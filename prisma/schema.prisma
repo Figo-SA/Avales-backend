@@ -9,6 +9,277 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql" // Cambia a "sqlite" si usas SQLite
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
+
+model Rol {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  UsuariosRol UsuarioRol[]
+}
+
+model Usuario {
+  id            Int         @id @default(autoincrement())
+  email        String      @unique
+  password      String
+  nombre        String
+  apellido      String
+  cedula        String      @unique
+  categoria_id  Int
+  disciplina_id Int
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+  Categoria     Categoria   @relation(fields: [categoria_id], references: [id])
+  Disciplina    Disciplina  @relation(fields: [disciplina_id], references: [id])
+  UsuariosRol   UsuarioRol[]
+  HistorialColeccion HistorialColeccion[]
+  HistorialSolicitud HistorialSolicitud[]
+  HistorialPda HistorialPda[]
+  HistorialDtm HistorialDtm[]
+  HistorialFinanciero HistorialFinanciero[]
+}
+
+model Disciplina {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  Usuarios    Usuario[]
+  Colecciones ColeccionAval[]
+}
+
+model Categoria {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  Usuarios    Usuario[]
+  Deportistas Deportista[]
+  Colecciones ColeccionAval[]
+}
+
+model UsuarioRol {
+  usuario_id Int
+  rol_id     Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  Usuario Usuario @relation(fields: [usuario_id], references: [id])
+  Rol     Rol     @relation(fields: [rol_id], references: [id])
+
+  @@id([usuario_id, rol_id])
+}
+
+model ColeccionAval {
+  id              Int                 @id @default(autoincrement())
+  nombre_evento   String
+  lugar_evento    String
+  fecha_evento    DateTime
+  disciplina_id   Int
+  categoria_id    Int
+  ciudad          String
+  created_at      DateTime            @default(now())
+  updated_at      DateTime            @updatedAt
+  Disciplina      Disciplina          @relation(fields: [disciplina_id], references: [id])
+  Categoria       Categoria           @relation(fields: [categoria_id], references: [id])
+  DeportistasAval DeportistaAval[]
+  HistorialColeccion HistorialColeccion[]
+}
+
+model DeportistaAval {
+  id                Int            @id @default(autoincrement())
+  coleccion_aval_id Int
+  deportista_id     Int
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+  ColeccionAval     ColeccionAval  @relation(fields: [coleccion_aval_id], references: [id])
+  Deportista        Deportista     @relation(fields: [deportista_id], references: [id])
+}
+
+model HistorialColeccion {
+  id                Int            @id @default(autoincrement())
+  fecha             DateTime
+  estado            Int
+  usuario_id        Int
+  coleccion_aval_id Int
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+  Usuario           Usuario        @relation(fields: [usuario_id], references: [id])
+  ColeccionAval     ColeccionAval  @relation(fields: [coleccion_aval_id], references: [id])
+}
+
+model Solicitud {
+  id              Int            @id @default(autoincrement())
+  descripcion     String
+  archivo         String
+  objetivos       String
+  criterios       String
+  fecha_salida    DateTime
+  ruta_salida     String
+  transporte_salida String
+  fecha_retorno   DateTime
+  hora_retorno    DateTime
+  transporte_retorno String
+  observaciones   String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  Requerimientos  Requerimiento[]
+  HistorialSolicitud HistorialSolicitud[]
+}
+
+model Requerimiento {
+  id           Int       @id @default(autoincrement())
+  tecnico_id   Int
+  rubro        String
+  cantidad_dias String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  Solicitud    Solicitud @relation(fields: [tecnico_id], references: [id])
+}
+
+model HistorialSolicitud {
+  id           Int       @id @default(autoincrement())
+  estado       Int
+  usuario_id   Int
+  solicitud_id Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  Usuario      Usuario  @relation(fields: [usuario_id], references: [id])
+  Solicitud    Solicitud @relation(fields: [solicitud_id], references: [id])
+}
+
+model Deportista {
+  id               Int           @id @default(autoincrement())
+  nombres          String
+  apellidos        String
+  cedula           String        @unique
+  fecha_nacimiento DateTime
+  categoria_id     Int
+  genero           String
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+  Categoria        Categoria     @relation(fields: [categoria_id], references: [id])
+  DeportistasAval  DeportistaAval[]
+}
+
+model Actividad {
+  id          Int        @id @default(autoincrement())
+  nombre      String
+  numero      Int
+  descripcion String
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  Items       Item[]
+}
+
+model Item {
+  id           Int       @id @default(autoincrement())
+  actividad_id Int
+  nombre       String
+  numero       Int
+  descripcion  String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  Actividad    Actividad @relation(fields: [actividad_id], references: [id])
+  PdaItems     PdaItem[]
+  FinancieroItems FinancieroItem[]
+}
+
+model Pda {
+  id                   Int            @id @default(autoincrement())
+  descripcion          String
+  documento            String
+  responsable_anticipo Int
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+  HistorialPda         HistorialPda[]
+  PdaItems             PdaItem[]
+}
+
+model HistorialPda {
+  id         Int     @id @default(autoincrement())
+  estado     Int
+  usuario_id Int
+  pda_id     Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  Usuario    Usuario @relation(fields: [usuario_id], references: [id])
+  Pda        Pda     @relation(fields: [pda_id], references: [id])
+}
+
+model PdaItem {
+  id         Int     @id @default(autoincrement())
+  pda_id     Int
+  item_id    Int
+  presupuesto Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  Pda        Pda     @relation(fields: [pda_id], references: [id])
+  Item       Item    @relation(fields: [item_id], references: [id])
+}
+
+model Dtm {
+  id                 Int            @id @default(autoincrement())
+  descripcion        String
+  documento          String
+  observacion        String?
+  fecha_presentacion DateTime
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
+  HistorialDtm       HistorialDtm[]
+}
+
+model HistorialDtm {
+  id         Int     @id @default(autoincrement())
+  estado     Int
+  usuario_id Int
+  dtm_id     Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  Usuario    Usuario @relation(fields: [usuario_id], references: [id])
+  Dtm        Dtm     @relation(fields: [dtm_id], references: [id])
+}
+
+model Financiero {
+  id            Int              @id @default(autoincrement())
+  descripcion   String
+  cuenta_bancaria String
+  fondos        String
+  notas         String?
+  razon_social  String
+  ruc           String
+  direccion     String
+  telefono      String
+  created_at    DateTime         @default(now())
+  updated_at    DateTime         @updatedAt
+  HistorialFinanciero HistorialFinanciero[]
+  FinancieroItems FinancieroItem[]
+}
+
+model HistorialFinanciero {
+  id           Int       @id @default(autoincrement())
+  estado       Int
+  usuario_id   Int
+  financiero_id Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  Usuario      Usuario  @relation(fields: [usuario_id], references: [id])
+  Financiero   Financiero @relation(fields: [financiero_id], references: [id])
+}
+
+model FinancieroItem {
+  id            Int        @id @default(autoincrement())
+  financiero_id Int
+  item_id       Int
+  precio_asignado Int
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  Financiero    Financiero @relation(fields: [financiero_id], references: [id])
+  Item          Item       @relation(fields: [item_id], references: [id])
+}
+
