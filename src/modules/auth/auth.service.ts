@@ -3,12 +3,15 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { BaseService } from 'src/common/services/base.service';
 
 const prisma = new PrismaClient(); // Lo puedes mejorar luego usando un módulo
 
 @Injectable()
-export class AuthService {
-  constructor(private jwtService: JwtService) {}
+export class AuthService extends BaseService<'usuario'> {
+  constructor(private jwtService: JwtService) {
+    super('usuario');
+  }
 
   async login(email: string, password: string) {
     const usuario = await prisma.usuario.findUnique({ where: { email } });
