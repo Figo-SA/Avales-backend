@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import jwtConfig from './config/jwt.config';
 import { ConfigModule } from '@nestjs/config';
 import databaseConfig from './config/database.config';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -16,6 +17,13 @@ import databaseConfig from './config/database.config';
       isGlobal: true, // Hace que esté disponible en toda la app
       load: [jwtConfig, databaseConfig], // Carga lo que exportaste desde `jwt.config.ts`
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'login',
+        limit: 5,
+        ttl: 60,
+      },
+    ]),
   ],
   controllers: [],
   providers: [],
