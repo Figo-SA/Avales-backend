@@ -36,11 +36,13 @@ export class CreateUsuarioDto {
   @Matches(/^\d{10}$/) // Solo 10 números
   cedula: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   categoria_id: number;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
