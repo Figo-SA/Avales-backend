@@ -9,7 +9,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
-    PrismaModule,
     AuthModule,
     UsuariosModule,
     PrismaModule,
