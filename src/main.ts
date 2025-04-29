@@ -24,9 +24,9 @@ async function bootstrap() {
 
   // Configuración de Swagger
   const config = new DocumentBuilder()
-    .setTitle('API de Gestión de Usuarios')
+    .setTitle('API de Gestión de Documentos')
     .setDescription(
-      'API para autenticación y gestión de usuarios desplegada en Railway',
+      'API para la gestión de documentos de Federación Railway',
     )
     .setVersion('1.0')
     .addBearerAuth(
