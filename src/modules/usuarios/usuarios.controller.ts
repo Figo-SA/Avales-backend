@@ -1,6 +1,6 @@
 import { Body, Controller, Post, SetMetadata, UseGuards } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
-import { CreateUsuarioDto } from '../auth/dto/usuario.dto';
+import { CreateUsuarioDto } from '../usuarios/dto/usuario.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import {

@@ -82,6 +82,15 @@ export class CreateUsuarioDto {
   @IsInt()
   @Min(1)
   disciplina_id: number;
+
+  @ApiProperty({
+    description: 'ID del rol del usuario',
+    example: 3,
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  rol_id: number;
 }
 
 export class UpdateUsuarioDto {
