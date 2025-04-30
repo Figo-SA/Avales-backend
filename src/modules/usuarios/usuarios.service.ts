@@ -1,7 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 // import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateUsuarioDto } from '../usuarios/dto/usuario.dto';
+import {
+  CreateUsuarioDto,
+  UsuarioResponseDto,
+} from '../usuarios/dto/usuario.dto';
 import * as bcrypt from 'bcrypt';
 import { PasswordService } from '../../common/services/password.service';
 
@@ -13,7 +16,10 @@ export class UsuariosService {
     // private jwtService: JwtService,
   ) {}
 
-  async create(data: CreateUsuarioDto) {
+  async create(
+    data: CreateUsuarioDto,
+  ): Promise<{ message: string; id: number }> {
+    console.log('Creando usuario:', data);
     // Validar email y cédula
     if (data.email) {
       const existingEmail = await this.prisma.usuario.findUnique({
@@ -95,7 +101,10 @@ export class UsuariosService {
         })),
       });
 
-      return usuario;
+      return {
+        message: 'Usuario creado correctamente',
+        id: usuario.id,
+      };
     });
   }
 }

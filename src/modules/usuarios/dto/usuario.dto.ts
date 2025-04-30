@@ -71,7 +71,7 @@ export class CreateUsuarioDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  categoria_id: number;
+  categoria_id?: number;
 
   @ApiProperty({
     description: 'ID de la disciplina del usuario (por defecto: 1)',
@@ -82,7 +82,7 @@ export class CreateUsuarioDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  disciplina_id: number;
+  disciplina_id?: number;
 
   @ApiProperty({
     description: 'Lista de IDs de roles asignados al usuario (al menos uno)',
@@ -130,4 +130,31 @@ export class UpdateUsuarioDto {
   @IsInt()
   @Min(1)
   disciplina_id: number;
+}
+
+// DTO para la respuesta al crear un usuario
+export class UsuarioResponseDto {
+  @ApiProperty({
+    description: 'ID del usuario creado',
+    example: 12,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Correo electrónico del usuario',
+    example: 'nuevo@ejemplo.com',
+  })
+  email: string;
+
+  @ApiProperty({
+    description: 'Nombre del usuario',
+    example: 'Juan',
+  })
+  nombre: string;
+
+  @ApiProperty({
+    description: 'Apellido del usuario',
+    example: 'Pérez',
+  })
+  apellido: string;
 }

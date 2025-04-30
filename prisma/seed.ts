@@ -1,27 +1,28 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { PasswordService } from '../src/common/services/password.service';
 
 const prisma = new PrismaClient();
+const passwordService = new PasswordService();
 
 async function main() {
   console.log('🚀 Iniciando seeding...');
 
-  // Limpiar la base de datos de ser necesario
-  // await prisma.$transaction([
-  //   prisma.usuarioRol.deleteMany(),
-  //   prisma.usuario.deleteMany(),
-  //   prisma.rol.deleteMany(),
-  //   prisma.categoria.deleteMany(),
-  //   prisma.disciplina.deleteMany(),
-  // ]);
+  // Limpiar la base de datos
+  await prisma.$transaction([
+    prisma.usuarioRol.deleteMany(),
+    prisma.usuario.deleteMany(),
+    prisma.rol.deleteMany(),
+    prisma.categoria.deleteMany(),
+    prisma.disciplina.deleteMany(),
+  ]);
   console.log('🧹 Base de datos limpiada');
 
   // Crear categorías
   const categorias = [
-    { id: 1, nombre: 'Infantil', created_at: new Date() },
-    { id: 2, nombre: 'Juvenil', created_at: new Date() },
-    { id: 3, nombre: 'Adulto', created_at: new Date() },
-    { id: 4, nombre: 'Mayores', created_at: new Date() },
+    { nombre: 'Infantil', created_at: new Date() },
+    { nombre: 'Juvenil', created_at: new Date() },
+    { nombre: 'Adulto', created_at: new Date() },
+    { nombre: 'Mayores', created_at: new Date() },
   ];
   await prisma.categoria.createMany({
     data: categorias,
@@ -31,10 +32,10 @@ async function main() {
 
   // Crear disciplinas
   const disciplinas = [
-    { id: 1, nombre: 'Fútbol', created_at: new Date() },
-    { id: 2, nombre: 'Natación', created_at: new Date() },
-    { id: 3, nombre: 'Atletismo', created_at: new Date() },
-    { id: 4, nombre: 'Ciclismo', created_at: new Date() },
+    { nombre: 'Fútbol', created_at: new Date() },
+    { nombre: 'Natación', created_at: new Date() },
+    { nombre: 'Atletismo', created_at: new Date() },
+    { nombre: 'Ciclismo', created_at: new Date() },
   ];
   await prisma.disciplina.createMany({
     data: disciplinas,
@@ -45,47 +46,40 @@ async function main() {
   // Crear roles
   const roles = [
     {
-      id: 1,
       nombre: 'super-admin',
       descripcion:
         'Administrador con acceso completo a todas las funcionalidades.',
       created_at: new Date(),
     },
     {
-      id: 2,
       nombre: 'admin',
       descripcion:
         'Administrador con permisos para gestionar usuarios y configuraciones.',
       created_at: new Date(),
     },
     {
-      id: 3,
       nombre: 'secretaria',
       descripcion:
         'Encargada de tareas administrativas y gestión de registros.',
       created_at: new Date(),
     },
     {
-      id: 4,
       nombre: 'dtm',
       descripcion: 'Director técnico o manager de equipos.',
       created_at: new Date(),
     },
     {
-      id: 5,
       nombre: 'pda',
       descripcion:
         'Personal de apoyo en actividades deportivas o administrativas.',
       created_at: new Date(),
     },
     {
-      id: 6,
       nombre: 'financiero',
       descripcion: 'Encargado de la gestión financiera y presupuestos.',
       created_at: new Date(),
     },
     {
-      id: 7,
       nombre: 'entrenador',
       descripcion: 'Encargado de entrenar y guiar a los atletas.',
       created_at: new Date(),
@@ -98,10 +92,9 @@ async function main() {
   console.log('👑 Roles creados');
 
   // Crear usuarios con roles asociados
-  const hashedPassword = await bcrypt.hash('123456', 10);
+  const hashedPassword = await passwordService.hashPassword('123456');
   const usuarios = [
     {
-      id: 1,
       nombre: 'Super',
       apellido: 'Admin',
       email: 'superadmin@ejemplo.com',
@@ -112,7 +105,6 @@ async function main() {
       rol_id: 1, // super-admin
     },
     {
-      id: 2,
       nombre: 'Admin',
       apellido: 'Principal',
       email: 'admin@ejemplo.com',
@@ -123,40 +115,36 @@ async function main() {
       rol_id: 2, // admin
     },
     {
-      id: 3,
       nombre: 'Ana',
       apellido: 'Gómez',
       email: 'secretaria@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567892',
-      categoria_id: 2,
-      disciplina_id: 2,
+      categoria_id: 1,
+      disciplina_id: 1,
       rol_id: 3, // secretaria
     },
     {
-      id: 4,
       nombre: 'Carlos',
       apellido: 'López',
       email: 'dtm@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567893',
-      categoria_id: 3,
-      disciplina_id: 3,
+      categoria_id: 1,
+      disciplina_id: 1,
       rol_id: 4, // dtm
     },
     {
-      id: 5,
       nombre: 'María',
       apellido: 'Pérez',
       email: 'pda@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567894',
-      categoria_id: 4,
-      disciplina_id: 4,
+      categoria_id: 1,
+      disciplina_id: 1,
       rol_id: 5, // pda
     },
     {
-      id: 6,
       nombre: 'Juan',
       apellido: 'Martínez',
       email: 'financiero@ejemplo.com',
@@ -167,41 +155,36 @@ async function main() {
       rol_id: 6, // financiero
     },
     {
-      id: 7,
       nombre: 'Luis',
       apellido: 'Rodríguez',
       email: 'entrenador@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567896',
-      categoria_id: 2,
-      disciplina_id: 2,
+      categoria_id: 1,
+      disciplina_id: 1,
       rol_id: 7, // entrenador
     },
-    // Usuarios adicionales para pruebas
     {
-      id: 8,
       nombre: 'Sofía',
       apellido: 'Hernández',
       email: 'entrenador2@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567897',
-      categoria_id: 3,
-      disciplina_id: 3,
+      categoria_id: 1,
+      disciplina_id: 1,
       rol_id: 7, // entrenador
     },
     {
-      id: 9,
       nombre: 'Diego',
       apellido: 'García',
       email: 'pda2@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567898',
-      categoria_id: 4,
-      disciplina_id: 4,
+      categoria_id: 1,
+      disciplina_id: 1,
       rol_id: 5, // pda
     },
     {
-      id: 10,
       nombre: 'Laura',
       apellido: 'Ramírez',
       email: 'secretaria2@ejemplo.com',
@@ -214,16 +197,28 @@ async function main() {
   ];
 
   // Crear usuarios y relaciones en una transacción
-  await prisma.$transaction(async (tx) => {
+  const createdUsuarios = await prisma.$transaction(async (tx) => {
     // Crear usuarios
-    await tx.usuario.createMany({
-      data: usuarios.map(({ rol_id, ...user }) => user),
-      skipDuplicates: true,
-    });
+    const insertedUsuarios = await Promise.all(
+      usuarios.map(async (user) => {
+        const newUser = await tx.usuario.create({
+          data: {
+            email: user.email,
+            password: user.password,
+            nombre: user.nombre,
+            apellido: user.apellido,
+            cedula: user.cedula,
+            categoria_id: user.categoria_id,
+            disciplina_id: user.disciplina_id,
+          },
+        });
+        return { ...user, id: newUser.id };
+      }),
+    );
 
     // Crear relaciones en UsuarioRol
     await tx.usuarioRol.createMany({
-      data: usuarios.map((user) => ({
+      data: insertedUsuarios.map((user) => ({
         usuario_id: user.id,
         rol_id: user.rol_id,
         created_at: new Date(),
@@ -231,8 +226,11 @@ async function main() {
       })),
       skipDuplicates: true,
     });
+
+    return insertedUsuarios;
   });
-  console.log('👤 Usuarios creados con roles asignados');
+
+  console.log('👤 Usuarios creados con roles asignados:', createdUsuarios);
 
   console.log('✅ Seeding completado');
 }
