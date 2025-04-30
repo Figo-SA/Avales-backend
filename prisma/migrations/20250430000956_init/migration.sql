@@ -5,6 +5,7 @@ CREATE TABLE "Rol" (
     "descripcion" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Rol_pkey" PRIMARY KEY ("id")
 );
@@ -12,6 +13,8 @@ CREATE TABLE "Rol" (
 -- CreateTable
 CREATE TABLE "Usuario" (
     "id" SERIAL NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
     "nombre" TEXT NOT NULL,
     "apellido" TEXT NOT NULL,
     "cedula" TEXT NOT NULL,
@@ -19,6 +22,7 @@ CREATE TABLE "Usuario" (
     "disciplina_id" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Usuario_pkey" PRIMARY KEY ("id")
 );
@@ -29,6 +33,7 @@ CREATE TABLE "Disciplina" (
     "nombre" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Disciplina_pkey" PRIMARY KEY ("id")
 );
@@ -39,6 +44,7 @@ CREATE TABLE "Categoria" (
     "nombre" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Categoria_pkey" PRIMARY KEY ("id")
 );
@@ -64,6 +70,7 @@ CREATE TABLE "ColeccionAval" (
     "ciudad" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "ColeccionAval_pkey" PRIMARY KEY ("id")
 );
@@ -108,6 +115,7 @@ CREATE TABLE "Solicitud" (
     "observaciones" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Solicitud_pkey" PRIMARY KEY ("id")
 );
@@ -147,6 +155,7 @@ CREATE TABLE "Deportista" (
     "genero" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Deportista_pkey" PRIMARY KEY ("id")
 );
@@ -184,6 +193,7 @@ CREATE TABLE "Pda" (
     "responsable_anticipo" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Pda_pkey" PRIMARY KEY ("id")
 );
@@ -221,6 +231,7 @@ CREATE TABLE "Dtm" (
     "fecha_presentacion" TIMESTAMP(3) NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Dtm_pkey" PRIMARY KEY ("id")
 );
@@ -250,6 +261,7 @@ CREATE TABLE "Financiero" (
     "telefono" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Financiero_pkey" PRIMARY KEY ("id")
 );
@@ -277,6 +289,9 @@ CREATE TABLE "FinancieroItem" (
 
     CONSTRAINT "FinancieroItem_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Usuario_email_key" ON "Usuario"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Usuario_cedula_key" ON "Usuario"("cedula");
