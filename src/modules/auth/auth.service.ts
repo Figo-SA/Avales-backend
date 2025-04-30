@@ -3,6 +3,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { BaseService } from 'src/common/services/base.service';
+import { PasswordService } from 'src/common/services/password.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 export interface JwtPayload {
@@ -16,6 +17,7 @@ export class AuthService extends BaseService<'usuario'> {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private passwordService: PasswordService,
   ) {
     super('usuario');
   }
@@ -34,8 +36,10 @@ export class AuthService extends BaseService<'usuario'> {
       throw new UnauthorizedException('Usuario no encontrado');
     }
 
-    const passwordMatch = await bcrypt.compare(password, usuario.password);
-
+    const passwordMatch = await this.passwordService.comparePassword(
+      password,
+      usuario.password,
+    );
     if (!passwordMatch) {
       throw new UnauthorizedException('Contraseña incorrecta');
     }

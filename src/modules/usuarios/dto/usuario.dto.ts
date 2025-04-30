@@ -9,6 +9,7 @@ import {
   Min,
   MaxLength,
   Matches,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -84,13 +85,15 @@ export class CreateUsuarioDto {
   disciplina_id: number;
 
   @ApiProperty({
-    description: 'ID del rol del usuario',
-    example: 3,
+    description: 'Lista de IDs de roles asignados al usuario (al menos uno)',
+    example: [3, 7],
   })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  rol_id: number;
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @IsNotEmpty()
+  rol_ids: number[];
 }
 
 export class UpdateUsuarioDto {
