@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { PasswordService } from '../src/common/services/password.service';
+import { PasswordService } from '../src/common/services/password/password.service';
 
 const prisma = new PrismaClient();
 const passwordService = new PasswordService();
@@ -15,7 +15,14 @@ async function main() {
     prisma.categoria.deleteMany(),
     prisma.disciplina.deleteMany(),
   ]);
-  console.log('🧹 Base de datos limpiada');
+
+  // Resetear las secuencias de los autoincrementadores (una por una)
+  // await prisma.$executeRaw`ALTER SEQUENCE "UsuarioRol_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "Usuario_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "Rol_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "Categoria_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "Disciplina_id_seq" RESTART WITH 1;`;
+  console.log('🧹 Base de datos limpiada y autoincrementadores reseteados');
 
   // Crear categorías
   const categorias = [
