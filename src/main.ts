@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -25,9 +27,7 @@ async function bootstrap() {
   // Configuración de Swagger
   const config = new DocumentBuilder()
     .setTitle('API de Gestión de Documentos')
-    .setDescription(
-      'API para la gestión de documentos de Federación Railway',
-    )
+    .setDescription('API para la gestión de documentos de Federación Railway')
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -40,6 +40,16 @@ async function bootstrap() {
       persistAuthorization: true, // Mantiene el token en la UI de Swagger
     },
   });
+
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+  );
+
+  app.useGlobalInterceptors(new ResponseInterceptor());
+
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  app.setGlobalPrefix('api/v1'); // Prefijo global para todas las rutas
 
   // iniciar la aplicación
   await app.listen(process.env.PORT ?? 3000);

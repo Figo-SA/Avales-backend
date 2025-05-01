@@ -8,6 +8,7 @@ import databaseConfig from './config/database.config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ValidationService } from './common/services/validation/validation.service';
 import { PasswordService } from './common/services/password/password.service';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PasswordService } from './common/services/password/password.service';
         ttl: 60,
       },
     ]),
+    CommonModule,
   ],
   controllers: [],
   providers: [ValidationService, PasswordService],
