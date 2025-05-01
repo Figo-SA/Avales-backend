@@ -12,9 +12,9 @@ import {
   IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
 
-export class CreateUsuarioDto {
+export class BaseUsuarioDto {
   @ApiProperty({
     description: 'Correo electrónico del usuario (opcional)',
     example: 'nuevo@ejemplo.com',
@@ -22,15 +22,7 @@ export class CreateUsuarioDto {
   })
   @IsOptional()
   @IsEmail()
-  email: string;
-
-  @ApiProperty({
-    description: 'Contraseña del usuario (6-32 caracteres)',
-    example: 'password123',
-  })
-  @IsString()
-  @Length(6, 32)
-  password: string;
+  email?: string;
 
   @ApiProperty({
     description: 'Nombre del usuario',
@@ -49,7 +41,7 @@ export class CreateUsuarioDto {
   @IsString()
   @IsOptional()
   @MaxLength(100)
-  apellido: string;
+  apellido?: string;
 
   @ApiProperty({
     description: 'Cédula del usuario (10 dígitos)',
@@ -83,6 +75,16 @@ export class CreateUsuarioDto {
   @IsInt()
   @Min(1)
   disciplina_id?: number;
+}
+
+export class CreateUsuarioDto extends BaseUsuarioDto {
+  @ApiProperty({
+    description: 'Contraseña del usuario (6-32 caracteres)',
+    example: 'password123',
+  })
+  @IsString()
+  @Length(6, 32)
+  password: string;
 
   @ApiProperty({
     description: 'Lista de IDs de roles asignados al usuario (al menos uno)',
@@ -96,65 +98,6 @@ export class CreateUsuarioDto {
   rol_ids: number[];
 }
 
-export class UpdateUsuarioDto {
-  @IsOptional()
-  @IsEmail()
-  email?: string;
+export class GetUsuarioDto extends BaseUsuarioDto {}
 
-  @IsOptional()
-  @IsString()
-  @Length(6, 32)
-  password?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  nombre?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  apellido?: string;
-
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d{10}$/, { message: 'La cédula debe tener 10 dígitos numéricos' })
-  cedula?: string;
-
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  categoria_id: number;
-
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  disciplina_id: number;
-}
-
-// DTO para la respuesta al crear un usuario
-export class UsuarioResponseDto {
-  @ApiProperty({
-    description: 'ID del usuario creado',
-    example: 12,
-  })
-  id: number;
-
-  @ApiProperty({
-    description: 'Correo electrónico del usuario',
-    example: 'nuevo@ejemplo.com',
-  })
-  email: string;
-
-  @ApiProperty({
-    description: 'Nombre del usuario',
-    example: 'Juan',
-  })
-  nombre: string;
-
-  @ApiProperty({
-    description: 'Apellido del usuario',
-    example: 'Pérez',
-  })
-  apellido: string;
-}
+export class UpdateUsuarioDto extends PartialType(CreateUsuarioDto) {}

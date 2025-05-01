@@ -1,16 +1,14 @@
 import {
   Body,
   Controller,
+  Get,
   HttpStatus,
   Post,
   SetMetadata,
   UseGuards,
 } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
-import {
-  CreateUsuarioDto,
-  UsuarioResponseDto,
-} from '../usuarios/dto/usuario.dto';
+import { CreateUsuarioDto, GetUsuarioDto } from '../usuarios/dto/usuario.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import {
@@ -20,6 +18,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Usuario } from '@prisma/client';
 
 @ApiTags('Usuarios')
 @Controller('usuarios')
@@ -60,5 +59,38 @@ export class UsuariosController {
     @Body() createUsuairoDto: CreateUsuarioDto,
   ): Promise<{ message: string; id: number }> {
     return this.usuariosService.create(createUsuairoDto);
+  }
+
+  @Get('')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @SetMetadata('roles', ['admin'])
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Crea un nuevo usuario (solo administradores)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de usuarios obtenida exitosamente',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 12 },
+          email: { type: 'string', example: 'cvillamarin@gmail' },
+          nombre: { type: 'string', example: 'Carlos' },
+          apellido: { type: 'string', example: 'Villamarín' },
+          cedula: { type: 'string', example: '1234567890' },
+          categoria_id: { type: 'number', example: 1 },
+          disciplina_id: { type: 'number', example: 1 },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description:
+      'No autorizado (requiere autenticación JWT y rol de administrador)',
+  })
+  getAll(): Promise<GetUsuarioDto[]> {
+    return this.usuariosService.getAllUsuarios();
   }
 }

@@ -3,7 +3,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { BaseService } from 'src/common/services/base.service';
-import { PasswordService } from 'src/common/services/password.service';
+import { PasswordService } from 'src/common/services/password/password.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 export interface JwtPayload {

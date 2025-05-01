@@ -1,83 +1,36 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 // import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
-import {
-  CreateUsuarioDto,
-  UsuarioResponseDto,
-} from '../usuarios/dto/usuario.dto';
+import { CreateUsuarioDto, GetUsuarioDto } from '../usuarios/dto/usuario.dto';
 import * as bcrypt from 'bcrypt';
-import { PasswordService } from '../../common/services/password.service';
+import { PasswordService } from '../../common/services/password/password.service';
+import { ValidationService } from 'src/common/services/validation/validation.service';
+import { Usuario } from '@prisma/client';
 
 @Injectable()
 export class UsuariosService {
   constructor(
     private prisma: PrismaService,
     private passwordService: PasswordService,
-    // private jwtService: JwtService,
+    private validationService: ValidationService,
   ) {}
 
   async create(
     data: CreateUsuarioDto,
   ): Promise<{ message: string; id: number }> {
-    console.log('Creando usuario:', data);
-    // Validar email y cédula
-    if (data.email) {
-      const existingEmail = await this.prisma.usuario.findUnique({
-        where: { email: data.email, deleted: false },
-      });
-      if (existingEmail) {
-        throw new BadRequestException(
-          'El correo electrónico ya está registrado',
-        );
-      }
-    }
+    // Validar los datos del usuario
+    await this.validateUsuarioData(data);
 
-    const existingCedula = await this.prisma.usuario.findUnique({
-      where: { cedula: data.cedula, deleted: false },
-    });
-    if (existingCedula) {
-      throw new BadRequestException('La cédula ya está registrada');
-    }
-
-    // Validar que todos los roles existan
-    const roles = await this.prisma.rol.findMany({
-      where: {
-        id: { in: data.rol_ids },
-        deleted: false,
-      },
-    });
-    if (roles.length !== data.rol_ids.length) {
-      throw new BadRequestException('Uno o más roles especificados no existen');
-    }
-
-    // Validar categoría y disciplina (si se proporcionan)
-    if (data.categoria_id) {
-      const categoria = await this.prisma.categoria.findUnique({
-        where: { id: data.categoria_id, deleted: false },
-      });
-      if (!categoria) {
-        throw new BadRequestException('La categoría especificada no existe');
-      }
-    }
-
-    if (data.disciplina_id) {
-      const disciplina = await this.prisma.disciplina.findUnique({
-        where: { id: data.disciplina_id, deleted: false },
-      });
-      if (!disciplina) {
-        throw new BadRequestException('La disciplina especificada no existe');
-      }
-    }
-
+    // Hash de la contraseña
     const hashedPassword = await this.passwordService.hashPassword(
       data.password,
     );
 
-    // Crear usuario y relaciones con roles en una transacción
+    // Creación del usuario y asignación de roles en transacción
     return this.prisma.$transaction(async (tx) => {
       const usuario = await tx.usuario.create({
         data: {
-          email: data.email,
+          email: data.email ?? '',
           password: hashedPassword,
           nombre: data.nombre,
           apellido: data.apellido ?? '',
@@ -85,13 +38,9 @@ export class UsuariosService {
           categoria_id: data.categoria_id ?? 1,
           disciplina_id: data.disciplina_id ?? 1,
         },
-        include: {
-          Categoria: true,
-          Disciplina: true,
-        },
+        select: { id: true },
       });
 
-      // Asignar roles al usuario
       await tx.usuarioRol.createMany({
         data: data.rol_ids.map((rol_id) => ({
           usuario_id: usuario.id,
@@ -106,5 +55,35 @@ export class UsuariosService {
         id: usuario.id,
       };
     });
+  }
+
+  getAllUsuarios(): Promise<GetUsuarioDto[]> {
+    return this.prisma.usuario.findMany({
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        apellido: true,
+        cedula: true,
+        categoria_id: true,
+        disciplina_id: true,
+      },
+      where: {
+        deleted: false,
+      },
+    });
+  }
+
+  private async validateUsuarioData(data: CreateUsuarioDto): Promise<void> {
+    // Comprobar si el email y la cédula son únicos
+    if (data.email)
+      await this.validationService.validateUniqueEmail(data.email);
+    await this.validationService.validateUniqueCedula(data.cedula);
+    await this.validationService.validateRoles(data.rol_ids);
+    // Comprobar si la categoría y disciplina existen
+    if (data.categoria_id)
+      await this.validationService.validateCategoria(data.categoria_id);
+    if (data.disciplina_id)
+      await this.validationService.validateDisciplina(data.disciplina_id);
   }
 }
