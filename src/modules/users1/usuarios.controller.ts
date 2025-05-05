@@ -9,12 +9,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
-import { CreateUsuarioDto, GetUsuarioDto } from './dto/usuario.dto';
+import { CreateUsuarioDto } from './dto/crearUsuario.dto';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiExtraModels,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -23,9 +25,11 @@ import {
   ApiResponseDto,
   ErrorResponseDto,
 } from '../../common/dtos/api-response.dto';
+import { UsuariosResponseDto } from './dto/respuestaUsuario.dto';
 
 @ApiTags('Usuarios')
 @Controller('usuarios')
+@ApiExtraModels(UsuariosResponseDto, ErrorResponseDto, ApiResponseDto)
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
@@ -46,8 +50,14 @@ export class UsuariosController {
           example: 'success',
           enum: ['success', 'error'],
         },
-        message: { type: 'string', example: 'Usuario creado correctamente' },
-        data: { $ref: '#/components/schemas/GetUsuarioDto' },
+        message: {
+          type: 'string',
+          example: 'Usuario creado correctamente',
+        },
+        data: {
+          type: 'object',
+          $ref: '#/components/schemas/UsuariosResponseDto',
+        },
       },
       required: ['status', 'message', 'data'],
     },
@@ -69,7 +79,7 @@ export class UsuariosController {
   })
   async create(
     @Body() createUsuarioDto: CreateUsuarioDto,
-  ): Promise<ApiResponseDto<GetUsuarioDto>> {
+  ): Promise<ApiResponseDto<UsuariosResponseDto>> {
     try {
       const usuario = await this.usuariosService.create(createUsuarioDto);
       return {
@@ -108,7 +118,7 @@ export class UsuariosController {
         },
         data: {
           type: 'array',
-          items: { $ref: '#/components/schemas/GetUsuarioDto' },
+          items: { $ref: '#/components/schemas/UsuariosResponseDto' },
         },
       },
       required: ['status', 'message', 'data'],
@@ -125,7 +135,7 @@ export class UsuariosController {
     description: 'No se encontraron usuarios',
     type: ErrorResponseDto,
   })
-  async getAll(): Promise<ApiResponseDto<GetUsuarioDto[]>> {
+  async getAll(): Promise<ApiResponseDto<UsuariosResponseDto[]>> {
     const users = await this.usuariosService.getAllUsuarios();
     return {
       status: 'success',

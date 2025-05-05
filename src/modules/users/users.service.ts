@@ -1,20 +1,35 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ResponseUserDto } from './dto/response-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateUsuarioDto, GetUsuarioDto } from '../usuarios/dto/usuario.dto';
-import { PasswordService } from '../../common/services/password/password.service';
+import { PasswordService } from 'src/common/services/password/password.service';
 import { ValidationService } from 'src/common/services/validation/validation.service';
 
 @Injectable()
-export class UsuariosService {
+export class UsersService {
   constructor(
     private prisma: PrismaService,
     private passwordService: PasswordService,
     private validationService: ValidationService,
   ) {}
 
-  async create(data: CreateUsuarioDto): Promise<GetUsuarioDto> {
+  private async validateUserData(data: CreateUserDto): Promise<void> {
+    // Comprobar si el email y la cédula son únicos
+    if (data.email)
+      await this.validationService.validateUniqueEmail(data.email);
+    await this.validationService.validateUniqueCedula(data.cedula);
+    await this.validationService.validateRoles(data.rol_ids);
+    // Comprobar si la categoría y disciplina existen
+    if (data.categoria_id)
+      await this.validationService.validateCategoria(data.categoria_id);
+    if (data.disciplina_id)
+      await this.validationService.validateDisciplina(data.disciplina_id);
+  }
+
+  async create(data: CreateUserDto): Promise<ResponseUserDto> {
     // Validar los datos del usuario
-    await this.validateUsuarioData(data);
+    await this.validateUserData(data);
 
     // Hash de la contraseña
     const hashedPassword = await this.passwordService.hashPassword(
@@ -71,7 +86,7 @@ export class UsuariosService {
     });
   }
 
-  async getAllUsuarios(): Promise<GetUsuarioDto[]> {
+  findAll() {
     return this.prisma.usuario
       .findMany({
         select: {
@@ -106,16 +121,15 @@ export class UsuariosService {
       );
   }
 
-  private async validateUsuarioData(data: CreateUsuarioDto): Promise<void> {
-    // Comprobar si el email y la cédula son únicos
-    if (data.email)
-      await this.validationService.validateUniqueEmail(data.email);
-    await this.validationService.validateUniqueCedula(data.cedula);
-    await this.validationService.validateRoles(data.rol_ids);
-    // Comprobar si la categoría y disciplina existen
-    if (data.categoria_id)
-      await this.validationService.validateCategoria(data.categoria_id);
-    if (data.disciplina_id)
-      await this.validationService.validateDisciplina(data.disciplina_id);
+  findOne(id: number) {
+    return `This action returns a #${id} user`;
+  }
+
+  update(id: number, updateUserDto: UpdateUserDto) {
+    return `This action updates a #${id} user`;
+  }
+
+  remove(id: number) {
+    return `This action removes a #${id} user`;
   }
 }

@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 import { AuthModule } from './modules/auth/auth.module';
-import { UsuariosModule } from './modules/usuarios/usuarios.module';
+import { UsuariosModule } from './modules/users1/usuarios.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

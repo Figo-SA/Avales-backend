@@ -17,9 +17,11 @@ export class ErrorResponseDto {
   @ApiProperty({ example: 'error', enum: ['success', 'error'] })
   status: string;
 
-  @ApiProperty({ example: 'Correo electrónico o cédula ya registrados' })
+  @ApiProperty({
+    example: 'Error al procesar la solicitud',
+  })
   message: string;
 
-  @ApiProperty({ type: 'object', nullable: true, additionalProperties: true })
+  @ApiProperty({ type: 'object', nullable: true, additionalProperties: false })
   data: null;
 }
