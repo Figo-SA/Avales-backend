@@ -1,11 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-// import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUsuarioDto, GetUsuarioDto } from '../usuarios/dto/usuario.dto';
-import * as bcrypt from 'bcrypt';
 import { PasswordService } from '../../common/services/password/password.service';
 import { ValidationService } from 'src/common/services/validation/validation.service';
-import { Usuario } from '@prisma/client';
 
 @Injectable()
 export class UsuariosService {
@@ -15,9 +12,7 @@ export class UsuariosService {
     private validationService: ValidationService,
   ) {}
 
-  async create(
-    data: CreateUsuarioDto,
-  ): Promise<{ message: string; id: number }> {
+  async create(data: CreateUsuarioDto): Promise<GetUsuarioDto> {
     // Validar los datos del usuario
     await this.validateUsuarioData(data);
 
@@ -38,7 +33,20 @@ export class UsuariosService {
           categoria_id: data.categoria_id ?? 1,
           disciplina_id: data.disciplina_id ?? 1,
         },
-        select: { id: true },
+        select: {
+          id: true,
+          email: true,
+          nombre: true,
+          apellido: true,
+          cedula: true,
+          categoria_id: true,
+          disciplina_id: true,
+          UsuariosRol: {
+            select: {
+              rol_id: true,
+            },
+          },
+        },
       });
 
       await tx.usuarioRol.createMany({
@@ -51,27 +59,51 @@ export class UsuariosService {
       });
 
       return {
-        message: 'Usuario creado correctamente',
         id: usuario.id,
+        email: usuario.email,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        cedula: usuario.cedula,
+        categoria_id: usuario.categoria_id,
+        disciplina_id: usuario.disciplina_id,
+        rol_ids: usuario.UsuariosRol.map((ur) => ur.rol_id),
       };
     });
   }
 
-  getAllUsuarios(): Promise<GetUsuarioDto[]> {
-    return this.prisma.usuario.findMany({
-      select: {
-        id: true,
-        email: true,
-        nombre: true,
-        apellido: true,
-        cedula: true,
-        categoria_id: true,
-        disciplina_id: true,
-      },
-      where: {
-        deleted: false,
-      },
-    });
+  async getAllUsuarios(): Promise<GetUsuarioDto[]> {
+    return this.prisma.usuario
+      .findMany({
+        select: {
+          id: true,
+          email: true,
+          nombre: true,
+          apellido: true,
+          cedula: true,
+          categoria_id: true,
+          disciplina_id: true,
+          UsuariosRol: {
+            select: {
+              rol_id: true,
+            },
+          },
+        },
+        where: {
+          deleted: false,
+        },
+      })
+      .then((users) =>
+        users.map((user) => ({
+          id: user.id,
+          email: user.email,
+          nombre: user.nombre,
+          apellido: user.apellido,
+          cedula: user.cedula,
+          categoria_id: user.categoria_id,
+          disciplina_id: user.disciplina_id,
+          rol_ids: user.UsuariosRol.map((ur) => ur.rol_id),
+        })),
+      );
   }
 
   private async validateUsuarioData(data: CreateUsuarioDto): Promise<void> {

@@ -6,7 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiResponse } from 'src/common/dtos/api-response.dto';
+import { ApiResponseDto } from 'src/common/dtos/api-response.dto';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -36,6 +36,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       data: null,
-    } as ApiResponse<null>);
+    } as ApiResponseDto<null>);
   }
 }

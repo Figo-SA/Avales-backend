@@ -10,7 +10,10 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Inicia sesión y obtiene un token JWT' })
-  @ApiBody({ type: LoginDto })
+  @ApiBody({
+    description: 'Credenciales de inicio de sesión del usuario',
+    type: LoginDto,
+  })
   @ApiResponse({
     status: 200,
     description: 'Token JWT generado exitosamente',

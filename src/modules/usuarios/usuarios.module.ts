@@ -4,6 +4,7 @@ import { UsuariosService } from './usuarios.service';
 import { PasswordService } from 'src/common/services/password/password.service';
 import { ValidationService } from 'src/common/services/validation/validation.service';
 import { CommonModule } from 'src/common/common.module';
+import { GetUsuarioDto, CreateUsuarioDto } from './dto/usuario.dto'; // Importa los DTOs explícitamente
 
 @Module({
   imports: [CommonModule],

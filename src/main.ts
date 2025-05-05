@@ -4,6 +4,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsuariosModule } from './modules/usuarios/usuarios.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -24,6 +26,8 @@ async function bootstrap() {
     }),
   );
 
+  app.setGlobalPrefix('api/v1'); // Prefijo global para todas las rutas
+
   // Configuración de Swagger
   const config = new DocumentBuilder()
     .setTitle('API de Gestión de Documentos')
@@ -34,7 +38,10 @@ async function bootstrap() {
       'JWT', // Nombre del esquema de autenticación
     )
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {
+    include: [AppModule, UsuariosModule, AuthModule], // Incluye módulos explícitamente
+    deepScanRoutes: true,
+  });
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true, // Mantiene el token en la UI de Swagger
@@ -48,8 +55,6 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   app.useGlobalFilters(new HttpExceptionFilter());
-
-  app.setGlobalPrefix('api/v1'); // Prefijo global para todas las rutas
 
   // iniciar la aplicación
   await app.listen(process.env.PORT ?? 3000);

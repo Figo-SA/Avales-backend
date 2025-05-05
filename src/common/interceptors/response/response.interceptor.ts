@@ -6,16 +6,16 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ApiResponse } from 'src/common/dtos/api-response.dto';
+import { ApiResponseDto } from 'src/common/dtos/api-response.dto';
 
 @Injectable()
 export class ResponseInterceptor<T>
-  implements NestInterceptor<T, ApiResponse<T>>
+  implements NestInterceptor<T, ApiResponseDto<T>>
 {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<ApiResponse<T>> {
+  ): Observable<ApiResponseDto<T>> {
     return next.handle().pipe(
       map((data) => ({
         status: 'success',

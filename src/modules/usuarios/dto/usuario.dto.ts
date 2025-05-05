@@ -1,4 +1,3 @@
-// src/usuario/dto/create-usuario.dto.ts
 import {
   IsEmail,
   IsNotEmpty,
@@ -98,6 +97,23 @@ export class CreateUsuarioDto extends BaseUsuarioDto {
   rol_ids: number[];
 }
 
-export class GetUsuarioDto extends BaseUsuarioDto {}
+export class GetUsuarioDto extends BaseUsuarioDto {
+  @ApiProperty({
+    description: 'ID del usuario',
+    example: 1,
+  })
+  @IsInt()
+  id: number;
+
+  @ApiProperty({
+    description: 'Lista de IDs de roles asignados al usuario',
+    example: [3, 7],
+  })
+  @Type(() => Number)
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  rol_ids: number[];
+}
 
 export class UpdateUsuarioDto extends PartialType(CreateUsuarioDto) {}
