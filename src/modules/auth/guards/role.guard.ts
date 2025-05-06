@@ -1,5 +1,11 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { RoleHelper } from 'src/common/herlpers/role.helper';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
@@ -10,13 +16,17 @@ export class RoleGuard implements CanActivate {
       'roles',
       context.getHandler(),
     );
-    if (!requiredRoles) {
-      return true;
-    }
+    if (!requiredRoles) return true;
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user; // Asume que el JWT incluye el rol en el payload
-    console.log(user);
+    const user = request.user;
+
+    const hasAccess = RoleHelper.hasRequiredRole(user.role, requiredRoles);
+    if (!hasAccess) {
+      throw new ForbiddenException(
+        `No tienes permisos suficientes para acceder a este recurso. Se requieren los siguientes roles: [${requiredRoles.join(', ')}]`,
+      );
+    }
 
     return true;
   }

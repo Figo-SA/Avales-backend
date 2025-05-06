@@ -130,8 +130,6 @@ export class UsersController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin'])
   @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Obtiene los detalles de un usuario por ID (solo administradores)',
