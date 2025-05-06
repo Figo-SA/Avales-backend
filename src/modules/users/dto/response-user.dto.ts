@@ -5,13 +5,6 @@ import { BaseUserDto } from './base-user.dto';
 
 export class ResponseUserDto extends BaseUserDto {
   @ApiProperty({
-    description: 'ID del usuario',
-    example: 1,
-  })
-  @IsInt()
-  id: number;
-
-  @ApiProperty({
     description: 'Lista de IDs de roles asignados al usuario',
     example: [3, 7],
   })

@@ -30,6 +30,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
+import { BaseUserDto } from './dto/base-user.dto';
 
 @Controller('users')
 @ApiTags('users')
