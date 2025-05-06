@@ -15,6 +15,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./erd.svg" // Output file for the diagram
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -102,25 +107,30 @@ model UsuarioRol {
 }
 
 model ColeccionAval {
-  id              Int                 @id @default(autoincrement())
-  nombre_evento   String              @db.VarChar(400)
-  lugar_evento    String              @db.VarChar(255)
-  fecha_evento    DateTime            
-  disciplina_id   Int
-  categoria_id    Int
-  ciudad          String              @db.VarChar(255)
-  created_at      DateTime            @default(now())
-  updated_at      DateTime            @updatedAt
-  deleted         Boolean             @default(false) // soft delete
-  Disciplina      Disciplina          @relation(fields: [disciplina_id], references: [id])
-  Categoria       Categoria           @relation(fields: [categoria_id], references: [id])
-  DeportistasAval DeportistaAval[]
+  id                Int                 @id @default(autoincrement())
+  nombre_evento     String              @db.VarChar(400)
+  lugar_evento      String              @db.VarChar(255)
+  fecha_evento      DateTime
+  disciplina_id     Int
+  categoria_id      Int
+  ciudad            String              @db.VarChar(255)
+  estado            Estado              @default(PENDIENTE) // nuevo campo
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  deleted           Boolean             @default(false) // soft delete
+  Disciplina        Disciplina          @relation(fields: [disciplina_id], references: [id])
+  Categoria         Categoria           @relation(fields: [categoria_id], references: [id])
+  DeportistasAval   DeportistaAval[]
   HistorialColeccion HistorialColeccion[]
+  Solicitudes       Solicitud[]         // nueva relación
+  Pdas              Pda[]               // nueva relación
+  Dtms              Dtm[]               // nueva relación
+  Financieros       Financiero[]        // nueva relación
 
   @@index([disciplina_id])
   @@index([categoria_id])
   @@index([deleted])
-
+  @@index([estado])
 }
 
 model DeportistaAval {
@@ -153,29 +163,31 @@ model HistorialColeccion {
 }
 
 model Solicitud {
-  id              Int            @id @default(autoincrement())
-  descripcion     String         @db.VarChar(600)
-  archivo         String         @db.VarChar(355)
-  objetivos       String         @db.VarChar(600)
-  criterios       String         @db.VarChar(600)
-  fecha_salida    DateTime
-  ruta_salida     String         @db.VarChar(255)
-  transporte_salida String       @db.VarChar(255)
-  fecha_retorno   DateTime
-  hora_retorno    DateTime
-  transporte_retorno String      @db.VarChar(255)
-  observaciones   String?        @db.VarChar(600)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-  deleted         Boolean  @default(false) // soft delete
-  Requerimientos  Requerimiento[]
-  HistorialSolicitud HistorialSolicitud[]
+  id                  Int            @id @default(autoincrement())
+  descripcion         String         @db.VarChar(600)
+  archivo             String         @db.VarChar(355)
+  objetivos           String         @db.VarChar(600)
+  criterios           String         @db.VarChar(600)
+  fecha_salida        DateTime
+  ruta_salida         String         @db.VarChar(255)
+  transporte_salida   String         @db.VarChar(255)
+  fecha_retorno       DateTime
+  hora_retorno        DateTime
+  transporte_retorno  String         @db.VarChar(255)
+  observaciones       String?        @db.VarChar(600)
+  coleccion_aval_id   Int            // Nueva relación
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+  deleted             Boolean        @default(false)
+  ColeccionAval       ColeccionAval  @relation(fields: [coleccion_aval_id], references: [id])
+  Requerimientos      Requerimiento[]
+  HistorialSolicitud  HistorialSolicitud[]
 
+  @@index([coleccion_aval_id])
   @@index([fecha_salida])
   @@index([created_at])
   @@index([fecha_retorno])
   @@index([deleted])
-
 }
 
 model Requerimiento {
@@ -214,6 +226,7 @@ model Deportista {
   fecha_nacimiento DateTime
   categoria_id     Int
   disciplina_id    Int
+  afiliacion       Boolean       @default(false)
   genero           String        @db.VarChar(50)
   created_at       DateTime      @default(now())
   updated_at       DateTime      @updatedAt
@@ -258,18 +271,21 @@ model Item {
 
 model Pda {
   id                   Int            @id @default(autoincrement())
+  coleccion_aval_id    Int
+  ColeccionAval        ColeccionAval @relation(fields: [coleccion_aval_id], references: [id])
   descripcion          String         @db.VarChar(600)
   documento            String         @db.VarChar(355)
   responsable_anticipo Int
   created_at           DateTime       @default(now())
   updated_at           DateTime       @updatedAt
-  deleted              Boolean        @default(false) // soft delete
+  deleted              Boolean        @default(false)
   HistorialPda         HistorialPda[]
   PdaItems             PdaItem[]
 
   @@index([created_at])
   @@index([deleted])
 }
+
 
 model HistorialPda {
   id         Int     @id @default(autoincrement())
@@ -303,22 +319,24 @@ model PdaItem {
 }
 
 model Dtm {
-  id                 Int            @id @default(autoincrement())
-  descripcion        String         @db.VarChar(600)
-  documento          String         @db.VarChar(355)
-  observacion        String?        @db.VarChar(600)
-  fecha_presentacion DateTime
-  created_at         DateTime       @default(now())
-  updated_at         DateTime       @updatedAt
-  deleted            Boolean        @default(false) // soft delete
-  HistorialDtm       HistorialDtm[]
+  id                   Int            @id @default(autoincrement())
+  coleccion_aval_id    Int
+  ColeccionAval        ColeccionAval @relation(fields: [coleccion_aval_id], references: [id])
+  descripcion          String         @db.VarChar(600)
+  documento            String         @db.VarChar(355)
+  observacion          String?        @db.VarChar(600)
+  fecha_presentacion   DateTime
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+  deleted              Boolean        @default(false)
+  HistorialDtm         HistorialDtm[]
 
   @@index([created_at])
   @@index([fecha_presentacion])
   @@index([descripcion])
   @@index([deleted])
-
 }
+
 
 model HistorialDtm {
   id         Int     @id @default(autoincrement())
@@ -337,27 +355,27 @@ model HistorialDtm {
   
 }
 
-
 model Financiero {
-  id            Int              @id @default(autoincrement())
-  descripcion   String           @db.VarChar(600)
-  cuenta_bancaria String         @db.VarChar(255)
-  fondos        String           @db.VarChar(255)
-  notas         String?          @db.VarChar(400)
-  razon_social  String           @db.VarChar(255)
-  ruc           String           @db.VarChar(50)
-  direccion     String           @db.VarChar(255)
-  telefono      String           @db.VarChar(50)
-  created_at    DateTime         @default(now())
-  updated_at    DateTime         @updatedAt
-  deleted       Boolean          @default(false) // soft delete
+  id                 Int              @id @default(autoincrement())
+  coleccion_aval_id  Int
+  ColeccionAval      ColeccionAval   @relation(fields: [coleccion_aval_id], references: [id])
+  descripcion        String           @db.VarChar(600)
+  cuenta_bancaria    String           @db.VarChar(255)
+  fondos             String           @db.VarChar(255)
+  notas              String?          @db.VarChar(400)
+  razon_social       String           @db.VarChar(255)
+  ruc                String           @db.VarChar(50)
+  direccion          String           @db.VarChar(255)
+  telefono           String           @db.VarChar(50)
+  created_at         DateTime         @default(now())
+  updated_at         DateTime         @updatedAt
+  deleted            Boolean          @default(false)
   HistorialFinanciero HistorialFinanciero[]
-  FinancieroItems FinancieroItem[]
+  FinancieroItems    FinancieroItem[]
 
   @@index([created_at])
   @@index([descripcion])
   @@index([deleted])
-
 }
 
 model HistorialFinanciero {
