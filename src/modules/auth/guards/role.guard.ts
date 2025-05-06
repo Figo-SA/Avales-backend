@@ -21,7 +21,10 @@ export class RoleGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    const hasAccess = RoleHelper.hasRequiredRole(user.role, requiredRoles);
+    console.log('User:', user);
+    console.log('Required Roles:', requiredRoles);
+
+    const hasAccess = RoleHelper.hasRequiredRole(user.rol, requiredRoles);
     if (!hasAccess) {
       throw new ForbiddenException(
         `No tienes permisos suficientes para acceder a este recurso. Se requieren los siguientes roles: [${requiredRoles.join(', ')}]`,
