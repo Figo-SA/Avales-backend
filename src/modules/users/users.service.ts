@@ -1,10 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/common/services/password/password.service';
 import { ValidationService } from 'src/common/services/validation/validation.service';
+import { Usuario } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -14,17 +19,41 @@ export class UsersService {
     private validationService: ValidationService,
   ) {}
 
-  private async validateUserData(data: CreateUserDto): Promise<void> {
-    // Comprobar si el email y la cédula son únicos
-    if (data.email)
-      await this.validationService.validateUniqueEmail(data.email);
-    await this.validationService.validateUniqueCedula(data.cedula);
-    await this.validationService.validateRoles(data.rol_ids);
-    // Comprobar si la categoría y disciplina existen
-    if (data.categoria_id)
+  private async validateUserData(
+    data: CreateUserDto | UpdateUserDto,
+    isUpdate = false,
+    excludeId?: number,
+  ): Promise<void> {
+    // Validar cédula
+    if (!isUpdate || data.cedula) {
+      await this.validationService.validateUniqueCedula(
+        data.cedula || '',
+        excludeId,
+      );
+    }
+
+    // Validar roles
+    if (!isUpdate || data.rol_ids) {
+      const rolIds = data.rol_ids || [];
+      if (rolIds.length === 0) {
+        throw new BadRequestException('Debe proporcionar al menos un rol');
+      }
+      await this.validationService.validateRoles(rolIds);
+    }
+
+    // Validar email si se provee
+    if (data.email) {
+      await this.validationService.validateUniqueEmail(data.email, excludeId);
+    }
+
+    // Validar categoría y disciplina si se proveen
+    if (data.categoria_id) {
       await this.validationService.validateCategoria(data.categoria_id);
-    if (data.disciplina_id)
+    }
+
+    if (data.disciplina_id) {
       await this.validationService.validateDisciplina(data.disciplina_id);
+    }
   }
 
   async create(data: CreateUserDto): Promise<ResponseUserDto> {
@@ -48,6 +77,19 @@ export class UsersService {
           categoria_id: data.categoria_id ?? 1,
           disciplina_id: data.disciplina_id ?? 1,
         },
+      });
+
+      await tx.usuarioRol.createMany({
+        data: data.rol_ids.map((rol_id) => ({
+          usuario_id: usuario.id,
+          rol_id,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })),
+      });
+
+      const usuarioConRoles = await tx.usuario.findUnique({
+        where: { id: usuario.id },
         select: {
           id: true,
           email: true,
@@ -64,24 +106,21 @@ export class UsersService {
         },
       });
 
-      await tx.usuarioRol.createMany({
-        data: data.rol_ids.map((rol_id) => ({
-          usuario_id: usuario.id,
-          rol_id,
-          created_at: new Date(),
-          updated_at: new Date(),
-        })),
-      });
+      if (!usuarioConRoles) {
+        throw new NotFoundException(
+          'Usuario no encontrado después de la creación',
+        );
+      }
 
       return {
-        id: usuario.id,
-        email: usuario.email,
-        nombre: usuario.nombre,
-        apellido: usuario.apellido,
-        cedula: usuario.cedula,
-        categoria_id: usuario.categoria_id,
-        disciplina_id: usuario.disciplina_id,
-        rol_ids: usuario.UsuariosRol.map((ur) => ur.rol_id),
+        id: usuarioConRoles.id,
+        email: usuarioConRoles.email,
+        nombre: usuarioConRoles.nombre,
+        apellido: usuarioConRoles.apellido,
+        cedula: usuarioConRoles.cedula,
+        categoria_id: usuarioConRoles.categoria_id,
+        disciplina_id: usuarioConRoles.disciplina_id,
+        rol_ids: usuarioConRoles.UsuariosRol.map((ur) => ur.rol_id),
       };
     });
   }
@@ -121,15 +160,128 @@ export class UsersService {
       );
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: number): Promise<ResponseUserDto> {
+    const user = await this.prisma.usuario.findUnique({
+      where: {
+        id,
+        deleted: false,
+      },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        apellido: true,
+        cedula: true,
+        categoria_id: true,
+        disciplina_id: true,
+        UsuariosRol: {
+          select: {
+            rol_id: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      cedula: user.cedula,
+      categoria_id: user.categoria_id,
+      disciplina_id: user.disciplina_id,
+      rol_ids: user.UsuariosRol.map((ur) => ur.rol_id),
+    };
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<ResponseUserDto> {
+    const user = await this.prisma.usuario.findUnique({
+      where: { id, deleted: false },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado o deshabilitado');
+    }
+
+    await this.validateUserData(updateUserDto, true, id);
+
+    const { categoria_id, disciplina_id, rol_ids, password, ...data } =
+      updateUserDto;
+    const hashedPassword = password
+      ? await this.passwordService.hashPassword(password)
+      : undefined;
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Actualizar usuario y obtener datos completos
+        const updatedUser = await tx.usuario.update({
+          where: { id },
+          data: {
+            ...data,
+            email: updateUserDto.email ?? undefined,
+            nombre: updateUserDto.nombre ?? undefined,
+            apellido: updateUserDto.apellido ?? undefined,
+            cedula: updateUserDto.cedula ?? undefined,
+            password: hashedPassword,
+            updated_at: new Date(),
+            categoria_id,
+            disciplina_id,
+            UsuariosRol: rol_ids
+              ? {
+                  deleteMany: {},
+                  create: rol_ids.map((rol_id) => ({
+                    rol_id,
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                  })),
+                }
+              : undefined,
+          },
+          include: {
+            UsuariosRol: {
+              select: {
+                rol_id: true,
+              },
+            },
+          },
+        });
+
+        return {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          nombre: updatedUser.nombre,
+          apellido: updatedUser.apellido,
+          cedula: updatedUser.cedula,
+          categoria_id: updatedUser.categoria_id,
+          disciplina_id: updatedUser.disciplina_id,
+          rol_ids: updatedUser.UsuariosRol.map((ur) => ur.rol_id),
+        };
+      },
+      { timeout: 10000 }, // Aumentar timeout a 10 segundos
+    );
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: number): Promise<void> {
+    const user = this.prisma.usuario.findUnique({
+      where: { id, deleted: false },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado o deshabilitado');
+    }
+
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { deleted: true, updated_at: new Date() },
+    });
   }
 }

@@ -5,7 +5,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 import { AuthModule } from './modules/auth/auth.module';
-import { UsuariosModule } from './modules/users1/usuarios.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -38,10 +37,7 @@ async function bootstrap() {
       'JWT', // Nombre del esquema de autenticación
     )
     .build();
-  const document = SwaggerModule.createDocument(app, config, {
-    include: [AppModule, UsuariosModule, AuthModule], // Incluye módulos explícitamente
-    deepScanRoutes: true,
-  });
+  const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true, // Mantiene el token en la UI de Swagger

@@ -80,21 +80,8 @@ export class UsersController {
     description: 'Acceso denegado (usuario no tiene rol de administrador)',
     type: ErrorResponseDto,
   })
-  async create(
-    @Body() CreateUserDto: CreateUserDto,
-  ): Promise<ApiResponseDto<ResponseUserDto>> {
-    try {
-      const usuario = await this.usersService.create(CreateUserDto);
-      return {
-        status: 'success',
-        message: 'Usuario creado correctamente',
-        data: usuario,
-      };
-    } catch (error) {
-      throw new BadRequestException(
-        error.message || 'Error al crear el usuario',
-      );
-    }
+  async create(@Body() CreateUserDto: CreateUserDto): Promise<ResponseUserDto> {
+    return await this.usersService.create(CreateUserDto);
   }
 
   @Get()
@@ -138,27 +125,148 @@ export class UsersController {
     description: 'No se encontraron usuarios',
     type: ErrorResponseDto,
   })
-  async findAll(): Promise<ApiResponseDto<ResponseUserDto[]>> {
-    const users = await this.usersService.findAll();
-    return {
-      status: 'success',
-      message: 'Usuarios obtenidos correctamente',
-      data: users,
-    };
+  async findAll(): Promise<ResponseUserDto[]> {
+    return await this.usersService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @SetMetadata('roles', ['admin'])
+  @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary: 'Obtiene los detalles de un usuario por ID (solo administradores)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Detalles del usuario obtenidos exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          example: 'success',
+          enum: ['success', 'error'],
+        },
+        message: {
+          type: 'string',
+          example: 'Usuario obtenido correctamente',
+        },
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/ResponseUserDto' },
+        },
+      },
+      required: ['status', 'message', 'data'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description:
+      'No autorizado (requiere autenticación JWT y rol de administrador)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'No se encontro el usuario con el ID proporcionado',
+    type: ErrorResponseDto,
+  })
+  async findOne(
+    @Param('id') id: string,
+  ): Promise<ResponseUserDto | ErrorResponseDto> {
+    return await this.usersService.findOne(+id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @SetMetadata('roles', ['admin'])
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Actualizar un usuario' })
+  @ApiBody({ type: UpdateUserDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Usuario actualizado exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          example: 'success',
+          enum: ['success', 'error'],
+        },
+        message: {
+          type: 'string',
+          example: 'Usuario actualizado correctamente',
+        },
+        data: {
+          type: 'object',
+          $ref: '#/components/schemas/ResponseUserDto',
+        },
+      },
+      required: ['status', 'message', 'data'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Correo electrónico o cédula ya registrados',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No autorizado (requiere autenticación JWT)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Acceso denegado (usuario no tiene rol de administrador)',
+    type: ErrorResponseDto,
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<ResponseUserDto> {
+    return await this.usersService.update(+id, updateUserDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @SetMetadata('roles', ['admin'])
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Eliminar un usuario' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Usuario eliminado exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          example: 'success',
+          enum: ['success', 'error'],
+        },
+        message: {
+          type: 'string',
+          example: 'Usuario eliminado correctamente',
+        },
+        data: {
+          type: 'object',
+          $ref: '#/components/schemas/ResponseUserDto',
+        },
+      },
+      required: ['status', 'message', 'data'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No autorizado (requiere autenticación JWT)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Acceso denegado (usuario no tiene rol de administrador)',
+    type: ErrorResponseDto,
+  })
+  async remove(@Param('id') id: string): Promise<null> {
+    await this.usersService.remove(+id);
+    return null;
   }
 }

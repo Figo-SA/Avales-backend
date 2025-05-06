@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './modules/auth/auth.module';
-import { UsuariosModule } from './modules/users1/usuarios.module';
 import { PrismaModule } from './prisma/prisma.module';
 import jwtConfig from './config/jwt.config';
 import { ConfigModule } from '@nestjs/config';
