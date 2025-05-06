@@ -7,6 +7,8 @@ import {
   Min,
   MaxLength,
   Matches,
+  isBoolean,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -19,6 +21,7 @@ export class BaseUserDto {
   })
   @IsOptional()
   @IsEmail()
+  @MaxLength(150)
   email?: string;
 
   @ApiProperty({
@@ -27,7 +30,7 @@ export class BaseUserDto {
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(100)
+  @MaxLength(150)
   nombre: string;
 
   @ApiProperty({
@@ -37,7 +40,7 @@ export class BaseUserDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(100)
+  @MaxLength(150)
   apellido?: string;
 
   @ApiProperty({
@@ -46,6 +49,7 @@ export class BaseUserDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   @Matches(/^\d{10}$/, {
     message: 'La cédula debe tener exactamente 10 dígitos',
   })

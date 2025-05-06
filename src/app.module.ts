@@ -10,6 +10,7 @@ import { PasswordService } from './common/services/password/password.service';
 import { CommonModule } from './common/common.module';
 // import { UsuariosModule } from './usuarios/usuarios.module';
 import { UsersModule } from './modules/users/users.module';
+import { DeportistasModule } from './modules/deportistas/deportistas.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { UsersModule } from './modules/users/users.module';
     ]),
     CommonModule,
     UsersModule,
+    DeportistasModule,
   ],
   controllers: [],
   providers: [ValidationService, PasswordService],
