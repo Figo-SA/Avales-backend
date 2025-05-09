@@ -1,11 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
 import { UpdateDeportistaDto } from './dto/update-deportista.dto';
+import { ValidationService } from 'src/common/services/validation/validation.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { BaseDeportistaDto } from './dto/base-deportista.dto';
+import { ResponseDeportistaDto } from './dto/response-deportista.dto';
+import { Deportista } from '@prisma/client';
 
 @Injectable()
 export class DeportistasService {
-  create(createDeportistaDto: CreateDeportistaDto) {
-    return 'This action adds a new deportista';
+  constructor(
+    private readonly prisma: PrismaService, // Cambia esto por el tipo correcto de PrismaService
+    private readonly validationService: ValidationService, // Cambia esto por el tipo correcto de ValidationService
+  ) {}
+
+  async create(
+    createDeportistaDto: CreateDeportistaDto,
+  ): Promise<ResponseDeportistaDto> {
+    await this.validateDeportistaData(createDeportistaDto);
+    console.log(
+      'Validación de datos de deportista exitosa:',
+      createDeportistaDto,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      console.log('Iniciando transacción para crear deportista...');
+      const deportista = await tx.deportista.create({
+        data: {
+          ...createDeportistaDto,
+        },
+      });
+      console.log('Deportista creado:', deportista);
+      return { ...deportista } as ResponseDeportistaDto;
+    });
   }
 
   findAll() {
@@ -22,6 +49,25 @@ export class DeportistasService {
 
   remove(id: number) {
     return `This action removes a #${id} deportista`;
+  }
+
+  async validateDeportistaData(
+    data: CreateDeportistaDto | UpdateDeportistaDto,
+  ) {
+    if (data.cedula) {
+      await this.validationService.validateUniqueCedula(data.cedula);
+    }
+    console.log('Validación de cédula exitosa:', data.cedula);
+
+    // Validar categoría y disciplina si se proveen
+    if (data.categoria_id) {
+      await this.validationService.validateCategoria(data.categoria_id);
+    }
+    console.log('Validación de categoría exitosa:', data.categoria_id);
+
+    if (data.disciplina_id) {
+      await this.validationService.validateDisciplina(data.disciplina_id);
+    }
   }
 
   // async afiliarUser(
