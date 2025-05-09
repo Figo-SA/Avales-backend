@@ -54,8 +54,13 @@ export class DeportistasService {
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} deportista`;
+  async softDelete(id: number): Promise<string> {
+    await this.prisma.deportista.update({
+      where: { id, deleted: false },
+      data: { deleted: true },
+    });
+
+    return `Deportista con ID ${id} eliminado correctamente`;
   }
 
   async validateDeportistaData(

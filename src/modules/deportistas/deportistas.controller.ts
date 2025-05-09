@@ -102,8 +102,8 @@ export class DeportistasController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.deportistasService.remove(+id);
+  remove(@Param('id') id: string): Promise<string> {
+    return this.deportistasService.softDelete(+id);
   }
 
   // @Put(':id/afiliate')
