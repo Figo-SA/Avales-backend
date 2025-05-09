@@ -18,10 +18,6 @@ export class DeportistasService {
     createDeportistaDto: CreateDeportistaDto,
   ): Promise<ResponseDeportistaDto> {
     await this.validateDeportistaData(createDeportistaDto);
-    console.log(
-      'Validación de datos de deportista exitosa:',
-      createDeportistaDto,
-    );
 
     return this.prisma.$transaction(async (tx) => {
       console.log('Iniciando transacción para crear deportista...');
@@ -35,16 +31,27 @@ export class DeportistasService {
     });
   }
 
-  findAll() {
-    return `This action returns all deportistas`;
+  findAll(): Promise<ResponseDeportistaDto[]> {
+    return this.prisma.deportista.findMany({
+      where: { deleted: false },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} deportista`;
+  findOne(id: number): Promise<ResponseDeportistaDto> {
+    return this.prisma.deportista.findUniqueOrThrow({
+      where: { id, deleted: false },
+    });
   }
 
-  update(id: number, updateDeportistaDto: UpdateDeportistaDto) {
-    return `This action updates a #${id} deportista`;
+  async update(id: number, updateDeportistaDto: UpdateDeportistaDto) {
+    await this.validateDeportistaData(updateDeportistaDto);
+
+    return this.prisma.deportista.update({
+      where: { id, deleted: false },
+      data: {
+        ...updateDeportistaDto,
+      },
+    });
   }
 
   remove(id: number) {

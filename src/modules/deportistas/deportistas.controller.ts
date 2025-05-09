@@ -80,20 +80,16 @@ export class DeportistasController {
   create(
     @Body() createDeportistaDto: CreateDeportistaDto,
   ): Promise<ResponseDeportistaDto> {
-    console.log(
-      'Datos recibidos en el controlador para crear deportista:',
-      createDeportistaDto,
-    );
     return this.deportistasService.create(createDeportistaDto);
   }
 
   @Get()
-  findAll() {
+  findAll(): Promise<ResponseDeportistaDto[]> {
     return this.deportistasService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<ResponseDeportistaDto> {
     return this.deportistasService.findOne(+id);
   }
 
