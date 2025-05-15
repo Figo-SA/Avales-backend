@@ -265,8 +265,15 @@ export class UsersController {
     description: 'Acceso denegado (usuario no tiene rol de administrador)',
     type: ErrorResponseDto,
   })
-  async remove(@Param('id') id: string): Promise<null> {
-    await this.usersService.remove(+id);
-    return null;
+  async remove(
+    @Param('id') id: string,
+  ): Promise<ApiResponseDto<{ id: number }>> {
+    const result = await this.usersService.softDelete(+id);
+
+    return {
+      status: 'success',
+      message: 'Eliminado correctamente',
+      data: result,
+    };
   }
 }

@@ -218,69 +218,59 @@ export class UsersService {
       ? await this.passwordService.hashPassword(password)
       : undefined;
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        // Actualizar usuario y obtener datos completos
-        const updatedUser = await tx.usuario.update({
-          where: { id },
-          data: {
-            ...data,
-            email: updateUserDto.email ?? undefined,
-            nombre: updateUserDto.nombre ?? undefined,
-            apellido: updateUserDto.apellido ?? undefined,
-            cedula: updateUserDto.cedula ?? undefined,
-            password: hashedPassword,
-            updated_at: new Date(),
-            categoria_id,
-            disciplina_id,
-            UsuariosRol: rol_ids
-              ? {
-                  deleteMany: {},
-                  create: rol_ids.map((rol_id) => ({
-                    rol_id,
-                    created_at: new Date(),
-                    updated_at: new Date(),
-                  })),
-                }
-              : undefined,
-          },
-          include: {
-            UsuariosRol: {
-              select: {
-                rol_id: true,
-              },
+    return this.prisma.$transaction(async (tx) => {
+      // Actualizar usuario y obtener datos completos
+      const updatedUser = await tx.usuario.update({
+        where: { id },
+        data: {
+          ...data,
+          email: updateUserDto.email ?? undefined,
+          nombre: updateUserDto.nombre ?? undefined,
+          apellido: updateUserDto.apellido ?? undefined,
+          cedula: updateUserDto.cedula ?? undefined,
+          password: hashedPassword,
+          updated_at: new Date(),
+          categoria_id,
+          disciplina_id,
+          UsuariosRol: rol_ids
+            ? {
+                deleteMany: {},
+                create: rol_ids.map((rol_id) => ({
+                  rol_id,
+                  created_at: new Date(),
+                  updated_at: new Date(),
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          UsuariosRol: {
+            select: {
+              rol_id: true,
             },
           },
-        });
+        },
+      });
 
-        return {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          nombre: updatedUser.nombre,
-          apellido: updatedUser.apellido,
-          cedula: updatedUser.cedula,
-          categoria_id: updatedUser.categoria_id,
-          disciplina_id: updatedUser.disciplina_id,
-          rol_ids: updatedUser.UsuariosRol.map((ur) => ur.rol_id),
-        };
-      },
-      { timeout: 10000 }, // Aumentar timeout a 10 segundos
-    );
+      return {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        nombre: updatedUser.nombre,
+        apellido: updatedUser.apellido,
+        cedula: updatedUser.cedula,
+        categoria_id: updatedUser.categoria_id,
+        disciplina_id: updatedUser.disciplina_id,
+        rol_ids: updatedUser.UsuariosRol.map((ur) => ur.rol_id),
+      };
+    });
   }
 
-  async remove(id: number): Promise<void> {
-    const user = this.prisma.usuario.findUnique({
-      where: { id, deleted: false },
-      select: { id: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado o deshabilitado');
-    }
-
+  async softDelete(id: number): Promise<{ id: number }> {
     await this.prisma.usuario.update({
-      where: { id },
+      where: { id, deleted: false },
       data: { deleted: true, updated_at: new Date() },
     });
+
+    return { id };
   }
 }
