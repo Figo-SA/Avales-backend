@@ -1,32 +1,25 @@
 import { Prisma } from '@prisma/client';
-import { HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { BaseExceptionHandler } from './base-exception.handler';
 
 export class PrismaKnownErrorHandler implements BaseExceptionHandler {
-  canHandle(exception: unknown): boolean {
+  canHandle(exception: any): boolean {
     return exception instanceof Prisma.PrismaClientKnownRequestError;
   }
 
-  handle(exception: Prisma.PrismaClientKnownRequestError) {
-    let status = HttpStatus.BAD_REQUEST;
-    let message = 'Error en la solicitud a la base de datos';
+  handle(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
 
-    switch (exception.code) {
-      case 'P2002':
-        message = 'El valor para un campo único ya está en uso.';
-        break;
-      case 'P2025':
-        message = 'El recurso especificado no fue encontrado.';
-        status = HttpStatus.NOT_FOUND;
-        break;
-      default:
-        message = exception.message;
+    if (exception.code === 'P2002') {
+      response.status(400).json({
+        message: `Ya existe un registro con el campo único: ${exception.meta?.target}`,
+      });
+    } else {
+      response.status(400).json({
+        message: 'Error de base de datos (conocido)',
+        code: exception.code,
+      });
     }
-
-    return {
-      status,
-      message,
-      error: 'PrismaClientKnownRequestError',
-    };
   }
 }

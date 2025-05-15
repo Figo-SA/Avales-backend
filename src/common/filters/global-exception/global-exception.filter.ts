@@ -20,6 +20,15 @@ export class GlobalExceptionFilter<T> implements ExceptionFilter {
     const handler = this.handlers.find((handler) =>
       handler.canHandle(exception),
     );
-    handler?.handle(exception, host);
+
+    if (handler) {
+      handler.handle(exception, host);
+    } else {
+      const ctx = host.switchToHttp();
+      const response = ctx.getResponse();
+      response
+        .status(500)
+        .json({ message: 'Unexpected error occurred', error: exception });
+    }
   }
 }
