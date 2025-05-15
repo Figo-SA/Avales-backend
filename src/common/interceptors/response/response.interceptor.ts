@@ -1,17 +1,22 @@
+// response.interceptor.ts
 import {
   Injectable,
   NestInterceptor,
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { ApiResponseDto } from 'src/common/dtos/api-response.dto';
+import { Reflector } from '@nestjs/core';
+import { Observable, map } from 'rxjs';
+import { Request } from 'express';
+import { ApiResponseDto } from '../../dtos/api-response.dto';
+import { SUCCESS_MESSAGE_KEY } from 'src/common/decorators/success-messages.decorator';
 
 @Injectable()
 export class ResponseInterceptor<T>
   implements NestInterceptor<T, ApiResponseDto<T>>
 {
+  constructor(private reflector: Reflector) {}
+
   intercept(
     context: ExecutionContext,
     next: CallHandler,
@@ -27,9 +32,13 @@ export class ResponseInterceptor<T>
       DELETE: 'Recurso eliminado correctamente',
     };
 
+    const customMessage = this.reflector.get<string>(
+      SUCCESS_MESSAGE_KEY,
+      context.getHandler(),
+    );
+
     return next.handle().pipe(
       map((data) => {
-        // Si el controlador ya devuelve un objeto con status/message/data, no lo reenvuelvas
         if (
           data &&
           typeof data === 'object' &&
@@ -41,7 +50,8 @@ export class ResponseInterceptor<T>
         }
 
         const method = request.method.toUpperCase();
-        const message = defaultMessages[method] || 'Operación exitosa';
+        const message =
+          customMessage || defaultMessages[method] || 'Operación exitosa';
 
         return {
           status: 'success',
