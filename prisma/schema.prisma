@@ -46,7 +46,7 @@ model Usuario {
   password      String      @db.VarChar(150)
   nombre        String      @db.VarChar(150) 
   apellido      String      @db.VarChar(150)
-  cedula        String      @unique @db.VarChar(50)
+  cedula        String      @db.VarChar(50)
   categoria_id  Int
   disciplina_id Int
   created_at    DateTime    @default(now())
