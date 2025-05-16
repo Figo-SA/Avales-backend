@@ -33,6 +33,7 @@ export class GlobalExceptionFilter<T> implements ExceptionFilter {
     // Fallback para errores no manejados
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
+    const request = ctx.getRequest();
 
     const status =
       exception instanceof HttpException
@@ -47,6 +48,10 @@ export class GlobalExceptionFilter<T> implements ExceptionFilter {
     response.status(status).json({
       status: 'error',
       message,
+      error: exception.name || 'InternalServerError',
+      timestamp: new Date().toLocaleString(),
+      path: request.url,
+      data: null,
     });
   }
 }

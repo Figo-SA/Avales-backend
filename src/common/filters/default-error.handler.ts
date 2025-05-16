@@ -20,7 +20,7 @@ export class DefaultErrorHandler implements BaseExceptionHandler {
       status: 'error',
       message,
       error,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toLocaleString(),
       path: request.url,
       data: null,
     });

@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { BaseExceptionHandler } from './base-exception.handler';
 
 export class PrismaUnknownErrorHandler implements BaseExceptionHandler {
@@ -7,11 +7,24 @@ export class PrismaUnknownErrorHandler implements BaseExceptionHandler {
     return exception instanceof Prisma.PrismaClientUnknownRequestError;
   }
 
-  handle(exception: Prisma.PrismaClientUnknownRequestError) {
+  handle(
+    exception: Prisma.PrismaClientUnknownRequestError,
+    host: ArgumentsHost,
+  ) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest();
+
+    const message = exception?.message || 'Error interno del servidor';
+    const error = exception?.name || 'InternalServerError';
+
     return {
-      status: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: exception.message,
-      error: 'PrismaClientUnknownRequestError',
+      status: 'error',
+      message,
+      error,
+      timestamp: new Date().toLocaleString(),
+      path: request.url,
+      data: null,
     };
   }
 }

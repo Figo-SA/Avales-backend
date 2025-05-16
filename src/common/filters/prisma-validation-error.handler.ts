@@ -15,12 +15,14 @@ export class PrismaValidationErrorHandler implements BaseExceptionHandler {
   ): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest();
 
     response.status(HttpStatus.BAD_REQUEST).json({
       status: 'error',
       message: exception.message,
       error: 'PrismaClientValidationError',
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toLocaleString(),
+      path: request.url,
       data: null,
     });
   }
