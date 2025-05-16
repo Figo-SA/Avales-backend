@@ -15,10 +15,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator erd {
-  provider = "prisma-erd-generator"
-  output   = "./erd.svg" // Output file for the diagram
-}
+// generator erd {
+//   provider = "prisma-erd-generator"
+//   output   = "./erd.svg" // Output file for the diagram
+// }
 
 datasource db {
   provider  = "postgresql"

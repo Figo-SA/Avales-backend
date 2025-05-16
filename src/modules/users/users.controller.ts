@@ -158,7 +158,7 @@ export class UsersController {
           example: 'Usuario obtenido correctamente',
         },
         data: {
-          type: 'array',
+          type: 'object',
           items: { $ref: '#/components/schemas/ResponseUserDto' },
         },
       },
