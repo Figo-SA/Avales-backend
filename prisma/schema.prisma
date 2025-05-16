@@ -11,6 +11,20 @@ enum Estado {
   RECHAZADO
 }
 
+enum Genero {
+  MASCULINO
+  FEMENINO
+  MASCULINO_FEMENINO
+}
+
+// enum Rol {
+//   ADMIN
+//   USUARIO
+//   DEPORTISTA
+//   COORDINADOR
+//   FINANCIERO
+// }
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -175,7 +189,7 @@ model Solicitud {
   hora_retorno        DateTime
   transporte_retorno  String         @db.VarChar(255)
   observaciones       String?        @db.VarChar(600)
-  coleccion_aval_id   Int            // Nueva relación
+  coleccion_aval_id   Int            
   created_at          DateTime       @default(now())
   updated_at          DateTime       @updatedAt
   deleted             Boolean        @default(false)
@@ -227,7 +241,7 @@ model Deportista {
   categoria_id     Int
   disciplina_id    Int
   afiliacion       Boolean       @default(false)
-  genero           String        @db.VarChar(50)
+  genero           Genero
   created_at       DateTime      @default(now())
   updated_at       DateTime      @updatedAt
   deleted          Boolean       @default(false) // soft delete
