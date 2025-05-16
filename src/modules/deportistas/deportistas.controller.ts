@@ -22,7 +22,10 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { ApiResponseDto } from 'src/common/dtos/api-response.dto';
+import {
+  ApiResponseDto,
+  ErrorResponseDto,
+} from 'src/common/dtos/api-response.dto';
 import { ResponseDeportistaDto } from './dto/response-deportista.dto';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 
@@ -87,18 +90,165 @@ export class DeportistasController {
 
   @Get()
   @SuccessMessage('Datos de deportistas obtenidos correctamente')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @SetMetadata('roles', ['admin', 'entrenador'])
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Obtener todos los deportistas' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de deportistas obtenida exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          example: 'success',
+          enum: ['success', 'error'],
+        },
+        message: {
+          type: 'string',
+          example: 'Lista de deportistas obtenida correctamente',
+        },
+        data: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/ResponseDeportistaDto',
+          },
+        },
+      },
+      required: ['status', 'message', 'data'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No autorizado (requiere autenticación JWT)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Acceso prohibido',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Error interno del servidor',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener la lista de deportistas',
+    type: ErrorResponseDto,
+  })
   findAll(): Promise<ResponseDeportistaDto[]> {
     return this.deportistasService.findAll();
   }
 
   @Get(':id')
   @SuccessMessage('Datos de deportista obtenidos correctamente')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @SetMetadata('roles', ['admin', 'entrenador'])
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Obtener deportista por ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Deportista obtenido exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          example: 'success',
+          enum: ['success', 'error'],
+        },
+        message: {
+          type: 'string',
+          example: 'Deportista obtenido correctamente',
+        },
+        data: {
+          type: 'object',
+          $ref: '#/components/schemas/ResponseDeportistaDto',
+        },
+      },
+      required: ['status', 'message', 'data'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No autorizado (requiere autenticación JWT)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Acceso prohibido',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Deportista no encontrado',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Error interno del servidor',
+    type: ErrorResponseDto,
+  })
   findOne(@Param('id') id: string): Promise<ResponseDeportistaDto> {
     return this.deportistasService.findOne(+id);
   }
 
   @Patch(':id')
   @SuccessMessage('Deportista actualizado correctamente')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @SetMetadata('roles', ['admin', 'entrenador'])
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Actualizar deportista' })
+  @ApiBody({
+    description: 'Datos del deportista a actualizar',
+    type: UpdateDeportistaDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Deportista obtenido exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          example: 'success',
+          enum: ['success', 'error'],
+        },
+        message: {
+          type: 'string',
+          example: 'Deportista obtenido correctamente',
+        },
+        data: {
+          type: 'object',
+          $ref: '#/components/schemas/ResponseDeportistaDto',
+        },
+      },
+      required: ['status', 'message', 'data'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No autorizado (requiere autenticación JWT)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Acceso prohibido',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Deportista no encontrado',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Error interno del servidor',
+    type: ErrorResponseDto,
+  })
   update(
     @Param('id') id: string,
     @Body() updateDeportistaDto: UpdateDeportistaDto,
@@ -108,6 +258,53 @@ export class DeportistasController {
 
   @Delete(':id')
   @SuccessMessage('Deportista eliminado correctamente')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @SetMetadata('roles', ['admin'])
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Eliminar deportista' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Deportista eliminado exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          example: 'success',
+          enum: ['success', 'error'],
+        },
+        message: {
+          type: 'string',
+          example: 'Deportista eliminado correctamente',
+        },
+        data: {
+          type: 'string',
+          example: 'Deportista eliminado correctamente',
+        },
+      },
+      required: ['status', 'message', 'data'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No autorizado (requiere autenticación JWT)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Acceso prohibido',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Deportista no encontrado',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Error interno del servidor',
+    type: ErrorResponseDto,
+  })
   remove(@Param('id') id: string): Promise<string> {
     return this.deportistasService.softDelete(+id);
   }
