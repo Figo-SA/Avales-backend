@@ -266,8 +266,18 @@ export class UsersService {
   }
 
   async softDelete(id: number): Promise<{ id: number }> {
-    await this.prisma.usuario.update({
+    const user = await this.prisma.usuario.findFirst({
       where: { id, deleted: false },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        `Usuario con ID ${id} no encontrado o ya eliminado`,
+      );
+    }
+
+    await this.prisma.usuario.update({
+      where: { id },
       data: { deleted: true, updated_at: new Date() },
     });
 

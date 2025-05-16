@@ -84,11 +84,12 @@ export class UsersController {
     description: 'Acceso denegado (usuario no tiene rol de administrador)',
     type: ErrorResponseDto,
   })
-  async create(@Body() CreateUserDto: CreateUserDto): Promise<ResponseUserDto> {
-    return await this.usersService.create(CreateUserDto);
+  create(@Body() CreateUserDto: CreateUserDto): Promise<ResponseUserDto> {
+    return this.usersService.create(CreateUserDto);
   }
 
   @Get()
+  @SuccessMessage('Datos de usuarios obtenidos correctamente')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @SetMetadata('roles', ['admin'])
   @ApiBearerAuth('JWT')
@@ -129,11 +130,14 @@ export class UsersController {
     description: 'No se encontraron usuarios',
     type: ErrorResponseDto,
   })
-  async findAll(): Promise<ResponseUserDto[]> {
-    return await this.usersService.findAll();
+  findAll(): Promise<ResponseUserDto[]> {
+    return this.usersService.findAll();
   }
 
   @Get(':id')
+  @SuccessMessage('Datos del usuario obtenidos correctamente')
+  @SetMetadata('roles', ['admin'])
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Obtiene los detalles de un usuario por ID (solo administradores)',
@@ -172,13 +176,14 @@ export class UsersController {
     description: 'No se encontro el usuario con el ID proporcionado',
     type: ErrorResponseDto,
   })
-  async findOne(
+  findOne(
     @Param('id') id: string,
   ): Promise<ResponseUserDto | ErrorResponseDto> {
-    return await this.usersService.findOne(+id);
+    return this.usersService.findOne(+id);
   }
 
   @Patch(':id')
+  @SuccessMessage('Usuario actualizado correctamente')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @SetMetadata('roles', ['admin'])
   @ApiBearerAuth('JWT')
@@ -222,14 +227,15 @@ export class UsersController {
     description: 'Acceso denegado (usuario no tiene rol de administrador)',
     type: ErrorResponseDto,
   })
-  async update(
+  update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<ResponseUserDto> {
-    return await this.usersService.update(+id, updateUserDto);
+    return this.usersService.update(+id, updateUserDto);
   }
 
   @Delete(':id')
+  @SuccessMessage('Usuario eliminado correctamente')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @SetMetadata('roles', ['admin'])
   @ApiBearerAuth('JWT')
@@ -267,15 +273,7 @@ export class UsersController {
     description: 'Acceso denegado (usuario no tiene rol de administrador)',
     type: ErrorResponseDto,
   })
-  async remove(
-    @Param('id') id: string,
-  ): Promise<ApiResponseDto<{ id: number }>> {
-    const result = await this.usersService.softDelete(+id);
-
-    return {
-      status: 'success',
-      message: 'Eliminado correctamente',
-      data: result,
-    };
+  remove(@Param('id') id: string): Promise<{ id: number }> {
+    return this.usersService.softDelete(+id);
   }
 }

@@ -32,8 +32,6 @@ export class ResponseInterceptor<T>
       DELETE: 'Recurso eliminado correctamente',
     };
 
-    console.log('Request URL:', request);
-    console.log('ctx:', ctx);
     const customMessage = this.reflector.get<string>(
       SUCCESS_MESSAGE_KEY,
       context.getHandler(),

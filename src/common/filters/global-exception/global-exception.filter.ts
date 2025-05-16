@@ -1,4 +1,10 @@
-import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { BaseExceptionHandler } from '../base-exception.handler';
 import { PrismaKnownErrorHandler } from '../prisma-known-error.handler';
 import { PrismaUnknownErrorHandler } from '../prisma-unknown-error.handler';
@@ -16,19 +22,31 @@ export class GlobalExceptionFilter<T> implements ExceptionFilter {
     new PrismaValidationErrorHandler(),
   ];
 
-  catch(exception: T, host: ArgumentsHost) {
-    const handler = this.handlers.find((handler) =>
-      handler.canHandle(exception),
-    );
-
-    if (handler) {
-      handler.handle(exception, host);
-    } else {
-      const ctx = host.switchToHttp();
-      const response = ctx.getResponse();
-      response
-        .status(500)
-        .json({ message: 'Unexpected error occurred', error: exception });
+  catch(exception: any, host: ArgumentsHost): void {
+    for (const handler of this.handlers) {
+      if (handler.canHandle(exception)) {
+        handler.handle(exception, host);
+        return;
+      }
     }
+
+    // Fallback para errores no manejados
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const message =
+      exception instanceof HttpException
+        ? exception.getResponse()
+        : 'Error interno del servidor';
+
+    response.status(status).json({
+      status: 'error',
+      message,
+    });
   }
 }

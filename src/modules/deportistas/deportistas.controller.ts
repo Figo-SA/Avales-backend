@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { ApiResponseDto } from 'src/common/dtos/api-response.dto';
 import { ResponseDeportistaDto } from './dto/response-deportista.dto';
+import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 
 @Controller('deportistas')
 @ApiExtraModels(CreateDeportistaDto)
@@ -31,6 +32,7 @@ export class DeportistasController {
   constructor(private readonly deportistasService: DeportistasService) {}
 
   @Post()
+  @SuccessMessage('Deportista creado correctamente')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @SetMetadata('roles', ['admin', 'entrenador'])
   @ApiBearerAuth('JWT')
@@ -84,16 +86,19 @@ export class DeportistasController {
   }
 
   @Get()
+  @SuccessMessage('Datos de deportistas obtenidos correctamente')
   findAll(): Promise<ResponseDeportistaDto[]> {
     return this.deportistasService.findAll();
   }
 
   @Get(':id')
+  @SuccessMessage('Datos de deportista obtenidos correctamente')
   findOne(@Param('id') id: string): Promise<ResponseDeportistaDto> {
     return this.deportistasService.findOne(+id);
   }
 
   @Patch(':id')
+  @SuccessMessage('Deportista actualizado correctamente')
   update(
     @Param('id') id: string,
     @Body() updateDeportistaDto: UpdateDeportistaDto,
@@ -102,6 +107,7 @@ export class DeportistasController {
   }
 
   @Delete(':id')
+  @SuccessMessage('Deportista eliminado correctamente')
   remove(@Param('id') id: string): Promise<string> {
     return this.deportistasService.softDelete(+id);
   }
