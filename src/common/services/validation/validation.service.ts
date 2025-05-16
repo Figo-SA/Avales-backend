@@ -18,7 +18,7 @@ export class ValidationService {
     cedula: string,
     excludeId?: number,
   ): Promise<void> {
-    const existingCedula = await this.prisma.usuario.findUnique({
+    const existingCedula = await this.prisma.usuario.findFirst({
       where: { cedula, deleted: false },
     });
     if (existingCedula && existingCedula.id !== excludeId) {

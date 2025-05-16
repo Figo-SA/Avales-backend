@@ -49,7 +49,7 @@ async function bootstrap() {
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
 
-  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalInterceptors(app.get(ResponseInterceptor));
 
   app.useGlobalFilters(new GlobalExceptionFilter());
 

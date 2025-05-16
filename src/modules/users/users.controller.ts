@@ -31,6 +31,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { BaseUserDto } from './dto/base-user.dto';
+import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 
 @Controller('users')
 @ApiTags('users')
@@ -38,6 +39,7 @@ import { BaseUserDto } from './dto/base-user.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @SuccessMessage('Usuario creado correctamente')
   @Post('create')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @SetMetadata('roles', ['admin'])

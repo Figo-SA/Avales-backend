@@ -11,6 +11,8 @@ import { CommonModule } from './common/common.module';
 // import { UsuariosModule } from './usuarios/usuarios.module';
 import { UsersModule } from './modules/users/users.module';
 import { DeportistasModule } from './modules/deportistas/deportistas.module';
+import { response } from 'express';
+import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 
 @Module({
   imports: [
@@ -33,6 +35,6 @@ import { DeportistasModule } from './modules/deportistas/deportistas.module';
     DeportistasModule,
   ],
   controllers: [],
-  providers: [ValidationService, PasswordService],
+  providers: [ValidationService, PasswordService, ResponseInterceptor],
 })
 export class AppModule {}
