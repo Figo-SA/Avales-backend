@@ -72,13 +72,13 @@ export class DeportistasService {
     console.log('Validación de cédula exitosa:', data.cedula);
 
     // Validar categoría y disciplina si se proveen
-    if (data.categoria_id) {
-      await this.validationService.validateCategoria(data.categoria_id);
+    if (data.categoriaId) {
+      await this.validationService.validateCategoria(data.categoriaId);
     }
-    console.log('Validación de categoría exitosa:', data.categoria_id);
+    console.log('Validación de categoría exitosa:', data.categoriaId);
 
-    if (data.disciplina_id) {
-      await this.validationService.validateDisciplina(data.disciplina_id);
+    if (data.disciplinaId) {
+      await this.validationService.validateDisciplina(data.disciplinaId);
     }
   }
 
