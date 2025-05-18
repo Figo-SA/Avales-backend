@@ -64,7 +64,7 @@ export class BaseUserDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  categoria_id?: number;
+  categoriaId?: number;
 
   @ApiProperty({
     description: 'ID de la disciplina del usuario (por defecto: 1)',
@@ -75,5 +75,5 @@ export class BaseUserDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  disciplina_id?: number;
+  disciplinaId?: number;
 }

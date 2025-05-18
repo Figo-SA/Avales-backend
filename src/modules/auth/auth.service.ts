@@ -26,8 +26,8 @@ export class AuthService extends BaseService<'usuario'> {
     const usuario = await this.prisma.usuario.findUnique({
       where: { email },
       include: {
-        UsuariosRol: {
-          include: { Rol: true },
+        usuariosRol: {
+          include: { rol: true },
         },
       },
     });
@@ -44,7 +44,7 @@ export class AuthService extends BaseService<'usuario'> {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
-    const rol = usuario.UsuariosRol[0]?.Rol.nombre || 'user';
+    const rol = usuario.usuariosRol[0]?.rol.nombre || 'user';
 
     const payload: JwtPayload = {
       usuarioId: usuario.id,

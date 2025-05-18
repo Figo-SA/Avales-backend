@@ -11,6 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { Genero } from '@prisma/client';
 
 export class BaseDeportistaDto {
   @ApiProperty({
@@ -48,7 +49,7 @@ export class BaseDeportistaDto {
   })
   @Type(() => Date)
   @IsDate()
-  fecha_nacimiento: Date;
+  fechaNacimiento: Date;
 
   @ApiProperty({
     description: 'Género del deportista',
@@ -57,7 +58,7 @@ export class BaseDeportistaDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  genero: string;
+  genero: Genero;
 
   @ApiProperty({
     description: 'ID de la categoría',
@@ -66,7 +67,7 @@ export class BaseDeportistaDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  categoria_id: number;
+  categoriaId: number;
 
   @ApiProperty({
     description: 'ID de la disciplina',
@@ -75,7 +76,7 @@ export class BaseDeportistaDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  disciplina_id: number;
+  disciplinaId: number;
 
   @ApiProperty({
     description: 'Afiliación activa del deportista',

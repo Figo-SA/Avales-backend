@@ -1,6 +1,19 @@
 import { PrismaClient } from '@prisma/client';
 import { PasswordService } from '../src/common/services/password/password.service';
 
+enum TipoRol {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  SECRETARIA = 'SECRETARIA',
+  DTM = 'DTM',
+  DTM_EIDE = 'DTM_EIDE',
+  ENTRENADOR = 'ENTRENADOR',
+  USUARIO = 'USUARIO',
+  DEPORTISTA = 'DEPORTISTA',
+  PDA = 'PDA',
+  FINANCIERO = 'FINANCIERO',
+}
+
 const prisma = new PrismaClient();
 const passwordService = new PasswordService();
 
@@ -17,7 +30,7 @@ async function main() {
   ]);
 
   // Resetear las secuencias de los autoincrementadores (una por una)
-  // await prisma.$executeRaw`ALTER SEQUENCE "UsuarioRol_id_seq" RESTART WITH 1;`;
+  // await prisma.$executeRaw`ALTER SEQUENCE "UsuarioRolId_seq" RESTART WITH 1;`;
   await prisma.$executeRaw`ALTER SEQUENCE "Usuario_id_seq" RESTART WITH 1;`;
   await prisma.$executeRaw`ALTER SEQUENCE "Rol_id_seq" RESTART WITH 1;`;
   await prisma.$executeRaw`ALTER SEQUENCE "Categoria_id_seq" RESTART WITH 1;`;
@@ -26,10 +39,10 @@ async function main() {
 
   // Crear categorías
   const categorias = [
-    { nombre: 'Infantil', created_at: new Date() },
-    { nombre: 'Juvenil', created_at: new Date() },
-    { nombre: 'Adulto', created_at: new Date() },
-    { nombre: 'Mayores', created_at: new Date() },
+    { nombre: 'Infantil', createdAt: new Date() },
+    { nombre: 'Juvenil', createdAt: new Date() },
+    { nombre: 'Adulto', createdAt: new Date() },
+    { nombre: 'Mayores', createdAt: new Date() },
   ];
   await prisma.categoria.createMany({
     data: categorias,
@@ -39,10 +52,10 @@ async function main() {
 
   // Crear disciplinas
   const disciplinas = [
-    { nombre: 'Fútbol', created_at: new Date() },
-    { nombre: 'Natación', created_at: new Date() },
-    { nombre: 'Atletismo', created_at: new Date() },
-    { nombre: 'Ciclismo', created_at: new Date() },
+    { nombre: 'Fútbol', createdAt: new Date() },
+    { nombre: 'Natación', createdAt: new Date() },
+    { nombre: 'Atletismo', createdAt: new Date() },
+    { nombre: 'Ciclismo', createdAt: new Date() },
   ];
   await prisma.disciplina.createMany({
     data: disciplinas,
@@ -53,43 +66,48 @@ async function main() {
   // Crear roles
   const roles = [
     {
-      nombre: 'super-admin',
+      nombre: TipoRol.SUPER_ADMIN,
       descripcion:
         'Administrador con acceso completo a todas las funcionalidades.',
-      created_at: new Date(),
+      createdAt: new Date(),
     },
     {
-      nombre: 'admin',
+      nombre: TipoRol.ADMIN,
       descripcion:
         'Administrador con permisos para gestionar usuarios y configuraciones.',
-      created_at: new Date(),
+      createdAt: new Date(),
     },
     {
-      nombre: 'secretaria',
+      nombre: TipoRol.SECRETARIA,
       descripcion:
         'Encargada de tareas administrativas y gestión de registros.',
-      created_at: new Date(),
+      createdAt: new Date(),
     },
     {
-      nombre: 'dtm',
+      nombre: TipoRol.DTM_EIDE,
       descripcion: 'Director técnico o manager de equipos.',
-      created_at: new Date(),
+      createdAt: new Date(),
     },
     {
-      nombre: 'pda',
+      nombre: TipoRol.DTM,
+      descripcion: 'Director técnico o manager de equipos.',
+      createdAt: new Date(),
+    },
+    {
+      nombre: TipoRol.PDA,
       descripcion:
         'Personal de apoyo en actividades deportivas o administrativas.',
-      created_at: new Date(),
+      createdAt: new Date(),
     },
     {
-      nombre: 'financiero',
+      nombre: TipoRol.FINANCIERO,
       descripcion: 'Encargado de la gestión financiera y presupuestos.',
-      created_at: new Date(),
+      createdAt: new Date(),
     },
     {
-      nombre: 'entrenador',
+      nombre: TipoRol.ENTRENADOR,
       descripcion: 'Encargado de entrenar y guiar a los atletas.',
-      created_at: new Date(),
+      createdAt: new Date(),
     },
   ];
   await prisma.rol.createMany({
@@ -107,9 +125,9 @@ async function main() {
       email: 'superadmin@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567890',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 1, // super-admin
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 1, // super-admin
     },
     {
       nombre: 'Admin',
@@ -117,9 +135,9 @@ async function main() {
       email: 'admin@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567891',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 2, // admin
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 2, // admin
     },
     {
       nombre: 'Ana',
@@ -127,9 +145,9 @@ async function main() {
       email: 'secretaria@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567892',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 3, // secretaria
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 3, // secretaria
     },
     {
       nombre: 'Carlos',
@@ -137,9 +155,9 @@ async function main() {
       email: 'dtm@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567893',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 4, // dtm
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 4, // dtm
     },
     {
       nombre: 'María',
@@ -147,9 +165,9 @@ async function main() {
       email: 'pda@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567894',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 5, // pda
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 5, // pda
     },
     {
       nombre: 'Juan',
@@ -157,9 +175,9 @@ async function main() {
       email: 'financiero@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567895',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 6, // financiero
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 6, // financiero
     },
     {
       nombre: 'Luis',
@@ -167,9 +185,9 @@ async function main() {
       email: 'entrenador@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567896',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 7, // entrenador
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 7, // entrenador
     },
     {
       nombre: 'Sofía',
@@ -177,9 +195,9 @@ async function main() {
       email: 'entrenador2@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567897',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 7, // entrenador
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 7, // entrenador
     },
     {
       nombre: 'Diego',
@@ -187,9 +205,9 @@ async function main() {
       email: 'pda2@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567898',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 5, // pda
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 5, // pda
     },
     {
       nombre: 'Laura',
@@ -197,9 +215,9 @@ async function main() {
       email: 'secretaria2@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567899',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 3, // secretaria
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 3, // secretaria
     },
   ];
 
@@ -215,8 +233,8 @@ async function main() {
             nombre: user.nombre,
             apellido: user.apellido,
             cedula: user.cedula,
-            categoria_id: user.categoria_id,
-            disciplina_id: user.disciplina_id,
+            categoriaId: user.categoriaId,
+            disciplinaId: user.disciplinaId,
           },
         });
         return { ...user, id: newUser.id };
@@ -226,10 +244,10 @@ async function main() {
     // Crear relaciones en UsuarioRol
     await tx.usuarioRol.createMany({
       data: insertedUsuarios.map((user) => ({
-        usuario_id: user.id,
-        rol_id: user.rol_id,
-        created_at: new Date(),
-        updated_at: new Date(),
+        usuarioId: user.id,
+        rolId: user.rolId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })),
       skipDuplicates: true,
     });

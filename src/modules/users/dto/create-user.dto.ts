@@ -28,5 +28,5 @@ export class CreateUserDto extends BaseUserDto {
   @IsInt({ each: true })
   @Min(1, { each: true })
   @IsNotEmpty()
-  rol_ids: number[];
+  rolIds: number[];
 }

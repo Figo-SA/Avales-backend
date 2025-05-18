@@ -17,13 +17,18 @@ enum Genero {
   MASCULINO_FEMENINO
 }
 
-// enum Rol {
-//   ADMIN
-//   USUARIO
-//   DEPORTISTA
-//   COORDINADOR
-//   FINANCIERO
-// }
+enum TipoRol {
+  SUPER_ADMIN
+  ADMIN
+  SECRETARIA
+  DTM
+  DTM_EIDE
+  ENTRENADOR
+  USUARIO
+  DEPORTISTA
+  PDA
+  FINANCIERO
+}
 
 generator client {
   provider = "prisma-client-js"
@@ -42,383 +47,457 @@ datasource db {
 
 
 model Rol {
-  id          Int      @id @default(autoincrement())
-  nombre      String   @db.VarChar(150)
-  descripcion String?  @db.VarChar(150)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  deleted     Boolean  @default(false) // soft delete
-  UsuariosRol UsuarioRol[]
+  id          Int          @id @default(autoincrement())
+  nombre      TipoRol
+  descripcion String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deleted     Boolean      @default(false)
+  usuariosRol UsuarioRol[]
 
   @@index([deleted])
   @@index([nombre])
 }
 
 model Usuario {
-  id            Int         @id @default(autoincrement())
-  email         String      @unique @db.VarChar(150)
-  password      String      @db.VarChar(150)
-  nombre        String      @db.VarChar(150) 
-  apellido      String      @db.VarChar(150)
-  cedula        String      @db.VarChar(50)
-  categoria_id  Int
-  disciplina_id Int
-  created_at    DateTime    @default(now())
-  updated_at    DateTime    @updatedAt
-  deleted       Boolean     @default(false) // soft delete
-  Categoria     Categoria   @relation(fields: [categoria_id], references: [id])
-  Disciplina    Disciplina  @relation(fields: [disciplina_id], references: [id])
-  UsuariosRol   UsuarioRol[]
-  HistorialColeccion HistorialColeccion[]
-  HistorialSolicitud HistorialSolicitud[]
-  HistorialPda HistorialPda[]
-  HistorialDtm HistorialDtm[]
-  HistorialFinanciero HistorialFinanciero[]
+  id                 Int                   @id @default(autoincrement())
+  email              String                @unique
+  password           String
+  nombre             String
+  apellido           String
+  cedula             String
+  categoriaId        Int
+  disciplinaId       Int
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  deleted            Boolean               @default(false)
+  categoria          Categoria             @relation(fields: [categoriaId], references: [id])
+  disciplina         Disciplina            @relation(fields: [disciplinaId], references: [id])
+  usuariosRol        UsuarioRol[]
+  historialColeccion HistorialColeccion[]
+  historialSolicitud HistorialAvalTecnico[]
+  historialPda       HistorialPda[]
+  historialDtm       HistorialDtm[]
+  historialFinanciero HistorialFinanciero[]
 
   @@index([nombre])
   @@index([deleted])
 }
 
 model Disciplina {
-  id          Int       @id @default(autoincrement())
-  nombre      String    @db.VarChar(200)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  deleted     Boolean   @default(false) // soft delete
-  Usuarios    Usuario[]
-  Deportistas Deportista[]
-  Colecciones ColeccionAval[]
+  id           Int               @id @default(autoincrement())
+  nombre       String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deleted      Boolean           @default(false)
+  usuarios     Usuario[]
+  deportistas  Deportista[]
+  colecciones  ColeccionAval[]
 
   @@index([deleted])
 }
 
-
 model Categoria {
-  id          Int       @id @default(autoincrement())
-  nombre      String    @db.VarChar(200)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  deleted     Boolean   @default(false) // soft delete
-  Usuarios    Usuario[]
-  Deportistas Deportista[]
-  Colecciones ColeccionAval[]
+  id           Int               @id @default(autoincrement())
+  nombre       String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deleted      Boolean           @default(false)
+  usuarios     Usuario[]
+  deportistas  Deportista[]
+  colecciones  ColeccionAval[]
 
   @@index([deleted])
 }
 
 model UsuarioRol {
-  usuario_id Int
-  rol_id     Int
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  usuarioId Int
+  rolId     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  Usuario Usuario @relation(fields: [usuario_id], references: [id])
-  Rol     Rol     @relation(fields: [rol_id], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  rol     Rol     @relation(fields: [rolId], references: [id])
 
-  @@id([usuario_id, rol_id])
-  @@index([rol_id])
-  @@index([usuario_id])
-}
-
-model ColeccionAval {
-  id                Int                 @id @default(autoincrement())
-  nombre_evento     String              @db.VarChar(400)
-  lugar_evento      String              @db.VarChar(255)
-  fecha_evento      DateTime
-  disciplina_id     Int
-  categoria_id      Int
-  ciudad            String              @db.VarChar(255)
-  estado            Estado              @default(PENDIENTE) // nuevo campo
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @updatedAt
-  deleted           Boolean             @default(false) // soft delete
-  Disciplina        Disciplina          @relation(fields: [disciplina_id], references: [id])
-  Categoria         Categoria           @relation(fields: [categoria_id], references: [id])
-  DeportistasAval   DeportistaAval[]
-  HistorialColeccion HistorialColeccion[]
-  Solicitudes       Solicitud[]         // nueva relación
-  Pdas              Pda[]               // nueva relación
-  Dtms              Dtm[]               // nueva relación
-  Financieros       Financiero[]        // nueva relación
-
-  @@index([disciplina_id])
-  @@index([categoria_id])
-  @@index([deleted])
-  @@index([estado])
-}
-
-model DeportistaAval {
-  id                Int            @id @default(autoincrement())
-  coleccion_aval_id Int
-  deportista_id     Int
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
-  ColeccionAval     ColeccionAval  @relation(fields: [coleccion_aval_id], references: [id])
-  Deportista        Deportista     @relation(fields: [deportista_id], references: [id])
-
-  @@index([coleccion_aval_id])
-  @@index([deportista_id])
-}
-
-model HistorialColeccion {
-  id                Int            @id @default(autoincrement())
-  fecha             DateTime
-  estado            Estado
-  usuario_id        Int
-  coleccion_aval_id Int
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
-  Usuario           Usuario        @relation(fields: [usuario_id], references: [id])
-  ColeccionAval     ColeccionAval  @relation(fields: [coleccion_aval_id], references: [id])
-
-  @@index([usuario_id])
-  @@index([estado])
-  @@index([created_at])
-}
-
-model Solicitud {
-  id                  Int            @id @default(autoincrement())
-  descripcion         String         @db.VarChar(600)
-  archivo             String         @db.VarChar(355)
-  objetivos           String         @db.VarChar(600)
-  criterios           String         @db.VarChar(600)
-  fecha_salida        DateTime
-  ruta_salida         String         @db.VarChar(255)
-  transporte_salida   String         @db.VarChar(255)
-  fecha_retorno       DateTime
-  hora_retorno        DateTime
-  transporte_retorno  String         @db.VarChar(255)
-  observaciones       String?        @db.VarChar(600)
-  coleccion_aval_id   Int            
-  created_at          DateTime       @default(now())
-  updated_at          DateTime       @updatedAt
-  deleted             Boolean        @default(false)
-  ColeccionAval       ColeccionAval  @relation(fields: [coleccion_aval_id], references: [id])
-  Requerimientos      Requerimiento[]
-  HistorialSolicitud  HistorialSolicitud[]
-
-  @@index([coleccion_aval_id])
-  @@index([fecha_salida])
-  @@index([created_at])
-  @@index([fecha_retorno])
-  @@index([deleted])
-}
-
-model Requerimiento {
-  id           Int       @id @default(autoincrement())
-  solicitud_id   Int
-  rubro        String    @db.VarChar(255)
-  cantidad_dias String   @db.VarChar(100)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  Solicitud    Solicitud @relation(fields: [solicitud_id], references: [id])
-
-  @@index([solicitud_id])
-}
-
-model HistorialSolicitud {
-  id           Int       @id @default(autoincrement())
-  estado       Estado
-  usuario_id   Int
-  solicitud_id Int
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  Usuario      Usuario  @relation(fields: [usuario_id], references: [id])
-  Solicitud    Solicitud @relation(fields: [solicitud_id], references: [id])
-
-  @@index([usuario_id])
-  @@index([estado])
-  @@index([created_at])
-  @@index([solicitud_id])
+  @@id([usuarioId, rolId])
+  @@index([usuarioId])
+  @@index([rolId])
 }
 
 model Deportista {
-  id               Int           @id @default(autoincrement())
-  nombres          String        @db.VarChar(150)
-  apellidos        String        @db.VarChar(150)
-  cedula           String        @unique @db.VarChar(50)
-  fecha_nacimiento DateTime
-  categoria_id     Int
-  disciplina_id    Int
-  afiliacion       Boolean       @default(false)
+  id               Int              @id @default(autoincrement())
+  nombres          String           @db.VarChar(150)
+  apellidos        String           @db.VarChar(150)
+  cedula           String           @unique @db.VarChar(50)
+  fechaNacimiento  DateTime
+  categoriaId      Int
+  disciplinaId     Int
+  afiliacion       Boolean          @default(false)
   genero           Genero
-  created_at       DateTime      @default(now())
-  updated_at       DateTime      @updatedAt
-  deleted          Boolean       @default(false) // soft delete
-  Categoria        Categoria     @relation(fields: [categoria_id], references: [id])
-  Disciplina       Disciplina    @relation(fields: [disciplina_id], references: [id])
-  DeportistasAval  DeportistaAval[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deleted          Boolean          @default(false)
+
+  categoria        Categoria        @relation(fields: [categoriaId], references: [id])
+  disciplina       Disciplina       @relation(fields: [disciplinaId], references: [id])
+  deportistasAval  DeportistaAval[]
 
   @@index([nombres])
-  @@index([categoria_id])
+  @@index([categoriaId])
   @@index([deleted])
-
 }
 
+
+// ------------------
+// Modelo base de colección de avales
+// ------------------
+model ColeccionAval {
+  id               Int                 @id @default(autoincrement())
+  descripcion      String              @db.VarChar(600)
+  disciplinaId       Int                    // deporte/lucha olímpica etc.
+  categoriaId        Int
+  genero             Genero
+  evento             String                 @db.VarChar(255)
+  lugar              String                 @db.VarChar(255)
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  disciplina         Disciplina             @relation(fields: [disciplinaId], references: [id])
+  categoria          Categoria              @relation(fields: [categoriaId], references: [id])
+  // Un Aval Técnico por colección
+  avalTecnico      AvalTecnico?
+  pda              Pda[]
+  dtm              Dtm[]
+  financiero       Financiero[]
+  historial        HistorialColeccion[]
+}
+
+// ------------------
+// HISTORIAL DE LA COLECCIÓN
+// ------------------
+model HistorialColeccion {
+  id              Int            @id @default(autoincrement())
+  fecha           DateTime
+  estado          Estado
+  usuarioId       Int
+  coleccionAvalId Int
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  usuario         Usuario        @relation(fields: [usuarioId], references: [id])
+  coleccionAval   ColeccionAval  @relation(fields: [coleccionAvalId], references: [id])
+
+  @@index([usuarioId])
+  @@index([estado])
+  @@index([createdAt])
+}
+
+// =====================================================================
+//  NUEVO MODELO: AvalTecnico  (reemplaza a Solicitud)
+// =====================================================================
+model AvalTecnico {
+  id                 Int                    @id @default(autoincrement())
+  coleccionAvalId    Int                    @unique
+  descripcion        String                 @db.VarChar(600)
+  archivo            String                 @db.VarChar(355)
+  // Datos específicos del aval técnico
+ 
+  fechaSalida        DateTime
+  horaSalida         DateTime
+  fechaRetorno       DateTime
+  horaRetorno        DateTime
+  transporteSalida   String                 @db.VarChar(255)
+  transporteRetorno  String                 @db.VarChar(255)
+  oficiales          Int
+  atletas            Int
+  observaciones      String?                @db.VarChar(600)
+  deleted            Boolean                @default(false)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  coleccionAval      ColeccionAval          @relation(fields: [coleccionAvalId], references: [id])
+
+  objetivos          AvalObjetivo[]
+  criterios          AvalCriterio[]
+  requerimientos     AvalRequerimiento[]
+  historial          HistorialAvalTecnico[]
+  deportistasAval    DeportistaAval[]
+
+  @@index([coleccionAvalId])
+  @@index([fechaSalida])
+  @@index([fechaRetorno])
+  @@index([createdAt])
+  @@index([deleted])
+}
+
+// ------------------
+// OBJETIVOS DEL AVAL
+// ------------------
+model AvalObjetivo {
+  id            Int         @id @default(autoincrement())
+  avalTecnicoId Int
+  orden         Int
+  descripcion   String      @db.VarChar(600)
+
+  avalTecnico   AvalTecnico @relation(fields: [avalTecnicoId], references: [id])
+
+  @@index([avalTecnicoId])
+}
+
+// ------------------
+// CRITERIOS DE SELECCIÓN DEL AVAL
+// ------------------
+model AvalCriterio {
+  id            Int         @id @default(autoincrement())
+  avalTecnicoId Int
+  orden         Int
+  descripcion   String      @db.VarChar(600)
+
+  avalTecnico   AvalTecnico @relation(fields: [avalTecnicoId], references: [id])
+
+  @@index([avalTecnicoId])
+}
+
+// ------------------
+// REQUERIMIENTOS DEL AVAL (antes Requerimiento)
+// ------------------
+model AvalRequerimiento {
+  id             Int            @id @default(autoincrement())
+  avalTecnicoId  Int
+  rubro          String         @db.VarChar(255)
+  cantidadDias   Int
+  valorUnitario  Decimal?       @db.Decimal(10,2)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  avalTecnico    AvalTecnico    @relation(fields: [avalTecnicoId], references: [id])
+
+  @@index([avalTecnicoId])
+}
+
+// ------------------
+// HISTORIAL DEL AVAL TÉCNICO (antes HistorialSolicitud)
+// ------------------
+model HistorialAvalTecnico {
+  id             Int          @id @default(autoincrement())
+  estado         Estado
+  usuarioId      Int
+  avalTecnicoId  Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  usuario        Usuario      @relation(fields: [usuarioId], references: [id])
+  avalTecnico    AvalTecnico  @relation(fields: [avalTecnicoId], references: [id])
+
+  @@index([usuarioId])
+  @@index([estado])
+  @@index([createdAt])
+  @@index([avalTecnicoId])
+}
+
+// ------------------
+// DEPORTISTAS LIGADOS A UN AVAL TÉCNICO
+// ------------------
+model DeportistaAval {
+  id             Int          @id @default(autoincrement())
+  avalTecnicoId  Int
+  deportistaId   Int
+  rol            String       @db.VarChar(100) // deportista, entrenador, delegado, etc.
+
+  avalTecnico    AvalTecnico  @relation(fields: [avalTecnicoId], references: [id])
+  deportista     Deportista   @relation(fields: [deportistaId], references: [id])
+
+  @@index([avalTecnicoId])
+  @@index([deportistaId])
+}
+
+// =====================================================================
+//  MODELOS EXISTENTES SIN CAMBIOS MAYORES (sección original)
+//  Solo se actualizan las FK que antes apuntaban a Solicitud/Requerimiento
+// =====================================================================
+
 model Actividad {
-  id          Int        @id @default(autoincrement())
-  nombre      String     @db.VarChar(255)
+  id          Int      @id @default(autoincrement())
+  nombre      String   @db.VarChar(255)
   numero      Int
-  descripcion String     @db.VarChar(600)
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
-  Items       Item[]
+  descripcion String   @db.VarChar(600)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       Item[]
 
   @@index([numero])
 }
 
 model Item {
-  id           Int       @id @default(autoincrement())
-  actividad_id Int
-  nombre       String    @db.VarChar(255)
-  numero       Int       
-  descripcion  String   @db.VarChar(600)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  Actividad    Actividad @relation(fields: [actividad_id], references: [id])
-  PdaItems     PdaItem[]
-  FinancieroItems FinancieroItem[]
+  id              Int             @id @default(autoincrement())
+  actividadId     Int
+  nombre          String          @db.VarChar(255)
+  numero          Int
+  descripcion     String          @db.VarChar(600)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  @@index([actividad_id])
+  actividad       Actividad       @relation(fields: [actividadId], references: [id])
+  pdaItems        PdaItem[]
+  financieroItems FinancieroItem[]
+
+  @@index([actividadId])
   @@index([numero])
 }
 
+// ------------------
+//  PDA y su historial (sin cambios salvo FK)
+// ------------------
 model Pda {
-  id                   Int            @id @default(autoincrement())
-  coleccion_aval_id    Int
-  ColeccionAval        ColeccionAval @relation(fields: [coleccion_aval_id], references: [id])
-  descripcion          String         @db.VarChar(600)
-  documento            String         @db.VarChar(355)
-  responsable_anticipo Int
-  created_at           DateTime       @default(now())
-  updated_at           DateTime       @updatedAt
-  deleted              Boolean        @default(false)
-  HistorialPda         HistorialPda[]
-  PdaItems             PdaItem[]
+  id                  Int             @id @default(autoincrement())
+  coleccionAvalId     Int
+  descripcion         String          @db.VarChar(600)
+  documento           String          @db.VarChar(355)
+  responsableAnticipo Int
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  deleted             Boolean         @default(false)
 
-  @@index([created_at])
+  coleccionAval       ColeccionAval   @relation(fields: [coleccionAvalId], references: [id])
+  historialPda        HistorialPda[]
+  pdaItems            PdaItem[]
+
+  @@index([createdAt])
   @@index([deleted])
 }
 
-
 model HistorialPda {
-  id         Int     @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   estado     Estado
-  usuario_id Int
-  pda_id     Int
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  Usuario    Usuario @relation(fields: [usuario_id], references: [id])
-  Pda        Pda     @relation(fields: [pda_id], references: [id])
+  usuarioId  Int
+  pdaId      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  @@index([usuario_id])
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  pda        Pda      @relation(fields: [pdaId], references: [id])
+
+  @@index([usuarioId])
   @@index([estado])
-  @@index([created_at])
-  @@index([pda_id])
-  
+  @@index([createdAt])
+  @@index([pdaId])
 }
 
 model PdaItem {
-  id         Int     @id @default(autoincrement())
-  pda_id     Int
-  item_id    Int
+  id         Int      @id @default(autoincrement())
+  pdaId      Int
+  itemId     Int
   presupuesto Int
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  Pda        Pda     @relation(fields: [pda_id], references: [id])
-  Item       Item    @relation(fields: [item_id], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  @@index([pda_id])
-  @@index([item_id])
+  pda        Pda      @relation(fields: [pdaId], references: [id])
+  item       Item     @relation(fields: [itemId], references: [id])
+
+  @@index([pdaId])
+  @@index([itemId])
 }
 
+// ------------------
+//  DTM y su historial
+// ------------------
 model Dtm {
-  id                   Int            @id @default(autoincrement())
-  coleccion_aval_id    Int
-  ColeccionAval        ColeccionAval @relation(fields: [coleccion_aval_id], references: [id])
-  descripcion          String         @db.VarChar(600)
-  documento            String         @db.VarChar(355)
-  observacion          String?        @db.VarChar(600)
-  fecha_presentacion   DateTime
-  created_at           DateTime       @default(now())
-  updated_at           DateTime       @updatedAt
-  deleted              Boolean        @default(false)
-  HistorialDtm         HistorialDtm[]
+  id                  Int             @id @default(autoincrement())
+  coleccionAvalId     Int
+  descripcion         String          @db.VarChar(600)
+  documento           String          @db.VarChar(355)
+  observacion         String?         @db.VarChar(600)
+  fechaPresentacion   DateTime
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  deleted             Boolean         @default(false)
 
-  @@index([created_at])
-  @@index([fecha_presentacion])
+  coleccionAval       ColeccionAval   @relation(fields: [coleccionAvalId], references: [id])
+  historialDtm        HistorialDtm[]
+
+  @@index([createdAt])
+  @@index([fechaPresentacion])
   @@index([descripcion])
   @@index([deleted])
 }
 
-
 model HistorialDtm {
-  id         Int     @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   estado     Estado
-  usuario_id Int
-  dtm_id     Int
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  Usuario    Usuario @relation(fields: [usuario_id], references: [id])
-  Dtm        Dtm     @relation(fields: [dtm_id], references: [id])
+  usuarioId  Int
+  dtmId      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  @@index([usuario_id])
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  dtm        Dtm      @relation(fields: [dtmId], references: [id])
+
+  @@index([usuarioId])
   @@index([estado])
-  @@index([created_at])
-  @@index([dtm_id])
-  
+  @@index([createdAt])
+  @@index([dtmId])
 }
 
+// ------------------
+//  FINANCIERO y su historial / ítems
+// ------------------
 model Financiero {
-  id                 Int              @id @default(autoincrement())
-  coleccion_aval_id  Int
-  ColeccionAval      ColeccionAval   @relation(fields: [coleccion_aval_id], references: [id])
-  descripcion        String           @db.VarChar(600)
-  cuenta_bancaria    String           @db.VarChar(255)
-  fondos             String           @db.VarChar(255)
-  notas              String?          @db.VarChar(400)
-  razon_social       String           @db.VarChar(255)
-  ruc                String           @db.VarChar(50)
-  direccion          String           @db.VarChar(255)
-  telefono           String           @db.VarChar(50)
-  created_at         DateTime         @default(now())
-  updated_at         DateTime         @updatedAt
-  deleted            Boolean          @default(false)
-  HistorialFinanciero HistorialFinanciero[]
-  FinancieroItems    FinancieroItem[]
+  id                Int               @id @default(autoincrement())
+  coleccionAvalId   Int
+  descripcion       String            @db.VarChar(600)
+  cuentaBancaria    String            @db.VarChar(255)
+  fondos            String            @db.VarChar(255)
+  notas             String?           @db.VarChar(400)
+  razonSocial       String            @db.VarChar(255)
+  ruc               String            @db.VarChar(50)
+  direccion         String            @db.VarChar(255)
+  telefono          String            @db.VarChar(50)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deleted           Boolean           @default(false)
 
-  @@index([created_at])
+  coleccionAval     ColeccionAval     @relation(fields: [coleccionAvalId], references: [id])
+  historialFinanciero HistorialFinanciero[]
+  financieroItems   FinancieroItem[]
+
+  @@index([createdAt])
   @@index([descripcion])
   @@index([deleted])
 }
 
 model HistorialFinanciero {
-  id           Int       @id @default(autoincrement())
-  estado       Estado
-  usuario_id   Int
-  financiero_id Int
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  Usuario      Usuario  @relation(fields: [usuario_id], references: [id])
-  Financiero   Financiero @relation(fields: [financiero_id], references: [id])
+  id             Int       @id @default(autoincrement())
+  estado         Estado
+  usuarioId      Int
+  financieroId   Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  @@index([usuario_id])
+  usuario        Usuario   @relation(fields: [usuarioId], references: [id])
+  financiero     Financiero @relation(fields: [financieroId], references: [id])
+
+  @@index([usuarioId])
   @@index([estado])
-  @@index([created_at])
-  @@index([financiero_id])
+  @@index([createdAt])
+  @@index([financieroId])
 }
 
 model FinancieroItem {
-  id            Int        @id @default(autoincrement())
-  financiero_id Int
-  item_id       Int
-  precio_asignado Int
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @updatedAt
-  Financiero    Financiero @relation(fields: [financiero_id], references: [id])
-  Item          Item       @relation(fields: [item_id], references: [id])
+  id             Int        @id @default(autoincrement())
+  financieroId   Int
+  itemId         Int
+  precioAsignado Int
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  @@index([financiero_id])
-  @@index([item_id])
+  financiero     Financiero  @relation(fields: [financieroId], references: [id])
+  item           Item        @relation(fields: [itemId], references: [id])
+
+  @@index([financieroId])
+  @@index([itemId])
 }
+
 

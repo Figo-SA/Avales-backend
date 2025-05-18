@@ -33,8 +33,8 @@ export class UsersService {
     }
 
     // Validar roles
-    if (!isUpdate || data.rol_ids) {
-      const rolIds = data.rol_ids || [];
+    if (!isUpdate || data.rolIds) {
+      const rolIds = data.rolIds || [];
       if (rolIds.length === 0) {
         throw new BadRequestException('Debe proporcionar al menos un rol');
       }
@@ -47,12 +47,12 @@ export class UsersService {
     }
 
     // Validar categoría y disciplina si se proveen
-    if (data.categoria_id) {
-      await this.validationService.validateCategoria(data.categoria_id);
+    if (data.categoriaId) {
+      await this.validationService.validateCategoria(data.categoriaId);
     }
 
-    if (data.disciplina_id) {
-      await this.validationService.validateDisciplina(data.disciplina_id);
+    if (data.disciplinaId) {
+      await this.validationService.validateDisciplina(data.disciplinaId);
     }
   }
 
@@ -74,17 +74,17 @@ export class UsersService {
           nombre: data.nombre,
           apellido: data.apellido ?? '',
           cedula: data.cedula,
-          categoria_id: data.categoria_id ?? 1,
-          disciplina_id: data.disciplina_id ?? 1,
+          categoriaId: data.categoriaId ?? 1,
+          disciplinaId: data.disciplinaId ?? 1,
         },
       });
 
       await tx.usuarioRol.createMany({
-        data: data.rol_ids.map((rol_id) => ({
-          usuario_id: usuario.id,
-          rol_id,
-          created_at: new Date(),
-          updated_at: new Date(),
+        data: data.rolIds.map((rolId) => ({
+          usuarioId: usuario.id,
+          rolId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         })),
       });
 
@@ -96,11 +96,11 @@ export class UsersService {
           nombre: true,
           apellido: true,
           cedula: true,
-          categoria_id: true,
-          disciplina_id: true,
-          UsuariosRol: {
+          categoriaId: true,
+          disciplinaId: true,
+          usuariosRol: {
             select: {
-              rol_id: true,
+              rolId: true,
             },
           },
         },
@@ -118,9 +118,9 @@ export class UsersService {
         nombre: usuarioConRoles.nombre,
         apellido: usuarioConRoles.apellido,
         cedula: usuarioConRoles.cedula,
-        categoria_id: usuarioConRoles.categoria_id,
-        disciplina_id: usuarioConRoles.disciplina_id,
-        rol_ids: usuarioConRoles.UsuariosRol.map((ur) => ur.rol_id),
+        categoriaId: usuarioConRoles.categoriaId,
+        disciplinaId: usuarioConRoles.disciplinaId,
+        rolIds: usuarioConRoles.usuariosRol.map((ur) => ur.rolId),
       };
     });
   }
@@ -134,11 +134,11 @@ export class UsersService {
           nombre: true,
           apellido: true,
           cedula: true,
-          categoria_id: true,
-          disciplina_id: true,
-          UsuariosRol: {
+          categoriaId: true,
+          disciplinaId: true,
+          usuariosRol: {
             select: {
-              rol_id: true,
+              rolId: true,
             },
           },
         },
@@ -153,9 +153,9 @@ export class UsersService {
           nombre: user.nombre,
           apellido: user.apellido,
           cedula: user.cedula,
-          categoria_id: user.categoria_id,
-          disciplina_id: user.disciplina_id,
-          rol_ids: user.UsuariosRol.map((ur) => ur.rol_id),
+          categoriaId: user.categoriaId,
+          disciplinaId: user.disciplinaId,
+          rolIds: user.usuariosRol.map((ur) => ur.rolId),
         })),
       );
   }
@@ -172,11 +172,11 @@ export class UsersService {
         nombre: true,
         apellido: true,
         cedula: true,
-        categoria_id: true,
-        disciplina_id: true,
-        UsuariosRol: {
+        categoriaId: true,
+        disciplinaId: true,
+        usuariosRol: {
           select: {
-            rol_id: true,
+            rolId: true,
           },
         },
       },
@@ -191,9 +191,9 @@ export class UsersService {
       nombre: user.nombre,
       apellido: user.apellido,
       cedula: user.cedula,
-      categoria_id: user.categoria_id,
-      disciplina_id: user.disciplina_id,
-      rol_ids: user.UsuariosRol.map((ur) => ur.rol_id),
+      categoriaId: user.categoriaId,
+      disciplinaId: user.disciplinaId,
+      rolIds: user.usuariosRol.map((ur) => ur.rolId),
     };
   }
 
@@ -212,7 +212,7 @@ export class UsersService {
 
     await this.validateUserData(updateUserDto, true, id);
 
-    const { categoria_id, disciplina_id, rol_ids, password, ...data } =
+    const { categoriaId, disciplinaId, rolIds, password, ...data } =
       updateUserDto;
     const hashedPassword = password
       ? await this.passwordService.hashPassword(password)
@@ -229,14 +229,14 @@ export class UsersService {
           apellido: updateUserDto.apellido ?? undefined,
           cedula: updateUserDto.cedula ?? undefined,
           password: hashedPassword,
-          updated_at: new Date(),
-          categoria_id,
-          disciplina_id,
-          UsuariosRol: rol_ids
+          updatedAt: new Date(),
+          categoriaId,
+          disciplinaId,
+          usuariosRol: rolIds
             ? {
                 deleteMany: {},
-                create: rol_ids.map((rol_id) => ({
-                  rol_id,
+                create: rolIds.map((rolId) => ({
+                  rolId,
                   created_at: new Date(),
                   updated_at: new Date(),
                 })),
@@ -244,9 +244,9 @@ export class UsersService {
             : undefined,
         },
         include: {
-          UsuariosRol: {
+          usuariosRol: {
             select: {
-              rol_id: true,
+              rolId: true,
             },
           },
         },
@@ -258,9 +258,9 @@ export class UsersService {
         nombre: updatedUser.nombre,
         apellido: updatedUser.apellido,
         cedula: updatedUser.cedula,
-        categoria_id: updatedUser.categoria_id,
-        disciplina_id: updatedUser.disciplina_id,
-        rol_ids: updatedUser.UsuariosRol.map((ur) => ur.rol_id),
+        categoriaId: updatedUser.categoriaId,
+        disciplinaId: updatedUser.disciplinaId,
+        rolIds: updatedUser.usuariosRol.map((ur) => ur.rolId),
       };
     });
   }
@@ -278,7 +278,7 @@ export class UsersService {
 
     await this.prisma.usuario.update({
       where: { id },
-      data: { deleted: true, updated_at: new Date() },
+      data: { deleted: true, updatedAt: new Date() },
     });
 
     return { id };
