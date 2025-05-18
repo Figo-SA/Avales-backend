@@ -17,11 +17,11 @@ async function main() {
   ]);
 
   // Resetear las secuencias de los autoincrementadores (una por una)
-  // await prisma.$executeRaw`ALTER SEQUENCE "UsuarioRol_id_seq" RESTART WITH 1;`;
+  // await prisma.$executeRaw`ALTER SEQUENCE "UsuarioRolId_seq" RESTART WITH 1;`;
   await prisma.$executeRaw`ALTER SEQUENCE "Usuario_id_seq" RESTART WITH 1;`;
-  await prisma.$executeRaw`ALTER SEQUENCE "Rol_id_seq" RESTART WITH 1;`;
-  await prisma.$executeRaw`ALTER SEQUENCE "Categoria_id_seq" RESTART WITH 1;`;
-  await prisma.$executeRaw`ALTER SEQUENCE "Disciplina_id_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "RolId_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "CategoriaId_seq" RESTART WITH 1;`;
+  await prisma.$executeRaw`ALTER SEQUENCE "DisciplinaId_seq" RESTART WITH 1;`;
   console.log('🧹 Base de datos limpiada y autoincrementadores reseteados');
 
   // Crear categorías
@@ -71,6 +71,11 @@ async function main() {
       created_at: new Date(),
     },
     {
+      nombre: 'metodologo',
+      descripcion: 'Director técnico o manager de equipos.',
+      created_at: new Date(),
+    },
+    {
       nombre: 'dtm',
       descripcion: 'Director técnico o manager de equipos.',
       created_at: new Date(),
@@ -107,9 +112,9 @@ async function main() {
       email: 'superadmin@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567890',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 1, // super-admin
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 1, // super-admin
     },
     {
       nombre: 'Admin',
@@ -117,9 +122,9 @@ async function main() {
       email: 'admin@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567891',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 2, // admin
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 2, // admin
     },
     {
       nombre: 'Ana',
@@ -127,9 +132,9 @@ async function main() {
       email: 'secretaria@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567892',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 3, // secretaria
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 3, // secretaria
     },
     {
       nombre: 'Carlos',
@@ -137,9 +142,9 @@ async function main() {
       email: 'dtm@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567893',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 4, // dtm
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 4, // dtm
     },
     {
       nombre: 'María',
@@ -147,9 +152,9 @@ async function main() {
       email: 'pda@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567894',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 5, // pda
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 5, // pda
     },
     {
       nombre: 'Juan',
@@ -157,9 +162,9 @@ async function main() {
       email: 'financiero@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567895',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 6, // financiero
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 6, // financiero
     },
     {
       nombre: 'Luis',
@@ -167,9 +172,9 @@ async function main() {
       email: 'entrenador@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567896',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 7, // entrenador
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 7, // entrenador
     },
     {
       nombre: 'Sofía',
@@ -177,9 +182,9 @@ async function main() {
       email: 'entrenador2@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567897',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 7, // entrenador
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 7, // entrenador
     },
     {
       nombre: 'Diego',
@@ -187,9 +192,9 @@ async function main() {
       email: 'pda2@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567898',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 5, // pda
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 5, // pda
     },
     {
       nombre: 'Laura',
@@ -197,9 +202,9 @@ async function main() {
       email: 'secretaria2@ejemplo.com',
       password: hashedPassword,
       cedula: '1234567899',
-      categoria_id: 1,
-      disciplina_id: 1,
-      rol_id: 3, // secretaria
+      categoriaId: 1,
+      disciplinaId: 1,
+      rolId: 3, // secretaria
     },
   ];
 
@@ -215,8 +220,8 @@ async function main() {
             nombre: user.nombre,
             apellido: user.apellido,
             cedula: user.cedula,
-            categoria_id: user.categoria_id,
-            disciplina_id: user.disciplina_id,
+            categoriaId: user.categoriaId,
+            disciplinaId: user.disciplinaId,
           },
         });
         return { ...user, id: newUser.id };
@@ -226,10 +231,10 @@ async function main() {
     // Crear relaciones en UsuarioRol
     await tx.usuarioRol.createMany({
       data: insertedUsuarios.map((user) => ({
-        usuario_id: user.id,
-        rol_id: user.rol_id,
-        created_at: new Date(),
-        updated_at: new Date(),
+        usuarioId: user.id,
+        rolId: user.rolId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })),
       skipDuplicates: true,
     });
