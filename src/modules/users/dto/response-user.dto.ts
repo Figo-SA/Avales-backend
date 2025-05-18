@@ -12,5 +12,5 @@ export class ResponseUserDto extends BaseUserDto {
   @IsArray()
   @IsInt({ each: true })
   @Min(1, { each: true })
-  rol_ids: number[];
+  rolIds: number[];
 }
