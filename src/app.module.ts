@@ -13,6 +13,7 @@ import { UsersModule } from './modules/users/users.module';
 import { DeportistasModule } from './modules/deportistas/deportistas.module';
 import { response } from 'express';
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
+import { AvalTecnicosModule } from './modules/aval-tecnicos/aval-tecnicos.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ResponseInterceptor } from './common/interceptors/response/response.int
     CommonModule,
     UsersModule,
     DeportistasModule,
+    AvalTecnicosModule,
   ],
   controllers: [],
   providers: [ValidationService, PasswordService, ResponseInterceptor],
