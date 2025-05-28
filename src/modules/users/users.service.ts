@@ -9,7 +9,6 @@ import { ResponseUserDto } from './dto/response-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/common/services/password/password.service';
 import { ValidationService } from 'src/common/services/validation/validation.service';
-import { Usuario } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
