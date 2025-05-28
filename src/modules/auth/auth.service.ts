@@ -7,6 +7,8 @@ import { BaseService } from 'src/common/services/base.service';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { UsuarioConRoles } from './interfaces/usuario-roles';
+import { cleanUser } from 'src/common/herlpers/clean-user';
 
 export interface JwtPayload {
   usuarioId: number;
@@ -50,5 +52,15 @@ export class AuthService extends BaseService<'usuario'> {
   private getJwtToken(payload: JwtPayload) {
     const token = this.jwtService.sign(payload);
     return token;
+  }
+
+  checkAuthStatus(user: UsuarioConRoles) {
+    return {
+      ...cleanUser(user),
+      token: this.getJwtToken({
+        usuarioId: user.id,
+        email: user.email,
+      }),
+    };
   }
 }
