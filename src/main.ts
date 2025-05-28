@@ -27,7 +27,13 @@ async function bootstrap() {
     .setDescription('API para la gestión de documentos de Federación Railway')
     .setVersion('1.0')
     .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        in: 'header',
+      },
       'JWT', // Nombre del esquema de autenticación
     )
     .build();
