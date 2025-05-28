@@ -41,6 +41,12 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Get('check-status')
+  @Auth()
+  checkAuthStatus(@GetUser() user: UsuarioConRoles) {
+    return this.authService.checkAuthStatus(user);
+  }
+
   @Get('private3')
   @Auth(ValidRoles.superAdmin)
   privateRoute3(@GetUser() user: UsuarioConRoles) {
