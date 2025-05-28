@@ -32,6 +32,24 @@ export class AuthService extends BaseService<'usuario'> {
         email: true,
         password: true,
         id: true,
+        nombre: true,
+        apellido: true,
+        cedula: true,
+        categoriaId: true,
+        disciplinaId: true,
+        createdAt: true,
+        updatedAt: true,
+        deleted: true,
+        usuariosRol: {
+          select: {
+            rol: {
+              select: {
+                id: true,
+                nombre: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -44,6 +62,7 @@ export class AuthService extends BaseService<'usuario'> {
     }
 
     return {
+      ...cleanUser(usuario),
       token: this.getJwtToken({ usuarioId: usuario.id, email: usuario.email }),
     };
   }
