@@ -47,6 +47,17 @@ export class AuthController {
     return this.authService.checkAuthStatus(user);
   }
 
+  @Get('me')
+  @Auth()
+  @ApiOperation({ summary: 'Obtiene el perfil del usuario autenticado' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil del usuario autenticado',
+  })
+  getProfile(@GetUser() user: UsuarioConRoles) {
+    return cleanUser(user);
+  }
+
   @Get('private3')
   @Auth(ValidRoles.superAdmin)
   privateRoute3(@GetUser() user: UsuarioConRoles) {

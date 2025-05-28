@@ -44,7 +44,6 @@ export class AuthService extends BaseService<'usuario'> {
     }
 
     return {
-      ...usuario,
       token: this.getJwtToken({ usuarioId: usuario.id, email: usuario.email }),
     };
   }
