@@ -2,14 +2,15 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+
 import { BaseService } from 'src/common/services/base.service';
-import { PasswordService } from 'src/common/services/password/password.service';
+
 import { PrismaService } from 'src/prisma/prisma.service';
+import { LoginDto } from './dto/login.dto';
 
 export interface JwtPayload {
   usuarioId: number;
   email: string;
-  rol: string;
 }
 
 @Injectable()
@@ -17,47 +18,37 @@ export class AuthService extends BaseService<'usuario'> {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
-    private passwordService: PasswordService,
   ) {
     super('usuario');
   }
 
-  async login(email: string, password: string) {
+  async login(loginUserDto: LoginDto) {
+    const { email, password } = loginUserDto;
     const usuario = await this.prisma.usuario.findUnique({
       where: { email },
-      include: {
-        usuariosRol: {
-          include: { rol: true },
-        },
+      select: {
+        email: true,
+        password: true,
+        id: true,
       },
     });
 
     if (!usuario) {
-      throw new UnauthorizedException('Usuario no encontrado');
+      throw new UnauthorizedException('Email o contraseña incorrectos');
     }
 
-    const passwordMatch = await this.passwordService.comparePassword(
-      password,
-      usuario.password,
-    );
-    if (!passwordMatch) {
-      throw new UnauthorizedException('Contraseña incorrecta');
+    if (!bcrypt.compareSync(password, usuario.password)) {
+      throw new UnauthorizedException('Email o contraseña incorrectos');
     }
-
-    const rol = usuario.usuariosRol[0]?.rol.nombre || 'user';
-
-    const payload: JwtPayload = {
-      usuarioId: usuario.id,
-      email: usuario.email,
-      rol: rol,
-    };
-
-    const token = this.jwtService.sign(payload, {
-      expiresIn: '1h',
-    });
 
     return {
-      token,
+      ...usuario,
+      token: this.getJwtToken({ usuarioId: usuario.id, email: usuario.email }),
     };
+  }
+
+  private getJwtToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload);
+    return token;
   }
 }

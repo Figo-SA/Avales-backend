@@ -6,17 +6,13 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
-  SetMetadata,
   HttpStatus,
 } from '@nestjs/common';
 import { DeportistasService } from './deportistas.service';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
 import { UpdateDeportistaDto } from './dto/update-deportista.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RoleGuard } from '../auth/guards/role.guard';
+
 import {
-  ApiBearerAuth,
   ApiBody,
   ApiExtraModels,
   ApiOperation,
@@ -28,6 +24,8 @@ import {
 } from 'src/common/dtos/api-response.dto';
 import { ResponseDeportistaDto } from './dto/response-deportista.dto';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
+import { ValidRoles } from '../auth/interfaces/valid-roles';
+import { Auth } from '../auth/decorators';
 
 @Controller('deportistas')
 @ApiExtraModels(CreateDeportistaDto)
@@ -35,10 +33,8 @@ export class DeportistasController {
   constructor(private readonly deportistasService: DeportistasService) {}
 
   @Post()
+  @Auth(ValidRoles.admin, ValidRoles.entrenador)
   @SuccessMessage('Deportista creado correctamente')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin', 'entrenador'])
-  @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Crear deportista' })
   @ApiBody({
     description: 'Datos del deportista a crear',
@@ -90,9 +86,7 @@ export class DeportistasController {
 
   @Get()
   @SuccessMessage('Datos de deportistas obtenidos correctamente')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin', 'entrenador'])
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Obtener todos los deportistas' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -145,9 +139,7 @@ export class DeportistasController {
 
   @Get(':id')
   @SuccessMessage('Datos de deportista obtenidos correctamente')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin', 'entrenador'])
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Obtener deportista por ID' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -198,9 +190,7 @@ export class DeportistasController {
 
   @Patch(':id')
   @SuccessMessage('Deportista actualizado correctamente')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin', 'entrenador'])
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Actualizar deportista' })
   @ApiBody({
     description: 'Datos del deportista a actualizar',
@@ -258,9 +248,7 @@ export class DeportistasController {
 
   @Delete(':id')
   @SuccessMessage('Deportista eliminado correctamente')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin'])
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin)
   @ApiOperation({ summary: 'Eliminar deportista' })
   @ApiResponse({
     status: HttpStatus.OK,

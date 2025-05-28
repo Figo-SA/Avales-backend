@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
+
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
 
 async function bootstrap() {
@@ -37,8 +37,6 @@ async function bootstrap() {
       persistAuthorization: true, // Mantiene el token en la UI de Swagger
     },
   });
-
-  app.useGlobalInterceptors(app.get(ResponseInterceptor));
 
   app.useGlobalFilters(new GlobalExceptionFilter());
 
