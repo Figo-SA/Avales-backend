@@ -7,31 +7,23 @@ import {
   Param,
   Delete,
   HttpStatus,
-  UseGuards,
-  SetMetadata,
-  BadRequestException,
-  Put,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import {
-  ApiResponseDto,
-  ErrorResponseDto,
-} from 'src/common/dtos/api-response.dto';
+import { ErrorResponseDto } from 'src/common/dtos/api-response.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import {
-  ApiBearerAuth,
   ApiBody,
   ApiExtraModels,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RoleGuard } from '../auth/guards/role.guard';
-import { BaseUserDto } from './dto/base-user.dto';
+
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
+import { Auth } from '../auth/decorators';
+import { ValidRoles } from '../auth/interfaces/valid-roles';
 
 @Controller('users')
 @ApiTags('users')
@@ -41,9 +33,9 @@ export class UsersController {
 
   @SuccessMessage('Usuario creado correctamente')
   @Post('create')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin'])
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin)
+
+  // @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Crea un nuevo usuario (solo administradores)' })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({
@@ -90,9 +82,7 @@ export class UsersController {
 
   @Get()
   @SuccessMessage('Datos de usuarios obtenidos correctamente')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin'])
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin)
   @ApiOperation({
     summary: 'Obtiene la lista de todos los usuarios (solo administradores)',
   })
@@ -136,9 +126,7 @@ export class UsersController {
 
   @Get(':id')
   @SuccessMessage('Datos del usuario obtenidos correctamente')
-  @SetMetadata('roles', ['admin'])
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin)
   @ApiOperation({
     summary: 'Obtiene los detalles de un usuario por ID (solo administradores)',
   })
@@ -184,9 +172,7 @@ export class UsersController {
 
   @Patch(':id')
   @SuccessMessage('Usuario actualizado correctamente')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin'])
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin)
   @ApiOperation({ summary: 'Actualizar un usuario' })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({
@@ -236,9 +222,7 @@ export class UsersController {
 
   @Delete(':id')
   @SuccessMessage('Usuario eliminado correctamente')
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @SetMetadata('roles', ['admin'])
-  @ApiBearerAuth('JWT')
+  @Auth(ValidRoles.admin)
   @ApiOperation({ summary: 'Eliminar un usuario' })
   @ApiResponse({
     status: HttpStatus.CREATED,
