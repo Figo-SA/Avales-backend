@@ -2,14 +2,17 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+
 import { BaseService } from 'src/common/services/base.service';
-import { PasswordService } from 'src/common/services/password/password.service';
+
 import { PrismaService } from 'src/prisma/prisma.service';
+import { LoginDto } from './dto/login.dto';
+import { UsuarioConRoles } from './interfaces/usuario-roles';
+import { cleanUser } from 'src/common/herlpers/clean-user';
 
 export interface JwtPayload {
   usuarioId: number;
   email: string;
-  rol: string;
 }
 
 @Injectable()
@@ -17,47 +20,65 @@ export class AuthService extends BaseService<'usuario'> {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
-    private passwordService: PasswordService,
   ) {
     super('usuario');
   }
 
-  async login(email: string, password: string) {
+  async login(loginUserDto: LoginDto) {
+    const { email, password } = loginUserDto;
     const usuario = await this.prisma.usuario.findUnique({
       where: { email },
-      include: {
+      select: {
+        email: true,
+        password: true,
+        id: true,
+        nombre: true,
+        apellido: true,
+        cedula: true,
+        categoriaId: true,
+        disciplinaId: true,
+        createdAt: true,
+        updatedAt: true,
+        deleted: true,
         usuariosRol: {
-          include: { rol: true },
+          select: {
+            rol: {
+              select: {
+                id: true,
+                nombre: true,
+              },
+            },
+          },
         },
       },
     });
 
     if (!usuario) {
-      throw new UnauthorizedException('Usuario no encontrado');
+      throw new UnauthorizedException('Email o contraseña incorrectos');
     }
 
-    const passwordMatch = await this.passwordService.comparePassword(
-      password,
-      usuario.password,
-    );
-    if (!passwordMatch) {
-      throw new UnauthorizedException('Contraseña incorrecta');
+    if (!bcrypt.compareSync(password, usuario.password)) {
+      throw new UnauthorizedException('Email o contraseña incorrectos');
     }
-
-    const rol = usuario.usuariosRol[0]?.rol.nombre || 'user';
-
-    const payload: JwtPayload = {
-      usuarioId: usuario.id,
-      email: usuario.email,
-      rol: rol,
-    };
-
-    const token = this.jwtService.sign(payload, {
-      expiresIn: '1h',
-    });
 
     return {
-      token,
+      ...cleanUser(usuario),
+      token: this.getJwtToken({ usuarioId: usuario.id, email: usuario.email }),
+    };
+  }
+
+  private getJwtToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload);
+    return token;
+  }
+
+  checkAuthStatus(user: UsuarioConRoles) {
+    return {
+      ...cleanUser(user),
+      token: this.getJwtToken({
+        usuarioId: user.id,
+        email: user.email,
+      }),
     };
   }
 }
