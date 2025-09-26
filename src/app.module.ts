@@ -17,6 +17,7 @@ import { AvalTecnicosModule } from './modules/aval-tecnicos/aval-tecnicos.module
 import { CertificadoPdaModule } from './modules/certificado-pda/certificado-pda.module';
 import { RevisionDtmModule } from './modules/revision-dtm/revision-dtm.module';
 import { CertificadoFinancieroModule } from './modules/certificado-financiero/certificado-financiero.module';
+import { SeedingModule } from './modules/seeding/seeding.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { CertificadoFinancieroModule } from './modules/certificado-financiero/ce
     CertificadoPdaModule,
     RevisionDtmModule,
     CertificadoFinancieroModule,
+    SeedingModule,
   ],
   controllers: [],
   providers: [ValidationService, PasswordService, ResponseInterceptor],
