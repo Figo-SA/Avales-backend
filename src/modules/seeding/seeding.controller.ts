@@ -45,7 +45,6 @@ export class SeedingController {
 
   @Get('status')
   @HttpCode(HttpStatus.OK)
-  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.secretaria)
   @ApiOperation({
     summary: 'Obtener estado actual de la base de datos',
     description:
@@ -76,7 +75,6 @@ export class SeedingController {
 
   @Post('reset')
   @HttpCode(HttpStatus.OK)
-  @Auth(ValidRoles.superAdmin)
   @ApiOperation({
     summary: 'Resetear y re-inicializar base de datos',
     description:
