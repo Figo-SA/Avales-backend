@@ -33,7 +33,7 @@ export class DeportistasController {
   constructor(private readonly deportistasService: DeportistasService) {}
 
   @Post()
-  @Auth(ValidRoles.admin, ValidRoles.entrenador)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @SuccessMessage('Deportista creado correctamente')
   @ApiOperation({ summary: 'Crear deportista' })
   @ApiBody({
@@ -81,12 +81,13 @@ export class DeportistasController {
   create(
     @Body() createDeportistaDto: CreateDeportistaDto,
   ): Promise<ResponseDeportistaDto> {
+    console.log('Creando deportista con datos:', createDeportistaDto);
     return this.deportistasService.create(createDeportistaDto);
   }
 
   @Get()
   @SuccessMessage('Datos de deportistas obtenidos correctamente')
-  @Auth(ValidRoles.admin, ValidRoles.entrenador)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Obtener todos los deportistas' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -139,7 +140,7 @@ export class DeportistasController {
 
   @Get(':id')
   @SuccessMessage('Datos de deportista obtenidos correctamente')
-  @Auth(ValidRoles.admin, ValidRoles.entrenador)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Obtener deportista por ID' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -190,7 +191,7 @@ export class DeportistasController {
 
   @Patch(':id')
   @SuccessMessage('Deportista actualizado correctamente')
-  @Auth(ValidRoles.admin, ValidRoles.entrenador)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Actualizar deportista' })
   @ApiBody({
     description: 'Datos del deportista a actualizar',
@@ -248,7 +249,7 @@ export class DeportistasController {
 
   @Delete(':id')
   @SuccessMessage('Deportista eliminado correctamente')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Eliminar deportista' })
   @ApiResponse({
     status: HttpStatus.OK,

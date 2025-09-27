@@ -33,8 +33,7 @@ export class UsersController {
 
   @SuccessMessage('Usuario creado correctamente')
   @Post('create')
-  @Auth(ValidRoles.admin)
-
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
   // @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Crea un nuevo usuario (solo administradores)' })
   @ApiBody({ type: CreateUserDto })
@@ -82,7 +81,7 @@ export class UsersController {
 
   @Get()
   @SuccessMessage('Datos de usuarios obtenidos correctamente')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiOperation({
     summary: 'Obtiene la lista de todos los usuarios (solo administradores)',
   })
@@ -126,7 +125,7 @@ export class UsersController {
 
   @Get(':id')
   @SuccessMessage('Datos del usuario obtenidos correctamente')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiOperation({
     summary: 'Obtiene los detalles de un usuario por ID (solo administradores)',
   })
@@ -172,7 +171,7 @@ export class UsersController {
 
   @Patch(':id')
   @SuccessMessage('Usuario actualizado correctamente')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiOperation({ summary: 'Actualizar un usuario' })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({
@@ -222,7 +221,7 @@ export class UsersController {
 
   @Delete(':id')
   @SuccessMessage('Usuario eliminado correctamente')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiOperation({ summary: 'Eliminar un usuario' })
   @ApiResponse({
     status: HttpStatus.CREATED,
