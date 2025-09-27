@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsDate,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -10,7 +11,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { Genero } from '@prisma/client';
 
 export class BaseDeportistaDto {
@@ -51,13 +52,11 @@ export class BaseDeportistaDto {
   @IsDate()
   fechaNacimiento: Date;
 
-  @ApiProperty({
-    description: 'Género del deportista',
-    example: 'Femenino',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
+  @ApiProperty({ description: 'Género', enum: Genero, example: 'FEMENINO' })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
+  @IsEnum(Genero, { message: 'Use uno de: MASCULINO, FEMENINO, OTRO' })
   genero: Genero;
 
   @ApiProperty({

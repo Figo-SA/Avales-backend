@@ -26,6 +26,19 @@ export class ValidationService {
     }
   }
 
+  async validateUniqueCedulaDeportista(
+    cedula: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const existingCedula = await this.prisma.deportista.findFirst({
+      where: { cedula, deleted: false },
+    });
+    console.log('Validando cédula en deportista:', cedula, existingCedula);
+    if (existingCedula && existingCedula.id !== excludeId) {
+      throw new BadRequestException('La cédula ya está registrada');
+    }
+  }
+
   async validateRoles(rolIds: number[]): Promise<void> {
     const roles = await this.prisma.rol.findMany({
       where: { id: { in: rolIds }, deleted: false },
