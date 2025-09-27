@@ -5,8 +5,6 @@ import jwtConfig from './config/jwt.config';
 import { ConfigModule } from '@nestjs/config';
 import databaseConfig from './config/database.config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { ValidationService } from './common/services/validation/validation.service';
-import { PasswordService } from './common/services/password/password.service';
 import { CommonModule } from './common/common.module';
 // import { UsuariosModule } from './usuarios/usuarios.module';
 import { UsersModule } from './modules/users/users.module';
@@ -17,6 +15,7 @@ import { AvalTecnicosModule } from './modules/aval-tecnicos/aval-tecnicos.module
 import { CertificadoPdaModule } from './modules/certificado-pda/certificado-pda.module';
 import { RevisionDtmModule } from './modules/revision-dtm/revision-dtm.module';
 import { CertificadoFinancieroModule } from './modules/certificado-financiero/certificado-financiero.module';
+import { SeedingModule } from './modules/seeding/seeding.module';
 
 @Module({
   imports: [
@@ -41,8 +40,9 @@ import { CertificadoFinancieroModule } from './modules/certificado-financiero/ce
     CertificadoPdaModule,
     RevisionDtmModule,
     CertificadoFinancieroModule,
+    SeedingModule,
   ],
   controllers: [],
-  providers: [ValidationService, PasswordService, ResponseInterceptor],
+  providers: [ResponseInterceptor],
 })
 export class AppModule {}
