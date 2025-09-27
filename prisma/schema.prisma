@@ -48,7 +48,7 @@ datasource db {
 
 model Rol {
   id          Int          @id @default(autoincrement())
-  nombre      TipoRol
+  nombre      TipoRol      @unique
   descripcion String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -62,10 +62,10 @@ model Rol {
 model Usuario {
   id                 Int                   @id @default(autoincrement())
   email              String                @unique
-  password           String
+  password           String                
   nombre             String
   apellido           String
-  cedula             String
+  cedula             String                @unique
   categoriaId        Int
   disciplinaId       Int
   createdAt          DateTime              @default(now())
@@ -79,6 +79,8 @@ model Usuario {
   historialPda       HistorialPda[]
   historialDtm       HistorialDtm[]
   historialFinanciero HistorialFinanciero[]
+  coleccionesEntrenador ColeccionEntrenador[]
+  
 
   @@index([nombre])
   @@index([deleted])
@@ -90,8 +92,8 @@ model UsuarioRol {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  usuario Usuario @relation(fields: [usuarioId], references: [id])
-  rol     Rol     @relation(fields: [rolId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  rol     Rol     @relation(fields: [rolId], references: [id], onDelete: Cascade)
 
   @@id([usuarioId, rolId])
   @@index([usuarioId])
@@ -99,26 +101,26 @@ model UsuarioRol {
 }
 model Disciplina {
   id           Int               @id @default(autoincrement())
-  nombre       String
+  nombre       String            @db.VarChar(150) @unique
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   deleted      Boolean           @default(false)
   usuarios     Usuario[]
   deportistas  Deportista[]
-  colecciones  ColeccionAval[]
+  colecciones  Evento[]
 
   @@index([deleted])
 }
 
 model Categoria {
   id           Int               @id @default(autoincrement())
-  nombre       String
+  nombre       String            @db.VarChar(150) @unique
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   deleted      Boolean           @default(false)
   usuarios     Usuario[]
   deportistas  Deportista[]
-  colecciones  ColeccionAval[]
+  colecciones  Evento[]
 
   @@index([deleted])
 }
@@ -128,7 +130,7 @@ model Deportista {
   id               Int              @id @default(autoincrement())
   nombres          String           @db.VarChar(150)
   apellidos        String           @db.VarChar(150)
-  cedula           String           @unique @db.VarChar(50)
+  cedula           String           @db.VarChar(50)
   fechaNacimiento  DateTime
   categoriaId      Int
   disciplinaId     Int
@@ -147,6 +149,62 @@ model Deportista {
   @@index([deleted])
 }
 
+model Evento {
+  id                       Int      @id @default(autoincrement())
+  codigo                   String   @db.VarChar(100)
+  tipoParticipacion        String   @db.VarChar(100) // nacional, internacional, etc.
+  tipoEvento               String   @db.VarChar(100) // campeonato, torneo, etc.
+  nombre                   String   @db.VarChar(255)
+  lugar                    String   @db.VarChar(255)
+  genero                   Genero
+  disciplinaId             Int
+  categoriaId              Int
+  provincia                String   @db.VarChar(100)
+  ciudad                   String   @db.VarChar(100)
+  pais                     String   @db.VarChar(100)
+  alcance                  String   @db.VarChar(100) // local, regional, nacional, internacional
+  fechaInicio              DateTime
+  fechaFin                 DateTime
+  numEntrenadoresHombres   Int
+  numEntrenadoresMujeres   Int
+  numAtletasHombres        Int
+  numAtletasMujeres        Int
+
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  deleted                  Boolean  @default(false)
+  eventoEdiciones          EventoEdicion[]
+
+  disciplina         Disciplina             @relation(fields: [disciplinaId], references: [id])
+  categoria          Categoria              @relation(fields: [categoriaId], references: [id])
+
+  @@index([nombre])
+  @@index([fechaInicio])
+}
+
+model EventoEdicion {
+  id                      Int      @id @default(autoincrement())
+  eventoId                Int
+  lugar                   String   @db.VarChar(255)
+  provincia               String   @db.VarChar(100)
+  ciudad                  String   @db.VarChar(100)
+  pais                    String   @db.VarChar(100)
+  fechaInicio             DateTime
+  fechaFin                DateTime
+  numEntrenadoresHombres  Int
+  numEntrenadoresMujeres  Int
+  numAtletasHombres       Int
+  numAtletasMujeres       Int
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  evento                  Evento   @relation(fields: [eventoId], references: [id])
+
+  collection              ColeccionAval[]
+
+  @@unique([eventoId, fechaInicio, ciudad])
+}
+
 
 // ------------------
 // Modelo base de colección de avales
@@ -154,23 +212,20 @@ model Deportista {
 model ColeccionAval {
   id               Int                 @id @default(autoincrement())
   descripcion      String              @db.VarChar(600)
-  disciplinaId       Int                    // deporte/lucha olímpica etc.
-  categoriaId        Int
-  genero             Genero
-  evento             String                 @db.VarChar(255)
-  lugar              String                 @db.VarChar(255)
-
+  eventoEdicionId  Int             
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  disciplina         Disciplina             @relation(fields: [disciplinaId], references: [id])
-  categoria          Categoria              @relation(fields: [categoriaId], references: [id])
+  
   // Un Aval Técnico por colección
   avalTecnico      AvalTecnico?
   pda              Pda[]
   dtm              Dtm[]
   financiero       Financiero[]
   historial        HistorialColeccion[]
+  entrenadores     ColeccionEntrenador[]
+  eventoEdicion    EventoEdicion              @relation(fields: [eventoEdicionId], references: [id])
+
 }
 
 // ------------------
@@ -201,13 +256,11 @@ model AvalTecnico {
   id                 Int                    @id @default(autoincrement())
   coleccionAvalId    Int                    @unique
   descripcion        String                 @db.VarChar(600)
-  archivo            String                 @db.VarChar(355)
+  archivo            String?                 @db.VarChar(355)
   // Datos específicos del aval técnico
  
-  fechaSalida        DateTime
-  horaSalida         DateTime
-  fechaRetorno       DateTime
-  horaRetorno        DateTime
+  fechaHoraSalida        DateTime
+  fechaHoraRetorno       DateTime
   transporteSalida   String                 @db.VarChar(255)
   transporteRetorno  String                 @db.VarChar(255)
   oficiales          Int
@@ -226,8 +279,8 @@ model AvalTecnico {
   deportistasAval    DeportistaAval[]
 
   @@index([coleccionAvalId])
-  @@index([fechaSalida])
-  @@index([fechaRetorno])
+  @@index([fechaHoraSalida])
+  @@index([fechaHoraRetorno])
   @@index([createdAt])
   @@index([deleted])
 }
@@ -241,9 +294,10 @@ model AvalObjetivo {
   orden         Int
   descripcion   String      @db.VarChar(600)
 
-  avalTecnico   AvalTecnico @relation(fields: [avalTecnicoId], references: [id])
+  avalTecnico AvalTecnico @relation(fields: [avalTecnicoId], references: [id], onDelete: Cascade)
 
   @@index([avalTecnicoId])
+  @@unique([avalTecnicoId, orden])
 }
 
 // ------------------
@@ -258,6 +312,7 @@ model AvalCriterio {
   avalTecnico   AvalTecnico @relation(fields: [avalTecnicoId], references: [id])
 
   @@index([avalTecnicoId])
+  @@unique([avalTecnicoId, orden])
 }
 
 // ------------------
@@ -267,8 +322,8 @@ model AvalRequerimiento {
   id             Int            @id @default(autoincrement())
   avalTecnicoId  Int
   rubro          String         @db.VarChar(255)
-  cantidadDias   Int
-  valorUnitario  Decimal?       @db.Decimal(10,2)
+  cantidadDias   String         @db.VarChar(255)
+  valorUnitario  Decimal?       @db.Decimal(12, 2)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -309,8 +364,28 @@ model DeportistaAval {
   avalTecnico    AvalTecnico  @relation(fields: [avalTecnicoId], references: [id])
   deportista     Deportista   @relation(fields: [deportistaId], references: [id])
 
+  @@unique([avalTecnicoId, deportistaId])
   @@index([avalTecnicoId])
   @@index([deportistaId])
+}
+
+
+// ------------------
+// ENTRENADORES LIGADOS A UN AVAL 
+// ------------------
+
+model ColeccionEntrenador {
+  id              Int         @id @default(autoincrement())
+  coleccionAvalId Int
+  usuarioId       Int
+  rol             String      @db.VarChar(100) // entrenador principal, asistente, etc.
+  esPrincipal     Boolean
+
+  usuario         Usuario     @relation(fields: [usuarioId], references: [id])
+  coleccionAval   ColeccionAval @relation(fields: [coleccionAvalId], references: [id])
+
+  @@unique([coleccionAvalId, usuarioId]) // no repetir entrenador en el mismo aval
+  @@index([usuarioId])
 }
 
 // =====================================================================
@@ -390,7 +465,7 @@ model PdaItem {
   id         Int      @id @default(autoincrement())
   pdaId      Int
   itemId     Int
-  presupuesto Int
+  presupuesto Decimal @db.Decimal(12, 2)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -489,7 +564,7 @@ model FinancieroItem {
   id             Int        @id @default(autoincrement())
   financieroId   Int
   itemId         Int
-  precioAsignado Int
+  precioAsignado Decimal @db.Decimal(12, 2)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
