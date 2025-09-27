@@ -67,7 +67,7 @@ export class DeportistasService {
     data: CreateDeportistaDto | UpdateDeportistaDto,
   ) {
     if (data.cedula) {
-      await this.validationService.validateUniqueCedula(data.cedula);
+      await this.validationService.validateUniqueCedulaDeportista(data.cedula);
     }
     console.log('Validación de cédula exitosa:', data.cedula);
 
