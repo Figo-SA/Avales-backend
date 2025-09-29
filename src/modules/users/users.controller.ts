@@ -7,11 +7,16 @@ import {
   Param,
   Delete,
   HttpStatus,
+  Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ErrorResponseDto } from 'src/common/dtos/api-response.dto';
+import {
+  ApiResponseDto,
+  ErrorResponseDto,
+} from 'src/common/dtos/api-response.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import {
   ApiBody,
@@ -24,6 +29,8 @@ import {
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 import { Auth } from '../auth/decorators';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
+import { ResponseInterceptor } from 'src/common/interceptors/response/response.interceptor';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
 @Controller('users')
 @ApiTags('users')
@@ -119,8 +126,12 @@ export class UsersController {
     description: 'No se encontraron usuarios',
     type: ErrorResponseDto,
   })
-  findAll(): Promise<ResponseUserDto[]> {
-    return this.usersService.findAll();
+  // @UseInterceptors(ResponseInterceptor)
+  async findAll(@Query() paginationDto: PaginationQueryDto) {
+    return await this.usersService.findAllPaginated(
+      paginationDto.page,
+      paginationDto.limit,
+    );
   }
 
   @Get(':id')
