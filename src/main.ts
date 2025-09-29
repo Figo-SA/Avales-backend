@@ -4,6 +4,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
+import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -43,8 +44,6 @@ async function bootstrap() {
       persistAuthorization: true, // Mantiene el token en la UI de Swagger
     },
   });
-
-  app.useGlobalFilters(new GlobalExceptionFilter());
 
   await app.listen(process.env.PORT || 3000);
   logger.log(`Application is running on PORT: ${process.env.PORT ?? 3000}`);

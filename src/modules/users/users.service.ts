@@ -9,6 +9,8 @@ import { ResponseUserDto } from './dto/response-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/common/services/password/password.service';
 import { ValidationService } from 'src/common/services/validation/validation.service';
+import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
+import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 
 @Injectable()
 export class UsersService {
@@ -157,6 +159,50 @@ export class UsersService {
           rolIds: user.usuariosRol.map((ur) => ur.rolId),
         })),
       );
+  }
+
+  async findAllPaginated(
+    page: number,
+    limit: number,
+  ): Promise<{
+    items: ResponseUserDto[];
+    pagination: PaginationMetaDto;
+  }> {
+    const { skip, take } = PaginationHelper.buildPagination(page, limit);
+
+    const [total, users] = await this.prisma.$transaction([
+      this.prisma.usuario.count({ where: { deleted: false } }),
+      this.prisma.usuario.findMany({
+        skip,
+        take,
+        where: { deleted: false },
+        select: {
+          id: true,
+          email: true,
+          nombre: true,
+          apellido: true,
+          cedula: true,
+          categoriaId: true,
+          disciplinaId: true,
+          usuariosRol: {
+            select: { rolId: true },
+          },
+        },
+      }),
+    ]);
+
+    const items: ResponseUserDto[] = users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      cedula: user.cedula,
+      categoriaId: user.categoriaId,
+      disciplinaId: user.disciplinaId,
+      rolIds: user.usuariosRol.map((ur) => ur.rolId),
+    }));
+
+    return PaginationHelper.buildPaginatedResponse(items, total, page, limit);
   }
 
   async findOne(id: number): Promise<ResponseUserDto> {

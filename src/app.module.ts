@@ -16,6 +16,7 @@ import { CertificadoPdaModule } from './modules/certificado-pda/certificado-pda.
 import { RevisionDtmModule } from './modules/revision-dtm/revision-dtm.module';
 import { CertificadoFinancieroModule } from './modules/certificado-financiero/certificado-financiero.module';
 import { SeedingModule } from './modules/seeding/seeding.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
 
 @Module({
   imports: [
@@ -43,6 +44,15 @@ import { SeedingModule } from './modules/seeding/seeding.module';
     SeedingModule,
   ],
   controllers: [],
-  providers: [ResponseInterceptor],
+  providers: [
+    {
+      provide: 'APP_INTERCEPTOR',
+      useClass: ResponseInterceptor, //exitos
+    },
+    {
+      provide: 'APP_FILTER',
+      useClass: GlobalExceptionFilter, // errores RFC 7807
+    },
+  ],
 })
 export class AppModule {}
