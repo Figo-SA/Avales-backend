@@ -1,27 +1,36 @@
 // src/common/dtos/api-response.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  ApiExtraModels,
+  ApiProperty,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 
+@ApiExtraModels()
+export class GlobalMetaDto {
+  @ApiProperty({ example: 'd1b9abf7-8a1f-4c2d-b2e6-8a9f0c1d6a3e' })
+  requestId: string;
+
+  @ApiProperty({ example: '2025-09-29T16:25:41Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: 'v1' })
+  apiVersion: string;
+
+  @ApiProperty({ example: 42, description: 'Duración de la petición en ms' })
+  durationMs: number;
+}
+
+@ApiExtraModels()
 export class ApiResponseDto<T> {
   @ApiProperty({ example: 'success', enum: ['success', 'error'] })
-  status: string;
+  status: 'success' | 'error';
 
   @ApiProperty({ example: 'Operación completada correctamente' })
   message: string;
 
+  @ApiPropertyOptional({ type: GlobalMetaDto })
+  meta?: GlobalMetaDto;
+
   @ApiProperty({ description: 'Datos de la respuesta' })
   data: T;
-}
-
-// DTO para respuestas de error (opcional, para casos de error)
-export class ErrorResponseDto {
-  @ApiProperty({ example: 'error', enum: ['success', 'error'] })
-  status: string;
-
-  @ApiProperty({
-    example: 'Error al procesar la solicitud',
-  })
-  message: string;
-
-  @ApiProperty({ type: 'object', nullable: true, additionalProperties: false })
-  data: null;
 }

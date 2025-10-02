@@ -7,14 +7,22 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable, map } from 'rxjs';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { ApiResponseDto } from '../../dtos/api-response.dto';
 import { SUCCESS_MESSAGE_KEY } from 'src/common/decorators/success-messages.decorator';
+import { randomUUID } from 'crypto';
+
+function normalizeRequestId(headerVal: string | string[] | undefined): string {
+  if (Array.isArray(headerVal)) return headerVal[0] ?? randomUUID();
+  return headerVal ?? randomUUID();
+}
 
 @Injectable()
 export class ResponseInterceptor<T>
   implements NestInterceptor<T, ApiResponseDto<T>>
 {
+  private readonly apiVersion = process.env.API_VERSION ?? 'v1';
+
   constructor(private reflector: Reflector) {}
 
   intercept(
@@ -23,6 +31,14 @@ export class ResponseInterceptor<T>
   ): Observable<ApiResponseDto<T>> {
     const ctx = context.switchToHttp();
     const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse<Response>();
+
+    const startedAt = process.hrtime.bigint(); // Convertir a ms
+    const requestId = normalizeRequestId(
+      request.headers['x-request-id'] as string | string[] | undefined,
+    );
+
+    response.setHeader('X-Request-Id', requestId);
 
     const defaultMessages: Record<string, string> = {
       GET: 'Datos obtenidos correctamente',
@@ -38,26 +54,27 @@ export class ResponseInterceptor<T>
     );
 
     return next.handle().pipe(
-      map((data) => {
-        if (
-          data &&
-          typeof data === 'object' &&
-          'status' in data &&
-          'message' in data &&
-          'data' in data
-        ) {
-          return data as ApiResponseDto<T>;
-        }
-
+      map((payload: T) => {
         const method = request.method.toUpperCase();
         const message =
           customMessage || defaultMessages[method] || 'Operación exitosa';
 
-        return {
+        const durationNs = Number(process.hrtime.bigint() - startedAt);
+        const durationMs = Math.round(durationNs / 1_000_000);
+
+        const responseBody: ApiResponseDto<T> = {
           status: 'success',
           message,
-          data: data ?? null,
+          meta: {
+            requestId, // <- SIEMPRE string
+            timestamp: new Date().toISOString(),
+            apiVersion: this.apiVersion,
+            durationMs,
+          },
+          data: payload ?? (null as unknown as T),
         };
+
+        return responseBody;
       }),
     );
   }
