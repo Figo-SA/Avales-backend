@@ -24,6 +24,8 @@ import {
 import { LoginResponseDto } from './dto/login-response.dto';
 import { ApiOkResponseData } from 'src/common/swagger/decorators/api-success-responses.decorator';
 import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error-responses.decorator';
+import { UsuarioConRoles } from './interfaces/usuario-roles';
+import { GetUser } from './decorators/get-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -77,31 +79,30 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  // @Get('check-status')
-  // @Auth()
-  // @ApiBearerAuth()
-  // @ApiOperation({ summary: 'Verifica el estado de autenticación actual' })
-  // @ApiOkResponse({
-  //   description: 'Estado válido; devuelve el usuario o datos de sesión',
-  //   schema: {
-  //     allOf: [
-  //       { $ref: getSchemaPath(ApiResponseDto) },
-  //       {
-  //         properties: {
-  //           data: { $ref: getSchemaPath(Userreson) }, // ajusta si devuelves otra cosa
-  //         },
-  //       },
-  //     ],
-  //   },
-  // })
-  // @ApiResponse({
-  //   status: 401,
-  //   description: 'Unauthorized',
-  //   ...AuthController.problemContent,
-  // })
-  // getStatus(@GetUser() user: UsuarioConRoles) {
-  //   return this.authService.checkAuthStatus(user);
-  // }
+  @Get('check-status')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verifica el estado de autenticación actual' })
+  @ApiOkResponse({
+    description: 'Estado válido; devuelve el usuario o datos de sesión',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseDto) },
+        {
+          properties: {
+            data: { $ref: getSchemaPath(LoginResponseDto) }, // ajusta si devuelves otra cosa
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    ...AuthController.problemContent,
+  })
+  getStatus(@GetUser() user: UsuarioConRoles) {
+    return this.authService.checkAuthStatus(user);
+  }
 
   // @Get('me')
   // @Auth()
