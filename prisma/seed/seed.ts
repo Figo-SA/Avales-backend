@@ -29,8 +29,6 @@ async function seedCatalogos() {
 
 async function seedUsuarios() {
   const hashed = await bcrypt.hash('123456', 10);
-  // Crear usuarios y asignar rol en una transacción
-  // await prisma.$transaction(async (tx) => {
   for (const u of USUARIOS) {
     // upsert por email/cedula únicos
     const user = await prisma.usuario.upsert({
@@ -57,109 +55,70 @@ async function seedUsuarios() {
       });
     }
   }
-  // });
   console.log('✅ Usuarios con roles listos');
 }
 
-async function seedEventosYEdiciones() {
+/**
+ * Eventos SIN ediciones
+ * Requiere: `codigo` @unique en el modelo Evento para usar upsert.
+ */
+async function seedEventos() {
   for (const e of EVENTOS) {
     const disciplinaId = await ensureDisciplina(prisma, e.disciplinaNombre);
     const categoriaId = await ensureCategoria(prisma, e.categoriaNombre);
 
-    // Evento: si puedes, agrega @unique en "codigo" en tu schema para usar upsert directo.
-    let evento = await prisma.evento.findFirst({ where: { codigo: e.codigo } });
-    if (!evento) {
-      evento = await prisma.evento.create({
-        data: {
-          codigo: e.codigo,
-          tipoParticipacion: std(e.tipoParticipacion),
-          tipoEvento: std(e.tipoEvento),
-          nombre: std(e.nombre),
-          lugar: e.ediciones?.[0]?.lugar
-            ? std(e.ediciones[0].lugar)
-            : 'Por definir',
-          genero: mapGenero(e.genero),
-          disciplinaId,
-          categoriaId,
-          provincia: e.ediciones?.[0]?.provincia
-            ? std(e.ediciones[0].provincia)
-            : 'Por definir',
-          ciudad: e.ediciones?.[0]?.ciudad
-            ? std(e.ediciones[0].ciudad)
-            : 'Por definir',
-          pais: e.ediciones?.[0]?.pais
-            ? std(e.ediciones[0].pais).toUpperCase()
-            : 'ECUADOR',
-          alcance: std(e.alcance),
-          fechaInicio: e.ediciones?.[0]?.fechaInicio
-            ? new Date(e.ediciones[0].fechaInicio)
-            : new Date(),
-          fechaFin: e.ediciones?.[0]?.fechaFin
-            ? new Date(e.ediciones[0].fechaFin)
-            : new Date(),
-          numEntrenadoresHombres: e.ediciones?.[0]?.numEH ?? 0,
-          numEntrenadoresMujeres: e.ediciones?.[0]?.numEM ?? 0,
-          numAtletasHombres: e.ediciones?.[0]?.numAH ?? 0,
-          numAtletasMujeres: e.ediciones?.[0]?.numAM ?? 0,
-        },
-      });
-    }
+    const lugar = e.lugar ?? 'Por definir';
+    const provincia = e.provincia ?? 'Por definir';
+    const ciudad = e.ciudad ?? 'Por definir';
+    const pais = (e.pais ?? 'ECUADOR').toString();
+    const fechaInicio = e.fechaInicio ? new Date(e.fechaInicio) : new Date();
+    const fechaFin = e.fechaFin ? new Date(e.fechaFin) : fechaInicio;
 
-    for (const ed of e.ediciones ?? []) {
-      // Creamos/actualizamos una fila en `Evento` por cada edición.
-      // Para garantizar unicidad usamos un codigo compuesto por el codigo base + timestamp.
-      const fechaInicio = new Date(ed.fechaInicio);
-      const editionCodigo = `${evento.codigo}_${fechaInicio.getTime()}`;
-
-      // Buscar el evento por codigo (ya que no es unique en el schema)
-      const existingEdition = await prisma.evento.findFirst({
-        where: { codigo: editionCodigo },
-      });
-
-      if (existingEdition) {
-        await prisma.evento.update({
-          where: { id: existingEdition.id },
-          data: {
-            lugar: std(ed.lugar),
-            provincia: std(ed.provincia),
-            ciudad: std(ed.ciudad),
-            pais: std(ed.pais).toUpperCase(),
-            fechaInicio: fechaInicio,
-            fechaFin: new Date(ed.fechaFin),
-            numEntrenadoresHombres: ed.numEH,
-            numEntrenadoresMujeres: ed.numEM,
-            numAtletasHombres: ed.numAH,
-            numAtletasMujeres: ed.numAM,
-          },
-        });
-      } else {
-        await prisma.evento.create({
-          data: {
-            codigo: editionCodigo,
-            tipoParticipacion: std(e.tipoParticipacion),
-            tipoEvento: std(e.tipoEvento),
-            nombre: std(e.nombre),
-            lugar: std(ed.lugar),
-            genero: mapGenero(e.genero),
-            disciplinaId,
-            categoriaId,
-            provincia: std(ed.provincia),
-            ciudad: std(ed.ciudad),
-            pais: std(ed.pais).toUpperCase(),
-            alcance: std(e.alcance),
-            fechaInicio: fechaInicio,
-            fechaFin: new Date(ed.fechaFin),
-            numEntrenadoresHombres: ed.numEH,
-            numEntrenadoresMujeres: ed.numEM,
-            numAtletasHombres: ed.numAH,
-            numAtletasMujeres: ed.numAM,
-          },
-        });
-      }
-    }
+    await prisma.evento.upsert({
+      where: { codigo: e.codigo }, // requiere @unique
+      update: {
+        tipoParticipacion: std(e.tipoParticipacion),
+        tipoEvento: std(e.tipoEvento),
+        nombre: std(e.nombre),
+        lugar: std(lugar),
+        genero: mapGenero(e.genero),
+        disciplinaId,
+        categoriaId,
+        provincia: std(provincia),
+        ciudad: std(ciudad),
+        pais: std(pais).toUpperCase(),
+        alcance: std(e.alcance),
+        fechaInicio,
+        fechaFin,
+        numEntrenadoresHombres: e.numEntrenadoresHombres ?? 0,
+        numEntrenadoresMujeres: e.numEntrenadoresMujeres ?? 0,
+        numAtletasHombres: e.numAtletasHombres ?? 0,
+        numAtletasMujeres: e.numAtletasMujeres ?? 0,
+      },
+      create: {
+        codigo: e.codigo,
+        tipoParticipacion: std(e.tipoParticipacion),
+        tipoEvento: std(e.tipoEvento),
+        nombre: std(e.nombre),
+        lugar: std(lugar),
+        genero: mapGenero(e.genero),
+        disciplinaId,
+        categoriaId,
+        provincia: std(provincia),
+        ciudad: std(ciudad),
+        pais: std(pais).toUpperCase(),
+        alcance: std(e.alcance),
+        fechaInicio,
+        fechaFin,
+        numEntrenadoresHombres: e.numEntrenadoresHombres ?? 0,
+        numEntrenadoresMujeres: e.numEntrenadoresMujeres ?? 0,
+        numAtletasHombres: e.numAtletasHombres ?? 0,
+        numAtletasMujeres: e.numAtletasMujeres ?? 0,
+      },
+    });
   }
 
-  console.log('✅ Eventos y ediciones listos');
+  console.log('✅ Eventos listos (sin ediciones)');
 }
 
 async function main() {
@@ -172,7 +131,7 @@ async function main() {
 
   await seedCatalogos();
   await seedUsuarios();
-  await seedEventosYEdiciones();
+  await seedEventos();
 
   console.log('🎉 Seeding completado');
 }
