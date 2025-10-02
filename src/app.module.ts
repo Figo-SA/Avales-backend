@@ -11,10 +11,6 @@ import { UsersModule } from './modules/users/users.module';
 import { DeportistasModule } from './modules/deportistas/deportistas.module';
 
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
-import { AvalTecnicosModule } from './modules/aval-tecnicos/aval-tecnicos.module';
-import { CertificadoPdaModule } from './modules/certificado-pda/certificado-pda.module';
-import { RevisionDtmModule } from './modules/revision-dtm/revision-dtm.module';
-import { CertificadoFinancieroModule } from './modules/certificado-financiero/certificado-financiero.module';
 import { SeedingModule } from './modules/seeding/seeding.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
 
@@ -37,10 +33,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception/global-
     CommonModule,
     UsersModule,
     DeportistasModule,
-    AvalTecnicosModule,
-    CertificadoPdaModule,
-    RevisionDtmModule,
-    CertificadoFinancieroModule,
+
     SeedingModule,
   ],
   controllers: [],
