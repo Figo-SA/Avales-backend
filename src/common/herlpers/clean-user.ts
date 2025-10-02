@@ -9,7 +9,6 @@ type UsuarioConRoles = Usuario & {
 };
 
 export function cleanUser(user: UsuarioConRoles) {
-  console.log('CLEAN', user);
   return {
     id: user.id,
     email: user.email,

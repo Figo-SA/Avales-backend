@@ -15,17 +15,24 @@ import { UpdateDeportistaDto } from './dto/update-deportista.dto';
 import {
   ApiBody,
   ApiExtraModels,
+  ApiOkResponse,
   ApiOperation,
   ApiResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import {
   ApiResponseDto,
-  ErrorResponseDto,
+  GlobalMetaDto,
 } from 'src/common/dtos/api-response.dto';
 import { ResponseDeportistaDto } from './dto/response-deportista.dto';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 import { Auth } from '../auth/decorators';
+import { ProblemDetailsDto } from 'src/common/dtos/problem-details.dto';
+import {
+  ApiCreatedResponseData,
+  ApiOkResponseData,
+} from 'src/common/swagger/decorators/api-success-responses.decorator';
 
 @Controller('deportistas')
 @ApiExtraModels(CreateDeportistaDto)
@@ -34,49 +41,34 @@ export class DeportistasController {
 
   @Post()
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
-  @SuccessMessage('Deportista creado correctamente')
   @ApiOperation({ summary: 'Crear deportista' })
   @ApiBody({
     description: 'Datos del deportista a crear',
     type: CreateDeportistaDto,
   })
   @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Deportista creado exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Deportista creado correctamente',
-        },
-        data: {
-          type: 'object',
-          $ref: '#/components/schemas/CreateDerportistaDto',
-        },
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Body inválido (class-validator)',
+    content: {
+      'application/problem+json': {
+        schema: { $ref: getSchemaPath(ProblemDetailsDto) },
       },
-      required: ['status', 'message', 'data'],
     },
   })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al crear el deportista',
-    type: ApiResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'No autorizado (requiere autenticación JWT)',
-    type: ApiResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Acceso prohibido',
-    type: ApiResponseDto,
+  @ApiCreatedResponseData(ResponseDeportistaDto, {
+    status: 'success',
+    message: 'Deportista creado correctamente',
+    meta: {
+      requestId: 'd1b9abf7-8a1f-4c2d-b2e6-8a9f0c1d6a3e',
+      timestamp: '2025-09-29T16:25:41Z',
+      apiVersion: 'v1',
+      durationMs: 42,
+    },
+    data: {
+      id: 1,
+      nombres: 'Juan',
+      apellidos: 'Pérez',
+    },
   })
   create(
     @Body() createDeportistaDto: CreateDeportistaDto,
@@ -86,159 +78,75 @@ export class DeportistasController {
   }
 
   @Get()
-  @SuccessMessage('Datos de deportistas obtenidos correctamente')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Obtener todos los deportistas' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Lista de deportistas obtenida exitosamente',
+  // success (200) con wrapper y data = array de ResponseDeportistaDto
+  @ApiOkResponse({
+    description: 'Lista de deportistas obtenida correctamente',
     schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Lista de deportistas obtenida correctamente',
-        },
-        data: {
-          type: 'array',
-          items: {
-            $ref: '#/components/schemas/ResponseDeportistaDto',
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseDto) },
+        {
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Datos de deportistas obtenidos correctamente',
+            },
+            meta: { $ref: getSchemaPath(GlobalMetaDto) },
+            data: {
+              type: 'array',
+              items: { $ref: getSchemaPath(ResponseDeportistaDto) },
+            },
           },
         },
-      },
-      required: ['status', 'message', 'data'],
+      ],
     },
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'No autorizado (requiere autenticación JWT)',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Acceso prohibido',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Error interno del servidor',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener la lista de deportistas',
-    type: ErrorResponseDto,
   })
   findAll(): Promise<ResponseDeportistaDto[]> {
     return this.deportistasService.findAll();
   }
 
   @Get(':id')
-  @SuccessMessage('Datos de deportista obtenidos correctamente')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Obtener deportista por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Deportista obtenido exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Deportista obtenido correctamente',
-        },
-        data: {
-          type: 'object',
-          $ref: '#/components/schemas/ResponseDeportistaDto',
-        },
-      },
-      required: ['status', 'message', 'data'],
+  @ApiOkResponseData(ResponseDeportistaDto, {
+    status: 'success',
+    message: 'Deportista obtenido correctamente',
+    meta: {
+      requestId: 'd1b9abf7-8a1f-4c2d-b2e6-8a9f0c1d6a3e',
+      timestamp: '2025-09-29T16:25:41Z',
+      apiVersion: 'v1',
+      durationMs: 17,
     },
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'No autorizado (requiere autenticación JWT)',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Acceso prohibido',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Deportista no encontrado',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Error interno del servidor',
-    type: ErrorResponseDto,
+    data: {
+      id: 1,
+      nombres: 'Juan',
+      apellidos: 'Pérez',
+      // ...
+    },
   })
   findOne(@Param('id') id: string): Promise<ResponseDeportistaDto> {
     return this.deportistasService.findOne(+id);
   }
 
   @Patch(':id')
-  @SuccessMessage('Deportista actualizado correctamente')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Actualizar deportista' })
-  @ApiBody({
-    description: 'Datos del deportista a actualizar',
-    type: UpdateDeportistaDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Deportista obtenido exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Deportista obtenido correctamente',
-        },
-        data: {
-          type: 'object',
-          $ref: '#/components/schemas/ResponseDeportistaDto',
-        },
-      },
-      required: ['status', 'message', 'data'],
+  @ApiOkResponseData(ResponseDeportistaDto, {
+    status: 'success',
+    message: 'Deportista actualizado correctamente',
+    meta: {
+      requestId: 'd1b9abf7-8a1f-4c2d-b2e6-8a9f0c1d6a3e',
+      timestamp: '2025-09-29T16:25:41Z',
+      apiVersion: 'v1',
+      durationMs: 25,
     },
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'No autorizado (requiere autenticación JWT)',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Acceso prohibido',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Deportista no encontrado',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Error interno del servidor',
-    type: ErrorResponseDto,
+    data: {
+      id: 1,
+      nombres: 'Juan',
+      apellidos: 'Pérez',
+      // ...
+    },
   })
   update(
     @Param('id') id: string,
@@ -248,51 +156,29 @@ export class DeportistasController {
   }
 
   @Delete(':id')
-  @SuccessMessage('Deportista eliminado correctamente')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Eliminar deportista' })
-  @ApiResponse({
-    status: HttpStatus.OK,
+  // Aquí devuelves `data: string`. Lo documentamos manualmente:
+  @ApiOkResponse({
     description: 'Deportista eliminado exitosamente',
     schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseDto) },
+        {
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Deportista eliminado correctamente',
+            },
+            meta: { $ref: getSchemaPath(GlobalMetaDto) },
+            data: {
+              type: 'string',
+              example: 'Deportista eliminado correctamente',
+            },
+          },
         },
-        message: {
-          type: 'string',
-          example: 'Deportista eliminado correctamente',
-        },
-        data: {
-          type: 'string',
-          example: 'Deportista eliminado correctamente',
-        },
-      },
-      required: ['status', 'message', 'data'],
+      ],
     },
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'No autorizado (requiere autenticación JWT)',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Acceso prohibido',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Deportista no encontrado',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Error interno del servidor',
-    type: ErrorResponseDto,
   })
   remove(@Param('id') id: string): Promise<string> {
     return this.deportistasService.softDelete(+id);

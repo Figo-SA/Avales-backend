@@ -1,3 +1,4 @@
+// src/users/users.controller.ts
 import {
   Controller,
   Get,
@@ -6,257 +7,273 @@ import {
   Patch,
   Param,
   Delete,
-  HttpStatus,
+  Query,
+  HttpCode,
+  ParseIntPipe,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiNoContentResponse,
+  ApiOperation,
+  ApiTags,
+  ApiExtraModels,
+  ApiOkResponse,
+  getSchemaPath,
+} from '@nestjs/swagger';
+
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ErrorResponseDto } from 'src/common/dtos/api-response.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
-import {
-  ApiBody,
-  ApiExtraModels,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
 
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 import { Auth } from '../auth/decorators';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
-@Controller('users')
+import {
+  ApiCreatedResponseData,
+  ApiOkResponseData,
+  ApiOkResponsePaginated,
+} from 'src/common/swagger/decorators/api-success-responses.decorator';
+import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
+import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error-responses.decorator';
+import {
+  ApiResponseDto,
+  GlobalMetaDto,
+} from 'src/common/dtos/api-response.dto';
+
 @ApiTags('users')
-@ApiExtraModels(ResponseUserDto)
+@ApiBearerAuth()
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @SuccessMessage('Usuario creado correctamente')
   @Post('create')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin)
-  // @ApiBearerAuth('JWT')
+  @SuccessMessage('Usuario creado correctamente')
   @ApiOperation({ summary: 'Crea un nuevo usuario (solo administradores)' })
-  @ApiBody({ type: CreateUserDto })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Usuario creado exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Usuario creado correctamente',
-        },
-        data: {
-          type: 'object',
-          $ref: '#/components/schemas/ResponseUserDto',
-        },
-      },
-      required: ['status', 'message', 'data'],
+  @ApiCreatedResponseData(
+    ResponseUserDto,
+    undefined,
+    'Usuario creado correctamente',
+    true,
+  )
+  @ApiErrorResponsesConfig([400, 401, 403, 409, 422, 500], {
+    409: {
+      type: 'https://api.tu-dominio.com/errors/conflict',
+      title: 'Conflict',
+      status: 409,
+      detail: 'El email ya existe',
+      instance: '/api/v1/users/create',
+      apiVersion: 'v1',
+    },
+    422: {
+      type: 'https://api.tu-dominio.com/errors/unprocessable-entity',
+      title: 'Unprocessable Entity',
+      status: 422,
+      detail: 'Reglas de dominio no cumplidas',
+      instance: '/api/v1/users/create',
+      apiVersion: 'v1',
     },
   })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Correo electrónico o cédula ya registrados',
-    type: ErrorResponseDto,
+  create(@Body() dto: CreateUserDto): Promise<ResponseUserDto> {
+    return this.usersService.create(dto);
+  }
+
+  @Get('paginated')
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
+  @SuccessMessage('Datos de usuarios obtenidos correctamente (paginado)')
+  @ApiOperation({
+    summary: 'Obtiene la lista de usuarios (paginado)',
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'No autorizado (requiere autenticación JWT)',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Acceso denegado (usuario no tiene rol de administrador)',
-    type: ErrorResponseDto,
-  })
-  create(@Body() CreateUserDto: CreateUserDto): Promise<ResponseUserDto> {
-    return this.usersService.create(CreateUserDto);
+  @ApiOkResponsePaginated(
+    ResponseUserDto,
+    undefined,
+    'Usuarios obtenidos correctamente',
+    true,
+  )
+  @ApiErrorResponsesConfig([401, 403, 500])
+  async findAllPaginated(@Query() paginationDto: PaginationQueryDto) {
+    return this.usersService.findAllPaginated(
+      paginationDto.page,
+      paginationDto.limit,
+    );
   }
 
   @Get()
-  @SuccessMessage('Datos de usuarios obtenidos correctamente')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin)
+  @SuccessMessage('Datos de usuarios obtenidos correctamente')
   @ApiOperation({
-    summary: 'Obtiene la lista de todos los usuarios (solo administradores)',
+    summary: 'Obtiene la lista de todos los usuarios (sin paginar)',
   })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Lista de usuarios obtenida exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Usuarios obtenidos correctamente',
-        },
-        data: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/ResponseUserDto' },
+  @ApiExtraModels(ApiResponseDto, GlobalMetaDto, ResponseUserDto)
+  @ApiOkResponse({
+    description: 'Lista de usuarios obtenida correctamente',
+    content: {
+      'application/json': {
+        schema: {
+          allOf: [
+            { $ref: getSchemaPath(ApiResponseDto) },
+            {
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Datos de usuarios obtenidos correctamente',
+                },
+                meta: { $ref: getSchemaPath(GlobalMetaDto) },
+                data: {
+                  type: 'array',
+                  items: { $ref: getSchemaPath(ResponseUserDto) },
+                },
+              },
+            },
+          ],
         },
       },
-      required: ['status', 'message', 'data'],
     },
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description:
-      'No autorizado (requiere autenticación JWT y rol de administrador)',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'No se encontraron usuarios',
-    type: ErrorResponseDto,
-  })
+  @ApiErrorResponsesConfig([401, 403, 500])
   findAll(): Promise<ResponseUserDto[]> {
     return this.usersService.findAll();
   }
 
   @Get(':id')
-  @SuccessMessage('Datos del usuario obtenidos correctamente')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin)
+  @SuccessMessage('Datos del usuario obtenidos correctamente')
   @ApiOperation({
     summary: 'Obtiene los detalles de un usuario por ID (solo administradores)',
   })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Detalles del usuario obtenidos exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Usuario obtenido correctamente',
-        },
-        data: {
-          type: 'object',
-          items: { $ref: '#/components/schemas/ResponseUserDto' },
-        },
-      },
-      required: ['status', 'message', 'data'],
+  @ApiOkResponseData(
+    ResponseUserDto,
+    undefined,
+    'Usuario obtenido correctamente',
+    true,
+  )
+  @ApiErrorResponsesConfig([401, 403, 404, 500], {
+    404: {
+      type: 'https://api.tu-dominio.com/errors/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'No existe un usuario con ese id',
+      instance: '/api/v1/users/{id}',
+      apiVersion: 'v1',
     },
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description:
-      'No autorizado (requiere autenticación JWT y rol de administrador)',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'No se encontro el usuario con el ID proporcionado',
-    type: ErrorResponseDto,
-  })
-  findOne(
-    @Param('id') id: string,
-  ): Promise<ResponseUserDto | ErrorResponseDto> {
-    return this.usersService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<ResponseUserDto> {
+    return this.usersService.findOne(id);
   }
 
   @Patch(':id')
-  @SuccessMessage('Usuario actualizado correctamente')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin)
+  @SuccessMessage('Usuario actualizado correctamente')
   @ApiOperation({ summary: 'Actualizar un usuario' })
-  @ApiBody({ type: UpdateUserDto })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Usuario actualizado exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Usuario actualizado correctamente',
-        },
-        data: {
-          type: 'object',
-          $ref: '#/components/schemas/ResponseUserDto',
-        },
-      },
-      required: ['status', 'message', 'data'],
+  @ApiOkResponseData(
+    ResponseUserDto,
+    undefined,
+    'Usuario actualizado correctamente',
+    true,
+  )
+  @ApiErrorResponsesConfig([400, 401, 403, 404, 409, 422, 500], {
+    404: {
+      type: 'https://api.tu-dominio.com/errors/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'No existe un usuario con ese id',
+      instance: '/api/v1/users/{id}',
+      apiVersion: 'v1',
+    },
+    409: {
+      type: 'https://api.tu-dominio.com/errors/conflict',
+      title: 'Conflict',
+      status: 409,
+      detail: 'El email ya esta en uso por otro usuario',
+      instance: '/api/v1/users/{id}',
+      apiVersion: 'v1',
     },
   })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Correo electrónico o cédula ya registrados',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'No autorizado (requiere autenticación JWT)',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Acceso denegado (usuario no tiene rol de administrador)',
-    type: ErrorResponseDto,
-  })
   update(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateUserDto,
   ): Promise<ResponseUserDto> {
-    return this.usersService.update(+id, updateUserDto);
+    return this.usersService.update(id, dto);
   }
 
   @Delete(':id')
-  @SuccessMessage('Usuario eliminado correctamente')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin)
-  @ApiOperation({ summary: 'Eliminar un usuario' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Usuario eliminado exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          example: 'success',
-          enum: ['success', 'error'],
-        },
-        message: {
-          type: 'string',
-          example: 'Usuario eliminado correctamente',
-        },
-        data: {
-          type: 'object',
-          $ref: '#/components/schemas/ResponseUserDto',
-        },
-      },
-      required: ['status', 'message', 'data'],
+  @SuccessMessage('Usuario deshabilitado correctamente')
+  @ApiOperation({ summary: 'Deshabilitar (borrado logico) un usuario' })
+  @ApiOkResponseData(
+    DeletedResourceDto,
+    undefined,
+    'Usuario deshabilitado correctamente',
+    true,
+  )
+  @ApiErrorResponsesConfig([401, 403, 404, 500], {
+    404: {
+      type: 'https://api.tu-dominio.com/errors/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'No existe un usuario activo con ese id',
+      instance: '/api/v1/users/{id}',
+      apiVersion: 'v1',
     },
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'No autorizado (requiere autenticación JWT)',
-    type: ErrorResponseDto,
+  softDelete(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<DeletedResourceDto> {
+    return this.usersService.softDelete(id);
+  }
+
+  @Delete(':id/hard')
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
+  @SuccessMessage('Usuario eliminado permanentemente')
+  @ApiOperation({ summary: 'Eliminar un usuario de forma permanente' })
+  @ApiNoContentResponse({ description: 'Eliminado permanentemente' })
+  @ApiErrorResponsesConfig([401, 403, 404, 409, 500], {
+    404: {
+      type: 'https://api.tu-dominio.com/errors/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'No existe un usuario activo con ese id',
+      instance: '/api/v1/users/{id}/hard',
+      apiVersion: 'v1',
+    },
+    409: {
+      type: 'https://api.tu-dominio.com/errors/conflict',
+      title: 'Conflict',
+      status: 409,
+      detail: 'No se puede eliminar: dependencias existentes',
+      instance: '/api/v1/users/{id}/hard',
+      apiVersion: 'v1',
+    },
   })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Acceso denegado (usuario no tiene rol de administrador)',
-    type: ErrorResponseDto,
+  @HttpCode(204)
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.usersService.remove(id);
+  }
+
+  @Post(':id/restore')
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
+  @SuccessMessage('Usuario restaurado correctamente')
+  @ApiOperation({ summary: 'Restaurar un usuario eliminado' })
+  @ApiOkResponseData(
+    ResponseUserDto,
+    undefined,
+    'Usuario restaurado correctamente',
+    true,
+  )
+  @ApiErrorResponsesConfig([401, 403, 404, 500], {
+    404: {
+      type: 'https://api.tu-dominio.com/errors/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'No existe un usuario eliminado con ese id',
+      instance: '/api/v1/users/{id}',
+      apiVersion: 'v1',
+    },
   })
-  remove(@Param('id') id: string): Promise<{ id: number }> {
-    return this.usersService.softDelete(+id);
+  restore(@Param('id', ParseIntPipe) id: number): Promise<ResponseUserDto> {
+    return this.usersService.restore(id);
   }
 }
