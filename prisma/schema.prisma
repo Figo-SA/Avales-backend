@@ -151,7 +151,7 @@ model Deportista {
 
 model Evento {
   id                       Int      @id @default(autoincrement())
-  codigo                   String   @db.VarChar(100)
+  codigo                   String   @db.VarChar(100) @unique
   tipoParticipacion        String   @db.VarChar(100) // nacional, internacional, etc.
   tipoEvento               String   @db.VarChar(100) // campeonato, torneo, etc.
   nombre                   String   @db.VarChar(255)
@@ -173,37 +173,21 @@ model Evento {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
   deleted                  Boolean  @default(false)
-  eventoEdiciones          EventoEdicion[]
+  // Nota: las ediciones ahora se modelan como filas independientes en `Evento`.
+  // Se eliminó `EventoEdicion` para usar solo la tabla `Evento`.
 
   disciplina         Disciplina             @relation(fields: [disciplinaId], references: [id])
   categoria          Categoria              @relation(fields: [categoriaId], references: [id])
+  // Colecciones (antes estaban en EventoEdicion)
+  colecciones        ColeccionAval[]
 
   @@index([nombre])
   @@index([fechaInicio])
 }
 
-model EventoEdicion {
-  id                      Int      @id @default(autoincrement())
-  eventoId                Int
-  lugar                   String   @db.VarChar(255)
-  provincia               String   @db.VarChar(100)
-  ciudad                  String   @db.VarChar(100)
-  pais                    String   @db.VarChar(100)
-  fechaInicio             DateTime
-  fechaFin                DateTime
-  numEntrenadoresHombres  Int
-  numEntrenadoresMujeres  Int
-  numAtletasHombres       Int
-  numAtletasMujeres       Int
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-
-  evento                  Evento   @relation(fields: [eventoId], references: [id])
-
-  collection              ColeccionAval[]
-
-  @@unique([eventoId, fechaInicio, ciudad])
-}
+// Nota: se eliminó `EventoEdicion`. En este diseño cada edición se modela como una fila
+// en la tabla `Evento`. Si necesitas un identificador que vincule ediciones con un
+// evento "maestro", usa el campo `codigo` o añade un campo explícito.
 
 
 // ------------------
@@ -212,7 +196,7 @@ model EventoEdicion {
 model ColeccionAval {
   id               Int                 @id @default(autoincrement())
   descripcion      String              @db.VarChar(600)
-  eventoEdicionId  Int             
+  eventoId         Int
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
@@ -224,7 +208,7 @@ model ColeccionAval {
   financiero       Financiero[]
   historial        HistorialColeccion[]
   entrenadores     ColeccionEntrenador[]
-  eventoEdicion    EventoEdicion              @relation(fields: [eventoEdicionId], references: [id])
+  evento           Evento                    @relation(fields: [eventoId], references: [id])
 
 }
 
