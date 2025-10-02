@@ -106,39 +106,56 @@ async function seedEventosYEdiciones() {
     }
 
     for (const ed of e.ediciones ?? []) {
-      await prisma.eventoEdicion.upsert({
-        where: {
-          // nombre de where generado por @@unique([eventoId, fechaInicio, ciudad])
-          eventoId_fechaInicio_ciudad: {
-            eventoId: evento.id,
-            fechaInicio: new Date(ed.fechaInicio),
-            ciudad: std(ed.ciudad),
-          },
-        },
-        update: {
-          fechaFin: new Date(ed.fechaFin),
-          lugar: std(ed.lugar),
-          provincia: std(ed.provincia),
-          pais: std(ed.pais).toUpperCase(),
-          numEntrenadoresHombres: ed.numEH,
-          numEntrenadoresMujeres: ed.numEM,
-          numAtletasHombres: ed.numAH,
-          numAtletasMujeres: ed.numAM,
-        },
-        create: {
-          eventoId: evento.id,
-          lugar: std(ed.lugar),
-          provincia: std(ed.provincia),
-          ciudad: std(ed.ciudad),
-          pais: std(ed.pais).toUpperCase(),
-          fechaInicio: new Date(ed.fechaInicio),
-          fechaFin: new Date(ed.fechaFin),
-          numEntrenadoresHombres: ed.numEH,
-          numEntrenadoresMujeres: ed.numEM,
-          numAtletasHombres: ed.numAH,
-          numAtletasMujeres: ed.numAM,
-        },
+      // Creamos/actualizamos una fila en `Evento` por cada edición.
+      // Para garantizar unicidad usamos un codigo compuesto por el codigo base + timestamp.
+      const fechaInicio = new Date(ed.fechaInicio);
+      const editionCodigo = `${evento.codigo}_${fechaInicio.getTime()}`;
+
+      // Buscar el evento por codigo (ya que no es unique en el schema)
+      const existingEdition = await prisma.evento.findFirst({
+        where: { codigo: editionCodigo },
       });
+
+      if (existingEdition) {
+        await prisma.evento.update({
+          where: { id: existingEdition.id },
+          data: {
+            lugar: std(ed.lugar),
+            provincia: std(ed.provincia),
+            ciudad: std(ed.ciudad),
+            pais: std(ed.pais).toUpperCase(),
+            fechaInicio: fechaInicio,
+            fechaFin: new Date(ed.fechaFin),
+            numEntrenadoresHombres: ed.numEH,
+            numEntrenadoresMujeres: ed.numEM,
+            numAtletasHombres: ed.numAH,
+            numAtletasMujeres: ed.numAM,
+          },
+        });
+      } else {
+        await prisma.evento.create({
+          data: {
+            codigo: editionCodigo,
+            tipoParticipacion: std(e.tipoParticipacion),
+            tipoEvento: std(e.tipoEvento),
+            nombre: std(e.nombre),
+            lugar: std(ed.lugar),
+            genero: mapGenero(e.genero),
+            disciplinaId,
+            categoriaId,
+            provincia: std(ed.provincia),
+            ciudad: std(ed.ciudad),
+            pais: std(ed.pais).toUpperCase(),
+            alcance: std(e.alcance),
+            fechaInicio: fechaInicio,
+            fechaFin: new Date(ed.fechaFin),
+            numEntrenadoresHombres: ed.numEH,
+            numEntrenadoresMujeres: ed.numEM,
+            numAtletasHombres: ed.numAH,
+            numAtletasMujeres: ed.numAM,
+          },
+        });
+      }
     }
   }
 
