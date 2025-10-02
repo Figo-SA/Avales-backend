@@ -1,11 +1,16 @@
-// src/common/http/problem-details.ts
+// src/common/helpers/problem-details.ts
 export interface ProblemDetails {
-  type: string; // URI identificable del tipo de error
-  title: string; // título breve del problema
-  status: number; // código HTTP
-  detail?: string;
-  instance?: string;
-  [key: string]: any; // extensiones permitidas por RFC 7807
+  type: string;
+  title: string;
+  status: number;
+  detail: string;
+  instance: string;
+  // extensiones que tú añades:
+  requestId: string;
+  apiVersion: string;
+  durationMs?: number;
+  // cualquier otra extensión
+  [key: string]: unknown;
 }
 
 export function normalizeRequestId(
