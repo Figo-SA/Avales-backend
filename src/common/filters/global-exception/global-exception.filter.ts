@@ -12,6 +12,7 @@ import {
   normalizeRequestId,
   ProblemDetails,
 } from 'src/common/herlpers/problem-details';
+import { ProblemDetailsDto } from 'src/common/dtos/problem-details.dto';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {

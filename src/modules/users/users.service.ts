@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,6 +12,7 @@ import { PasswordService } from 'src/common/services/password/password.service';
 import { ValidationService } from 'src/common/services/validation/validation.service';
 import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
 import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
+import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 
 @Injectable()
 export class UsersService {
@@ -310,7 +312,7 @@ export class UsersService {
     });
   }
 
-  async softDelete(id: number): Promise<{ id: number }> {
+  async softDelete(id: number): Promise<DeletedResourceDto> {
     const user = await this.prisma.usuario.findFirst({
       where: { id, deleted: false },
     });
@@ -328,4 +330,46 @@ export class UsersService {
 
     return { id };
   }
+
+  async remove(id: number): Promise<void> {
+    try {
+      await this.prisma.usuario.delete({ where: { id } });
+    } catch (e: any) {
+      if (e.code === 'P2025') {
+        // record not found
+        throw new NotFoundException(`Usuario ${id} no encontrado`);
+      }
+      if (e.code === 'P2003') {
+        // FK constraint
+        throw new ConflictException(
+          `No se puede eliminar: dependencias existentes`,
+        );
+      }
+      throw e;
+    }
+  }
+
+  async restore(id: number): Promise<ResponseUserDto> {
+    const user = await this.prisma.usuario.findUnique({
+      where: { id, deleted: true },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado o habilitado');
+    }
+
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { deleted: false, updatedAt: new Date() },
+    });
+
+    return this.findOne(id);
+  }
 }
+
+
+
+
