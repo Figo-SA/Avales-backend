@@ -138,6 +138,43 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('deleted')
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin)
+  @SuccessMessage('Usuarios eliminados obtenidos correctamente')
+  @ApiOperation({
+    summary: 'Obtiene la lista de usuarios eliminados (soft deleted)',
+  })
+  @ApiExtraModels(ApiResponseDto, GlobalMetaDto, ResponseUserDto)
+  @ApiOkResponse({
+    description: 'Lista de usuarios eliminados obtenida correctamente',
+    content: {
+      'application/json': {
+        schema: {
+          allOf: [
+            { $ref: getSchemaPath(ApiResponseDto) },
+            {
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Usuarios eliminados obtenidos correctamente',
+                },
+                meta: { $ref: getSchemaPath(GlobalMetaDto) },
+                data: {
+                  type: 'array',
+                  items: { $ref: getSchemaPath(ResponseUserDto) },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiErrorResponsesConfig([401, 403, 500])
+  findDeleted(): Promise<ResponseUserDto[]> {
+    return this.usersService.findDeleted();
+  }
+
   @Get(':id')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin)
   @SuccessMessage('Datos del usuario obtenidos correctamente')

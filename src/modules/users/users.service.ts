@@ -244,6 +244,42 @@ export class UsersService {
     };
   }
 
+  /**
+   * Devuelve todos los usuarios que fueron deshabilitados (deleted = true)
+   */
+  findDeleted(): Promise<ResponseUserDto[]> {
+    return this.prisma.usuario
+      .findMany({
+        where: { deleted: true },
+        select: {
+          id: true,
+          email: true,
+          nombre: true,
+          apellido: true,
+          cedula: true,
+          categoriaId: true,
+          disciplinaId: true,
+          usuariosRol: {
+            select: {
+              rolId: true,
+            },
+          },
+        },
+      })
+      .then((users) =>
+        users.map((user) => ({
+          id: user.id,
+          email: user.email,
+          nombre: user.nombre,
+          apellido: user.apellido,
+          cedula: user.cedula,
+          categoriaId: user.categoriaId,
+          disciplinaId: user.disciplinaId,
+          rolIds: user.usuariosRol.map((ur) => ur.rolId),
+        })),
+      );
+  }
+
   async update(
     id: number,
     updateUserDto: UpdateUserDto,
@@ -369,7 +405,3 @@ export class UsersService {
     return this.findOne(id);
   }
 }
-
-
-
-
