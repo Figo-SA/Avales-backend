@@ -147,6 +147,43 @@ export class DeportistasController {
     return this.deportistasService.findAll();
   }
 
+  @Get('deleted')
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
+  @SuccessMessage('Deportistas eliminados obtenidos correctamente')
+  @ApiOperation({
+    summary: 'Obtiene la lista de deportistas eliminados (soft deleted)',
+  })
+  @ApiExtraModels(ApiResponseDto, GlobalMetaDto, ResponseDeportistaDto)
+  @ApiOkResponse({
+    description: 'Lista de deportistas eliminados obtenida correctamente',
+    content: {
+      'application/json': {
+        schema: {
+          allOf: [
+            { $ref: getSchemaPath(ApiResponseDto) },
+            {
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Deportistas eliminados obtenidos correctamente',
+                },
+                meta: { $ref: getSchemaPath(GlobalMetaDto) },
+                data: {
+                  type: 'array',
+                  items: { $ref: getSchemaPath(ResponseDeportistaDto) },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiErrorResponsesConfig([401, 403, 500])
+  findDeleted(): Promise<ResponseDeportistaDto[]> {
+    return this.deportistasService.findDeleted();
+  }
+
   @Get(':id')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Obtener deportista por ID' })
