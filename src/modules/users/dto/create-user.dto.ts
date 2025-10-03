@@ -1,32 +1,15 @@
-import {
-  IsNotEmpty,
-  IsString,
-  Length,
-  IsInt,
-  Min,
-  IsArray,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+// dto/create-user.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { BaseUserDto } from './base-user.dto';
+import { IsString, Length } from 'class-validator';
+import { UserEditableDto } from './user-editable.dto';
 
-export class CreateUserDto extends BaseUserDto {
-  @ApiProperty({
-    description: 'Contraseña del usuario (6-32 caracteres)',
-    example: 'password123',
-  })
+export class CreateUserDto extends UserEditableDto {
+  @ApiProperty({ example: 'password123', minLength: 6, maxLength: 32 })
   @IsString()
   @Length(6, 32)
   password: string;
 
-  @ApiProperty({
-    description: 'Lista de IDs de roles asignados al usuario (al menos uno)',
-    example: [3, 7],
-  })
-  @Type(() => Number)
-  @IsArray()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
-  @IsNotEmpty()
-  rolIds: number[];
+  // Si para create exiges al menos un rol:
+  @ApiProperty({ example: [3, 7], description: 'IDs de roles (mín. 1)' })
+  declare rolIds: number[];
 }
