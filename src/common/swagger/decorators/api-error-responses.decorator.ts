@@ -77,7 +77,7 @@ export function ApiErrorResponsesConfig(
       status: d.status,
       detail: d.detail,
       instance: `/api/v1/{RUTA}`, // si quieres, cámbialo en cada uso o déjalo genérico
-      requestId: 'auto-generated-request-id',
+      requestId: '9c0e-...-3800',
       apiVersion: 'v1',
       durationMs: 0,
     } as ProblemDetailsDto;
