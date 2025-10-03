@@ -7,6 +7,9 @@ import {
   Param,
   Delete,
   HttpStatus,
+  ParseIntPipe,
+  HttpCode,
+  Query,
 } from '@nestjs/common';
 import { DeportistasService } from './deportistas.service';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
@@ -19,6 +22,9 @@ import {
   ApiOperation,
   ApiResponse,
   getSchemaPath,
+  ApiBearerAuth,
+  ApiTags,
+  ApiNoContentResponse,
 } from '@nestjs/swagger';
 import {
   ApiResponseDto,
@@ -32,9 +38,17 @@ import { ProblemDetailsDto } from 'src/common/dtos/problem-details.dto';
 import {
   ApiCreatedResponseData,
   ApiOkResponseData,
+  ApiOkResponsePaginated,
 } from 'src/common/swagger/decorators/api-success-responses.decorator';
+import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+// (consolidated imports above)
+import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error-responses.decorator';
+// ... existing ApiResponseDto / GlobalMetaDto are already imported above
 
 @Controller('deportistas')
+@ApiTags('deportistas')
+@ApiBearerAuth()
 @ApiExtraModels(CreateDeportistaDto)
 export class DeportistasController {
   constructor(private readonly deportistasService: DeportistasService) {}
@@ -55,19 +69,28 @@ export class DeportistasController {
       },
     },
   })
-  @ApiCreatedResponseData(ResponseDeportistaDto, {
-    status: 'success',
-    message: 'Deportista creado correctamente',
-    meta: {
-      requestId: 'd1b9abf7-8a1f-4c2d-b2e6-8a9f0c1d6a3e',
-      timestamp: '2025-09-29T16:25:41Z',
+  @ApiCreatedResponseData(
+    ResponseDeportistaDto,
+    undefined,
+    'Deportista creado',
+    true,
+  )
+  @ApiErrorResponsesConfig([400, 401, 403, 409, 422, 500], {
+    409: {
+      type: 'https://api.tu-dominio.com/errors/conflict',
+      title: 'Conflict',
+      status: 409,
+      detail: 'La cédula ya existe',
+      instance: '/api/v1/deportistas',
       apiVersion: 'v1',
-      durationMs: 42,
     },
-    data: {
-      id: 1,
-      nombres: 'Juan',
-      apellidos: 'Pérez',
+    422: {
+      type: 'https://api.tu-dominio.com/errors/unprocessable-entity',
+      title: 'Unprocessable Entity',
+      status: 422,
+      detail: 'Reglas de dominio no cumplidas',
+      instance: '/api/v1/deportistas',
+      apiVersion: 'v1',
     },
   })
   create(
@@ -75,6 +98,23 @@ export class DeportistasController {
   ): Promise<ResponseDeportistaDto> {
     console.log('Creando deportista con datos:', createDeportistaDto);
     return this.deportistasService.create(createDeportistaDto);
+  }
+
+  @Get('paginated')
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
+  @ApiOperation({ summary: 'Obtener deportistas (paginado)' })
+  @ApiOkResponsePaginated(
+    ResponseDeportistaDto,
+    undefined,
+    'Deportistas obtenidos correctamente',
+    true,
+  )
+  @ApiErrorResponsesConfig([401, 403, 500])
+  async findAllPaginated(@Query() paginationDto: PaginationQueryDto) {
+    return this.deportistasService.findAllPaginated(
+      paginationDto.page,
+      paginationDto.limit,
+    );
   }
 
   @Get()
@@ -102,6 +142,7 @@ export class DeportistasController {
       ],
     },
   })
+  @ApiErrorResponsesConfig([401, 403, 500])
   findAll(): Promise<ResponseDeportistaDto[]> {
     return this.deportistasService.findAll();
   }
@@ -109,55 +150,66 @@ export class DeportistasController {
   @Get(':id')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Obtener deportista por ID' })
-  @ApiOkResponseData(ResponseDeportistaDto, {
-    status: 'success',
-    message: 'Deportista obtenido correctamente',
-    meta: {
-      requestId: 'd1b9abf7-8a1f-4c2d-b2e6-8a9f0c1d6a3e',
-      timestamp: '2025-09-29T16:25:41Z',
+  @ApiOkResponseData(
+    ResponseDeportistaDto,
+    undefined,
+    'Deportista obtenido',
+    true,
+  )
+  @ApiErrorResponsesConfig([401, 403, 404, 500], {
+    404: {
+      type: 'https://api.tu-dominio.com/errors/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'No existe un deportista con ese id',
+      instance: '/api/v1/deportistas/{id}',
       apiVersion: 'v1',
-      durationMs: 17,
-    },
-    data: {
-      id: 1,
-      nombres: 'Juan',
-      apellidos: 'Pérez',
-      // ...
     },
   })
-  findOne(@Param('id') id: string): Promise<ResponseDeportistaDto> {
-    return this.deportistasService.findOne(+id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ResponseDeportistaDto> {
+    return this.deportistasService.findOne(id);
   }
 
   @Patch(':id')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
   @ApiOperation({ summary: 'Actualizar deportista' })
-  @ApiOkResponseData(ResponseDeportistaDto, {
-    status: 'success',
-    message: 'Deportista actualizado correctamente',
-    meta: {
-      requestId: 'd1b9abf7-8a1f-4c2d-b2e6-8a9f0c1d6a3e',
-      timestamp: '2025-09-29T16:25:41Z',
+  @ApiOkResponseData(
+    ResponseDeportistaDto,
+    undefined,
+    'Deportista obtenido',
+    true,
+  )
+  @ApiErrorResponsesConfig([400, 401, 403, 404, 409, 422, 500], {
+    404: {
+      type: 'https://api.tu-dominio.com/errors/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'No existe un deportista con ese id',
+      instance: '/api/v1/deportistas/{id}',
       apiVersion: 'v1',
-      durationMs: 25,
     },
-    data: {
-      id: 1,
-      nombres: 'Juan',
-      apellidos: 'Pérez',
-      // ...
+    409: {
+      type: 'https://api.tu-dominio.com/errors/conflict',
+      title: 'Conflict',
+      status: 409,
+      detail: 'La cédula ya está en uso por otro deportista',
+      instance: '/api/v1/deportistas/{id}',
+      apiVersion: 'v1',
     },
   })
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateDeportistaDto: UpdateDeportistaDto,
-  ) {
-    return this.deportistasService.update(+id, updateDeportistaDto);
+  ): Promise<ResponseDeportistaDto> {
+    return this.deportistasService.update(id, updateDeportistaDto as any);
   }
 
   @Delete(':id')
   @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
-  @ApiOperation({ summary: 'Eliminar deportista' })
+  @SuccessMessage('Deportista deshabilitado correctamente')
+  @ApiOperation({ summary: 'Deshabilitar (borrado lógico) un deportista' })
   // Aquí devuelves `data: string`. Lo documentamos manualmente:
   @ApiOkResponse({
     description: 'Deportista eliminado exitosamente',
@@ -172,16 +224,55 @@ export class DeportistasController {
             },
             meta: { $ref: getSchemaPath(GlobalMetaDto) },
             data: {
-              type: 'string',
-              example: 'Deportista eliminado correctamente',
+              type: 'object',
+              properties: { id: { type: 'number', example: 1 } },
+              example: { id: 1 },
             },
           },
         },
       ],
     },
   })
-  remove(@Param('id') id: string): Promise<string> {
-    return this.deportistasService.softDelete(+id);
+  @ApiErrorResponsesConfig([401, 403, 404, 500], {
+    404: {
+      type: 'https://api.tu-dominio.com/errors/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'No existe un deportista activo con ese id',
+      instance: '/api/v1/deportistas/{id}',
+      apiVersion: 'v1',
+    },
+  })
+  remove(@Param('id', ParseIntPipe) id: number): Promise<DeletedResourceDto> {
+    return this.deportistasService.softDelete(id);
+  }
+
+  @Delete(':id/hard')
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
+  @SuccessMessage('Deportista eliminado permanentemente')
+  @ApiOperation({ summary: 'Eliminar deportista de forma permanente' })
+  @ApiNoContentResponse({ description: 'Eliminado permanentemente' })
+  @ApiErrorResponsesConfig([401, 403, 404, 409, 500])
+  @HttpCode(204)
+  async hardRemove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.deportistasService.remove(id);
+  }
+
+  @Post(':id/restore')
+  @Auth(ValidRoles.superAdmin, ValidRoles.admin, ValidRoles.entrenador)
+  @SuccessMessage('Deportista restaurado correctamente')
+  @ApiOperation({ summary: 'Restaurar un deportista eliminado' })
+  @ApiOkResponseData(
+    ResponseDeportistaDto,
+    undefined,
+    'Deportista restaurado correctamente',
+    true,
+  )
+  @ApiErrorResponsesConfig([401, 403, 404, 500])
+  restore(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ResponseDeportistaDto> {
+    return this.deportistasService.restore(id);
   }
 
   // @Put(':id/afiliate')
