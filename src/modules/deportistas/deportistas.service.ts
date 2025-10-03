@@ -42,6 +42,15 @@ export class DeportistasService {
     });
   }
 
+  /** Devuelve todos los deportistas que fueron deshabilitados (deleted = true) */
+  findDeleted(): Promise<ResponseDeportistaDto[]> {
+    return this.prisma.deportista
+      .findMany({
+        where: { deleted: true },
+      })
+      .then((items) => items as ResponseDeportistaDto[]);
+  }
+
   async findAllPaginated(
     page: number,
     limit: number,
