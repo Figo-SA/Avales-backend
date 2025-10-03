@@ -72,7 +72,7 @@ export function ApiErrorResponsesConfig(
   const makeDefaultExample = (s: StatusKey): ProblemDetailsDto => {
     const d = DEFAULTS[s];
     return {
-      type: `https://api.tu-dominio.com/errors/${String(d.title).toLowerCase().replace(/\s+/g, '-')}`,
+      type: `https://api.com/errors/${String(d.title).toLowerCase().replace(/\s+/g, '-')}`,
       title: d.title,
       status: d.status,
       detail: d.detail,
