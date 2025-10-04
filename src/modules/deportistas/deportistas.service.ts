@@ -7,7 +7,7 @@ import { CreateDeportistaDto } from './dto/create-deportista.dto';
 import { UpdateDeportistaDto } from './dto/update-deportista.dto';
 import { ValidationService } from 'src/common/services/validation/validation.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { BaseDeportistaDto } from './dto/base-deportista.dto';
+import { BaseDeportistaDto } from './dto/deportista-editable.dto';
 import { ResponseDeportistaDto } from './dto/response-deportista.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 import { Deportista } from '@prisma/client';
