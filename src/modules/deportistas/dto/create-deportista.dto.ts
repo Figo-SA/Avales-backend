@@ -1,3 +1,5 @@
-import { BaseDeportistaDto } from './base-deportista.dto';
+import { DeportistaEditableDto } from './deportista-editable.dto';
+import { ApiExtraModels } from '@nestjs/swagger';
 
-export class CreateDeportistaDto extends BaseDeportistaDto {}
+@ApiExtraModels(DeportistaEditableDto)
+export class CreateDeportistaDto extends DeportistaEditableDto {}

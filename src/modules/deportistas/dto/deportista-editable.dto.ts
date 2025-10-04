@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
-  IsDate,
+  IsDateString,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -14,11 +14,12 @@ import {
 import { Transform, Type } from 'class-transformer';
 import { Genero } from '@prisma/client';
 
-export class BaseDeportistaDto {
+export class DeportistaEditableDto {
   @ApiProperty({
     description: 'Nombres del deportista',
     example: 'María Fernanda',
   })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsNotEmpty()
   @MaxLength(150)
@@ -28,35 +29,37 @@ export class BaseDeportistaDto {
     description: 'Apellidos del deportista',
     example: 'Pérez Gómez',
   })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsNotEmpty()
   @MaxLength(150)
   apellidos: string;
 
   @ApiProperty({
-    description: 'Cédula del deportista (única, 10 dígitos)',
-    example: '1234567890',
+    description: 'Cédula del deportista (10 dígitos numéricos)',
+    example: '1104680135',
   })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsNotEmpty()
   @Matches(/^\d{10}$/, {
-    message: 'La cédula debe tener exactamente 10 dígitos',
+    message: 'La cédula debe tener exactamente 10 dígitos numéricos',
   })
   cedula: string;
 
   @ApiProperty({
-    description: 'Fecha de nacimiento del deportista (ISO 8601)',
+    description: 'Fecha de nacimiento (formato ISO 8601)',
     example: '2000-01-01',
   })
-  @Type(() => Date)
-  @IsDate()
-  fechaNacimiento: Date;
+  @IsDateString({}, { message: 'Debe ser una fecha válida (ISO 8601)' })
+  fechaNacimiento: string;
 
-  @ApiProperty({ description: 'Género', enum: Genero, example: 'FEMENINO' })
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.toUpperCase() : value,
-  )
-  @IsEnum(Genero, { message: 'Use uno de: MASCULINO, FEMENINO, OTRO' })
+  @ApiProperty({
+    description: 'Género del deportista',
+    enum: Genero,
+    example: 'FEMENINO',
+  })
+  @IsEnum(Genero, { message: 'Debe ser uno de: MASCULINO, FEMENINO, OTRO' })
   genero: Genero;
 
   @ApiProperty({
