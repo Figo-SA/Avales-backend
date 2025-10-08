@@ -3,7 +3,7 @@ import {
   ExecutionContext,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Request } from 'express'; // 👈 Asegúrate de importar desde express
+import { Request } from 'express';
 
 export const GetRawHeader = createParamDecorator(
   (data: number | undefined, ctx: ExecutionContext) => {

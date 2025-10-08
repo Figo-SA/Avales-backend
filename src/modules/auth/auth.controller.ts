@@ -26,6 +26,7 @@ import { ApiOkResponseData } from 'src/common/swagger/decorators/api-success-res
 import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error-responses.decorator';
 import { UsuarioConRoles } from './interfaces/usuario-roles';
 import { GetUser } from './decorators/get-user.decorator';
+import { Auth } from './decorators';
 
 @Controller('auth')
 export class AuthController {
@@ -80,7 +81,7 @@ export class AuthController {
   }
 
   @Get('check-status')
-  @ApiBearerAuth()
+  @Auth()
   @ApiOperation({ summary: 'Verifica el estado de autenticación actual' })
   @ApiOkResponse({
     description: 'Estado válido; devuelve el usuario o datos de sesión',
@@ -89,7 +90,7 @@ export class AuthController {
         { $ref: getSchemaPath(ApiResponseDto) },
         {
           properties: {
-            data: { $ref: getSchemaPath(LoginResponseDto) }, // ajusta si devuelves otra cosa
+            data: { $ref: getSchemaPath(LoginResponseDto) },
           },
         },
       ],
