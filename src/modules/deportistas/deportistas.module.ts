@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
-import { DeportistasService } from './deportistas.service';
+import { HttpModule } from '@nestjs/axios';
 import { DeportistasController } from './deportistas.controller';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { ValidationService } from 'src/common/services/validation/validation.service';
-import { AuthModule } from '../auth/auth.module';
+import { DeportistasService } from './deportistas.service';
 
 @Module({
+  imports: [HttpModule],
   controllers: [DeportistasController],
-  providers: [DeportistasService, PrismaService, ValidationService],
-  imports: [AuthModule],
+  providers: [DeportistasService],
 })
 export class DeportistasModule {}
