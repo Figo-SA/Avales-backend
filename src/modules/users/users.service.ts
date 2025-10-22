@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,10 +8,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/common/services/password/password.service';
-import { ValidationService } from 'src/common/services/validation/validation.service';
 import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
 import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
+import { ValidationService } from 'src/common/services/validation/validation.service';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -22,53 +22,12 @@ export class UsersService {
     private validationService: ValidationService,
   ) {}
 
-  private async validateUserData(
-    data: CreateUserDto | UpdateUserDto,
-    isUpdate = false,
-    excludeId?: number,
-  ): Promise<void> {
-    // Validar cédula
-    if (!isUpdate || data.cedula) {
-      await this.validationService.validateUniqueCedula(
-        data.cedula || '',
-        excludeId,
-      );
-    }
-
-    // Validar roles
-    if (!isUpdate || data.rolIds) {
-      const rolIds = data.rolIds || [];
-      if (rolIds.length === 0) {
-        throw new BadRequestException('Debe proporcionar al menos un rol');
-      }
-      await this.validationService.validateRoles(rolIds);
-    }
-
-    // Validar email si se provee
-    if (data.email) {
-      await this.validationService.validateUniqueEmail(data.email, excludeId);
-    }
-
-    // Validar categoría y disciplina si se proveen
-    if (data.categoriaId) {
-      await this.validationService.validateCategoria(data.categoriaId);
-    }
-
-    if (data.disciplinaId) {
-      await this.validationService.validateDisciplina(data.disciplinaId);
-    }
-  }
-
   async create(data: CreateUserDto): Promise<ResponseUserDto> {
-    // Validar los datos del usuario
     await this.validateUserData(data);
-
-    // Hash de la contraseña
     const hashedPassword = await this.passwordService.hashPassword(
       data.password,
     );
 
-    // Creación del usuario y asignación de roles en transacción
     return this.prisma.$transaction(async (tx) => {
       const usuario = await tx.usuario.create({
         data: {
@@ -91,39 +50,15 @@ export class UsersService {
         })),
       });
 
-      const usuarioConRoles = await tx.usuario.findUnique({
-        where: { id: usuario.id },
-        select: {
-          id: true,
-          email: true,
-          nombre: true,
-          apellido: true,
-          cedula: true,
-          categoriaId: true,
-          disciplinaId: true,
-          usuariosRol: {
-            select: {
-              rolId: true,
-            },
-          },
-        },
-      });
-
-      if (!usuarioConRoles) {
-        throw new NotFoundException(
-          'Usuario no encontrado después de la creación',
-        );
-      }
-
       return {
-        id: usuarioConRoles.id,
-        email: usuarioConRoles.email,
-        nombre: usuarioConRoles.nombre,
-        apellido: usuarioConRoles.apellido,
-        cedula: usuarioConRoles.cedula,
-        categoriaId: usuarioConRoles.categoriaId,
-        disciplinaId: usuarioConRoles.disciplinaId,
-        rolIds: usuarioConRoles.usuariosRol.map((ur) => ur.rolId),
+        id: usuario.id,
+        email: usuario.email,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        cedula: usuario.cedula,
+        categoriaId: usuario.categoriaId,
+        disciplinaId: usuario.disciplinaId,
+        rolIds: data.rolIds,
       };
     });
   }
@@ -280,11 +215,28 @@ export class UsersService {
         })),
       );
   }
+  async updateProfile(id: number, dto: UpdateUserProfileDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, rolIds, ...data } = dto;
+    const hashedPassword = password
+      ? await this.passwordService.hashPassword(password)
+      : undefined;
+
+    return this.prisma.usuario.update({
+      where: { id, deleted: false },
+      data: {
+        ...data,
+        password: hashedPassword,
+        updatedAt: new Date(),
+      },
+    });
+  }
 
   async update(
     id: number,
     updateUserDto: UpdateUserDto,
   ): Promise<ResponseUserDto> {
+    console.log('updateUserDto', updateUserDto);
     const user = await this.prisma.usuario.findUnique({
       where: { id, deleted: false },
       select: { id: true },
@@ -293,8 +245,6 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado o deshabilitado');
     }
-
-    await this.validateUserData(updateUserDto, true, id);
 
     const { categoriaId, disciplinaId, rolIds, password, ...data } =
       updateUserDto;
@@ -321,8 +271,8 @@ export class UsersService {
                 deleteMany: {},
                 create: rolIds.map((rolId) => ({
                   rolId,
-                  created_at: new Date(),
-                  updated_at: new Date(),
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
                 })),
               }
             : undefined,
@@ -368,24 +318,6 @@ export class UsersService {
     return { id };
   }
 
-  async remove(id: number): Promise<void> {
-    try {
-      await this.prisma.usuario.delete({ where: { id } });
-    } catch (e: any) {
-      if (e.code === 'P2025') {
-        // record not found
-        throw new NotFoundException(`Usuario ${id} no encontrado`);
-      }
-      if (e.code === 'P2003') {
-        // FK constraint
-        throw new ConflictException(
-          `No se puede eliminar: dependencias existentes`,
-        );
-      }
-      throw e;
-    }
-  }
-
   async restore(id: number): Promise<ResponseUserDto> {
     const user = await this.prisma.usuario.findUnique({
       where: { id, deleted: true },
@@ -404,5 +336,37 @@ export class UsersService {
     });
 
     return this.findOne(id);
+  }
+  private async validateUserData(
+    data: CreateUserDto | UpdateUserDto,
+    isUpdate = false,
+    excludeId?: number,
+  ): Promise<void> {
+    if (!isUpdate || data.cedula) {
+      await this.validationService.validateUniqueCedula(
+        data.cedula || '',
+        excludeId,
+      );
+    }
+
+    if (!isUpdate || data.rolIds) {
+      const rolIds = data.rolIds || [];
+      if (rolIds.length === 0) {
+        throw new BadRequestException('Debe proporcionar al menos un rol');
+      }
+      await this.validationService.validateRoles(rolIds);
+    }
+
+    if (data.email) {
+      await this.validationService.validateUniqueEmail(data.email, excludeId);
+    }
+
+    if (data.categoriaId) {
+      await this.validationService.validateCategoria(data.categoriaId);
+    }
+
+    if (data.disciplinaId) {
+      await this.validationService.validateDisciplina(data.disciplinaId);
+    }
   }
 }
