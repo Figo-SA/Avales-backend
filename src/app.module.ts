@@ -13,6 +13,7 @@ import { DeportistasModule } from './modules/deportistas/deportistas.module';
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 import { SeedingModule } from './modules/seeding/seeding.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -35,6 +36,8 @@ import { GlobalExceptionFilter } from './common/filters/global-exception/global-
     DeportistasModule,
 
     SeedingModule,
+
+    EventsModule,
   ],
   controllers: [],
   providers: [

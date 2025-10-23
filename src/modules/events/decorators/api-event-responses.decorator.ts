@@ -1,0 +1,221 @@
+import { applyDecorators } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
+import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
+import {
+  ApiCreatedResponseData,
+  ApiOkResponseData,
+  ApiOkResponsePaginated,
+} from 'src/common/swagger/decorators/api-success-responses.decorator';
+import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error-responses.decorator';
+import { EventResponseDto } from '../dto/event-response.dto';
+
+/**
+ * Decorador para el endpoint de creación de evento
+ */
+export function ApiCreateEvent() {
+  return applyDecorators(
+    ApiOperation({ summary: 'Crea un nuevo evento' }),
+    SuccessMessage('Evento creado correctamente'),
+    ApiCreatedResponseData(
+      EventResponseDto,
+      undefined,
+      'Evento creado correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([400, 401, 403, 409, 422, 500], {
+      409: {
+        type: 'https://api.tu-dominio.com/errors/conflict',
+        title: 'Conflict',
+        status: 409,
+        detail: 'El código del evento ya existe en el sistema.',
+        instance: '/api/v1/events',
+        apiVersion: 'v1',
+      },
+      422: {
+        type: 'https://api.tu-dominio.com/errors/unprocessable-entity',
+        title: 'Unprocessable Entity',
+        status: 422,
+        detail:
+          'Reglas de dominio no cumplidas. Posibles causas: disciplina inexistente, categoría inexistente, o fechas inválidas.',
+        instance: '/api/v1/events',
+        apiVersion: 'v1',
+      },
+    }),
+  );
+}
+
+/**
+ * Decorador para el endpoint de listado de eventos
+ */
+export function ApiGetEvents() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Obtiene la lista de todos los eventos',
+      description: `
+Retorna todos los eventos registrados en el sistema.
+
+**Nota:** Incluye información de disciplina y categoría relacionadas.
+      `.trim(),
+    }),
+    SuccessMessage('Eventos obtenidos correctamente'),
+    ApiOkResponseData(
+      EventResponseDto,
+      true,
+      'Eventos obtenidos correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([401, 403, 500]),
+  );
+}
+
+/**
+ * Decorador para el endpoint de listado paginado de eventos
+ */
+export function ApiGetEventsPaginated() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Obtiene la lista de eventos (paginado)',
+      description: `
+Retorna una lista paginada de eventos activos (no eliminados) del sistema.
+
+**Parámetros de paginación:**
+- page: Número de página (default: 1)
+- limit: Cantidad de registros por página (default: 10)
+
+**Nota:** Solo retorna eventos con deleted=false, ordenados por fecha de inicio descendente.
+      `.trim(),
+    }),
+    SuccessMessage('Eventos obtenidos correctamente (paginado)'),
+    ApiOkResponsePaginated(
+      EventResponseDto,
+      undefined,
+      'Eventos obtenidos correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([401, 403, 500]),
+  );
+}
+
+/**
+ * Decorador para el endpoint de obtener un evento por ID
+ */
+export function ApiGetEvent() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Obtiene los detalles de un evento por ID',
+      description: `
+Retorna los detalles completos de un evento específico incluyendo disciplina y categoría.
+      `.trim(),
+    }),
+    SuccessMessage('Evento obtenido correctamente'),
+    ApiOkResponseData(
+      EventResponseDto,
+      undefined,
+      'Evento obtenido correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([401, 403, 404, 500], {
+      404: {
+        type: 'https://api.tu-dominio.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'No existe un evento con ese id',
+        instance: '/api/v1/events/{id}',
+        apiVersion: 'v1',
+      },
+    }),
+  );
+}
+
+/**
+ * Decorador para el endpoint de actualización de evento
+ */
+export function ApiUpdateEvent() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Actualizar un evento',
+      description: `
+Actualiza los datos de un evento existente con las siguientes validaciones:
+
+**Validaciones de unicidad:**
+- El código debe ser único (exceptuando el evento actual)
+
+**Validaciones de integridad referencial:**
+- disciplinaId debe existir (si se proporciona)
+- categoriaId debe existir (si se proporciona)
+
+**Reglas de negocio:**
+- Solo se actualizan los campos proporcionados (actualización parcial)
+- Las fechas deben ser válidas (fechaFin >= fechaInicio)
+      `.trim(),
+    }),
+    SuccessMessage('Evento actualizado correctamente'),
+    ApiOkResponseData(
+      EventResponseDto,
+      undefined,
+      'Evento actualizado correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([400, 401, 403, 404, 409, 422, 500], {
+      404: {
+        type: 'https://api.tu-dominio.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'No existe un evento con ese id',
+        instance: '/api/v1/events/{id}',
+        apiVersion: 'v1',
+      },
+      409: {
+        type: 'https://api.tu-dominio.com/errors/conflict',
+        title: 'Conflict',
+        status: 409,
+        detail: 'El código del evento ya está en uso por otro evento.',
+        instance: '/api/v1/events/{id}',
+        apiVersion: 'v1',
+      },
+      422: {
+        type: 'https://api.tu-dominio.com/errors/unprocessable-entity',
+        title: 'Unprocessable Entity',
+        status: 422,
+        detail:
+          'Reglas de dominio no cumplidas. Posibles causas: disciplina inexistente o categoría inexistente.',
+        instance: '/api/v1/events/{id}',
+        apiVersion: 'v1',
+      },
+    }),
+  );
+}
+
+/**
+ * Decorador para el endpoint de eliminación de evento
+ */
+export function ApiDeleteEvent() {
+  return applyDecorators(
+    ApiOperation({ summary: 'Eliminar un evento de forma permanente' }),
+    SuccessMessage('Evento eliminado correctamente'),
+    ApiOkResponseData(
+      EventResponseDto,
+      undefined,
+      'Evento eliminado correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([401, 403, 404, 409, 500], {
+      404: {
+        type: 'https://api.tu-dominio.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'No existe un evento con ese id',
+        instance: '/api/v1/events/{id}',
+        apiVersion: 'v1',
+      },
+      409: {
+        type: 'https://api.tu-dominio.com/errors/conflict',
+        title: 'Conflict',
+        status: 409,
+        detail: 'No se puede eliminar: dependencias existentes',
+        instance: '/api/v1/events/{id}',
+        apiVersion: 'v1',
+      },
+    }),
+  );
+}
