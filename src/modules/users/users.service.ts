@@ -236,7 +236,6 @@ export class UsersService {
     id: number,
     updateUserDto: UpdateUserDto,
   ): Promise<ResponseUserDto> {
-    console.log('updateUserDto', updateUserDto);
     const user = await this.prisma.usuario.findUnique({
       where: { id, deleted: false },
       select: { id: true },

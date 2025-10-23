@@ -14,6 +14,7 @@ import { ResponseInterceptor } from './common/interceptors/response/response.int
 import { SeedingModule } from './modules/seeding/seeding.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
 import { EventsModule } from './modules/events/events.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -38,6 +39,8 @@ import { EventsModule } from './modules/events/events.module';
     SeedingModule,
 
     EventsModule,
+
+    MailModule,
   ],
   controllers: [],
   providers: [

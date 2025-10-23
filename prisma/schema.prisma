@@ -68,6 +68,8 @@ model Usuario {
   cedula             String                @unique
   categoriaId        Int
   disciplinaId       Int
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   deleted            Boolean               @default(false)
@@ -84,6 +86,7 @@ model Usuario {
 
   @@index([nombre])
   @@index([deleted])
+  @@index([resetPasswordToken])
 }
 
 model UsuarioRol {

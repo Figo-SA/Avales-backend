@@ -13,13 +13,33 @@ export class PrismaKnownErrorHandler extends BaseExceptionHandler {
     errorBase: string,
   ): ProblemShape {
     switch (e.code) {
-      case 'P2002':
+      case 'P2002': {
+        // Extraer el campo que causó el conflicto
+        const target = e.meta?.target as string[] | undefined;
+        const field = target?.[0] || 'campo';
+
+        // Mapeo de campos a mensajes amigables
+        const fieldMessages: Record<string, string> = {
+          email: 'El email ya está en uso por otro usuario.',
+          cedula: 'La cédula ya está registrada en el sistema.',
+          codigo: 'El código ya existe. Debe ser único.',
+        };
+
+        const detail =
+          fieldMessages[field] ||
+          `El valor para el campo '${field}' ya está en uso.`;
+
         return {
           status: 409,
           title: 'Conflict',
           type: buildType(errorBase, 'unique_constraint_violation'),
-          detail: 'El valor para un campo único ya está en uso.',
+          detail,
+          extensions: {
+            field,
+            errorCode: `DUPLICATE_${field.toUpperCase()}`,
+          },
         };
+      }
       case 'P2025':
         return {
           status: 404,
