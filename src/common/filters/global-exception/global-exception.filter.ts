@@ -7,6 +7,7 @@ import { PrismaUnknownErrorHandler } from 'src/common/handlers/prisma-unknown-er
 import { PrismaValidationErrorHandler } from 'src/common/handlers/prisma-validation-error.handler';
 import { HttpErrorHandler } from 'src/common/handlers/http-error.handler';
 import { DefaultErrorHandler } from 'src/common/handlers/default-error.handler';
+import { AuthExceptionHandler } from 'src/common/handlers/auth-exception.handler';
 import { BaseExceptionHandler } from 'src/common/handlers/base-exception.handler';
 import {
   normalizeRequestId,
@@ -21,6 +22,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     process.env.ERRORS_BASE_URL ?? 'https://api.tu-dominio.com/errors';
 
   private handlers: BaseExceptionHandler[] = [
+    new AuthExceptionHandler(), // ← Debe ir ANTES de HttpErrorHandler
     new PrismaKnownErrorHandler(),
     new PrismaUnknownErrorHandler(),
     new PrismaValidationErrorHandler(),

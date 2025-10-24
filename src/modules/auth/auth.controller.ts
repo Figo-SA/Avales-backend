@@ -2,14 +2,24 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiBody } from '@nestjs/swagger';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { UsuarioConRoles } from './interfaces/usuario-roles';
 import { GetUser } from './decorators/get-user.decorator';
-import { Auth, ApiLogin, ApiCheckStatus, ApiGetProfile } from './decorators';
+import {
+  Auth,
+  ApiLogin,
+  ApiCheckStatus,
+  ApiGetProfile,
+  ApiForgotPassword,
+  ApiResetPassword,
+  ApiChangePassword,
+} from './decorators';
 import { cleanUser } from 'src/common/herlpers/clean-user';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Usuario } from '@prisma/client';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -38,24 +48,24 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  @ApiOperation({
-    summary: 'Solicitar código de recuperación',
-    description:
-      'Envía un código de 6 dígitos al email del usuario para recuperar su contraseña',
-  })
-  @ApiBody({ type: ForgotPasswordDto })
+  @ApiForgotPassword()
   forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
 
   @Post('reset-password')
-  @ApiOperation({
-    summary: 'Restablecer contraseña con código',
-    description:
-      'Restablece la contraseña usando el código de 6 dígitos recibido por email',
-  })
-  @ApiBody({ type: ResetPasswordDto })
+  @ApiResetPassword()
   resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @Post('change-password')
+  @Auth()
+  @ApiChangePassword()
+  changePassword(
+    @GetUser() user: UsuarioConRoles,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(user.id, changePasswordDto);
   }
 }

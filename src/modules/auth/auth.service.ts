@@ -1,10 +1,5 @@
 // src/auth/auth.service.ts
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -18,6 +13,14 @@ import { cleanUser } from 'src/common/herlpers/clean-user';
 import { MailService } from 'src/modules/mail/mail.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import {
+  InvalidCredentialsException,
+  InvalidResetCodeException,
+  InvalidCurrentPasswordException,
+  EmailSendFailedException,
+  UserNotFoundException,
+} from './exceptions/auth.exceptions';
 
 export interface JwtPayload {
   usuarioId: number;
@@ -66,11 +69,11 @@ export class AuthService extends BaseService<'usuario'> {
     });
 
     if (!usuario) {
-      throw new UnauthorizedException('Email o contraseña incorrectos');
+      throw new InvalidCredentialsException();
     }
 
     if (!bcrypt.compareSync(password, usuario.password)) {
-      throw new UnauthorizedException('Email o contraseña incorrectos');
+      throw new InvalidCredentialsException();
     }
 
     return {
@@ -141,9 +144,7 @@ export class AuthService extends BaseService<'usuario'> {
           resetPasswordExpires: null,
         },
       });
-      throw new BadRequestException(
-        'Error al enviar el correo de recuperación',
-      );
+      throw new EmailSendFailedException();
     }
 
     return {
@@ -169,9 +170,7 @@ export class AuthService extends BaseService<'usuario'> {
     });
 
     if (!usuario) {
-      throw new BadRequestException(
-        'Código inválido o expirado. Por favor solicita un nuevo código',
-      );
+      throw new InvalidResetCodeException();
     }
 
     // Hash de la nueva contraseña
@@ -189,6 +188,35 @@ export class AuthService extends BaseService<'usuario'> {
 
     return {
       message: 'Contraseña actualizada exitosamente',
+    };
+  }
+
+  async changePassword(
+    usuarioId: number,
+    changePasswordDto: ChangePasswordDto,
+  ) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: usuarioId },
+    });
+
+    const { currentPassword, newPassword } = changePasswordDto;
+    if (!usuario) {
+      throw new UserNotFoundException();
+    }
+
+    if (!bcrypt.compareSync(currentPassword, usuario.password)) {
+      throw new InvalidCurrentPasswordException();
+    }
+
+    const hashedNewPassword = bcrypt.hashSync(newPassword, 10);
+
+    await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { password: hashedNewPassword },
+    });
+
+    return {
+      message: 'Contraseña cambiada exitosamente',
     };
   }
 }

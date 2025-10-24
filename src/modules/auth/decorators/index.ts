@@ -9,4 +9,7 @@ export {
   ApiLogin,
   ApiCheckStatus,
   ApiGetProfile,
+  ApiForgotPassword,
+  ApiResetPassword,
+  ApiChangePassword,
 } from './api-auth-responses.decorator';
