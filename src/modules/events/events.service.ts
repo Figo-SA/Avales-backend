@@ -4,6 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
 import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 import { EventResponseDto } from './dto/event-response.dto';
+import { Estado } from '@prisma/client';
 
 @Injectable()
 export class EventsService {
@@ -28,18 +29,39 @@ export class EventsService {
   async findAllPaginated(
     page: number,
     limit: number,
+    estado?: Estado,
+    search?: string,
   ): Promise<{
     items: EventResponseDto[];
     pagination: PaginationMetaDto;
   }> {
     const { skip, take } = PaginationHelper.buildPagination(page, limit);
 
+    // Construir el where dinámicamente
+    const where: any = { deleted: false };
+
+    if (estado) {
+      where.estado = estado;
+    }
+
+    if (search) {
+      where.OR = [
+        { nombre: { contains: search, mode: 'insensitive' } },
+        { codigo: { contains: search, mode: 'insensitive' } },
+        { lugar: { contains: search, mode: 'insensitive' } },
+        { ciudad: { contains: search, mode: 'insensitive' } },
+        { provincia: { contains: search, mode: 'insensitive' } },
+        { tipoEvento: { contains: search, mode: 'insensitive' } },
+        { alcance: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
     const [total, eventos] = await this.prisma.$transaction([
-      this.prisma.evento.count({ where: { deleted: false } }),
+      this.prisma.evento.count({ where }),
       this.prisma.evento.findMany({
         skip,
         take,
-        where: { deleted: false },
+        where,
         include: {
           disciplina: true,
           categoria: true,

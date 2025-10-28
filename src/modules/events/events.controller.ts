@@ -18,7 +18,7 @@ import {
   ApiGetEvent,
   ApiGetEventsPaginated,
 } from './decorators';
-import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import { EventFiltersDto } from './dto/event-filters.dto';
 
 @ApiTags('events')
 @Controller('events')
@@ -35,9 +35,9 @@ export class EventsController {
   @Get('paginated')
   @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
   @ApiGetEventsPaginated()
-  findAllPaginated(@Query() paginationQuery: PaginationQueryDto) {
-    const { page, limit } = paginationQuery;
-    return this.eventsService.findAllPaginated(page, limit);
+  findAllPaginated(@Query() filters: EventFiltersDto) {
+    const { page = 1, limit = 10, estado, search } = filters;
+    return this.eventsService.findAllPaginated(page, limit, estado, search);
   }
 
   @Get()

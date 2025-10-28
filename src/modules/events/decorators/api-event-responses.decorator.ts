@@ -80,7 +80,17 @@ Retorna una lista paginada de eventos activos (no eliminados) del sistema.
 
 **Parámetros de paginación:**
 - page: Número de página (default: 1)
-- limit: Cantidad de registros por página (default: 10)
+- limit: Cantidad de registros por página (default: 10, max: 100)
+
+**Filtros disponibles:**
+- estado: Filtrar por estado del evento (DISPONIBLE, SOLICITADO, RECHAZADO, ACEPTADO)
+- search: Buscar por nombre, código, lugar, ciudad, provincia, tipo de evento o alcance (búsqueda case-insensitive)
+
+**Ejemplos de búsqueda:**
+- ?search=Nacional → Busca "Nacional" en nombre, código, lugar, etc.
+- ?search=Quito → Busca eventos en Quito (ciudad o provincia)
+- ?search=EV-FUT → Busca por código de evento
+- ?estado=DISPONIBLE&search=Campeonato → Combina filtros
 
 **Nota:** Solo retorna eventos con deleted=false, ordenados por fecha de inicio descendente.
       `.trim(),

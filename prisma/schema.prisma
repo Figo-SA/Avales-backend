@@ -5,10 +5,10 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 enum Estado {
-  PENDIENTE
-  APROBADO
-  ACTIVO
+  DISPONIBLE
+  SOLICITADO
   RECHAZADO
+  ACEPTADO
 }
 
 enum Genero {
@@ -176,6 +176,7 @@ model Evento {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
   deleted                  Boolean  @default(false)
+  estado                   Estado   @default(DISPONIBLE)
   // Nota: las ediciones ahora se modelan como filas independientes en `Evento`.
   // Se eliminó `EventoEdicion` para usar solo la tabla `Evento`.
 
