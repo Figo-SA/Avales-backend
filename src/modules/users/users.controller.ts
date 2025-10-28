@@ -14,6 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePushTokenDto } from './dto/update-push-token.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
@@ -30,6 +31,7 @@ import {
   ApiGetUsersPaginated,
   ApiGetUsersDeleted,
   ApiHardDeleteUser,
+  ApiUpdatePushToken,
 } from './decorators/api-user-responses.decorator';
 import { GetUser } from '../auth/decorators';
 import { Usuario } from '@prisma/client';
@@ -107,5 +109,15 @@ export class UsersController {
   @ApiRestoreUser()
   restore(@Param('id', ParseIntPipe) id: number): Promise<ResponseUserDto> {
     return this.usersService.restore(id);
+  }
+
+  @Patch('me/push-token')
+  @ApiAuth()
+  @ApiUpdatePushToken()
+  updateMyPushToken(
+    @GetUser() user: Usuario,
+    @Body() dto: UpdatePushTokenDto,
+  ): Promise<ResponseUserDto> {
+    return this.usersService.updatePushToken(user.id, dto.pushToken);
   }
 }

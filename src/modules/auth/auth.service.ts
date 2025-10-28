@@ -52,7 +52,9 @@ export class AuthService extends BaseService<'usuario'> {
         disciplinaId: true,
         resetPasswordToken: true,
         resetPasswordExpires: true,
+        pushToken: true,
         createdAt: true,
+
         updatedAt: true,
         deleted: true,
         usuariosRol: {

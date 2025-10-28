@@ -121,6 +121,7 @@ export class UsersService {
           cedula: true,
           categoriaId: true,
           disciplinaId: true,
+          pushToken: true,
           usuariosRol: {
             select: { rolId: true },
           },
@@ -136,6 +137,7 @@ export class UsersService {
       cedula: user.cedula,
       categoriaId: user.categoriaId,
       disciplinaId: user.disciplinaId,
+      pushToken: user.pushToken ?? undefined,
       rolIds: user.usuariosRol.map((ur) => ur.rolId),
     }));
 
@@ -336,6 +338,27 @@ export class UsersService {
 
     return this.findOne(id);
   }
+
+  async updatePushToken(
+    userId: number,
+    pushToken: string,
+  ): Promise<ResponseUserDto> {
+    const user = await this.prisma.usuario.findUnique({
+      where: { id: userId, deleted: false },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    await this.prisma.usuario.update({
+      where: { id: userId },
+      data: { pushToken, updatedAt: new Date() },
+    });
+
+    return this.findOne(userId);
+  }
+
   private async validateUserData(
     data: CreateUserDto | UpdateUserDto,
     isUpdate = false,

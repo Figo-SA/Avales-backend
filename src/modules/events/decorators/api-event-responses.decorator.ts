@@ -291,3 +291,57 @@ export function ApiDeleteEvent() {
     }),
   );
 }
+
+/**
+ * Decorador para el endpoint de subir archivo a un evento
+ */
+export function ApiUploadEventFile() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Subir archivo a un evento existente',
+      description: `
+Sube o reemplaza el archivo de un evento ya creado.
+
+**Validaciones:**
+- El evento debe existir
+- Archivo requerido
+- Tamaño máximo: 5MB
+- Formatos permitidos: JPG, JPEG, PNG, PDF
+
+**Comportamiento:**
+- Si el evento ya tiene un archivo, se elimina el anterior y se sube el nuevo
+- La URL del archivo se actualiza automáticamente en el evento
+      `.trim(),
+    }),
+    ApiBody({
+      schema: {
+        type: 'object',
+        required: ['archivo'],
+        properties: {
+          archivo: {
+            type: 'string',
+            format: 'binary',
+            description: 'Archivo del evento (JPG, JPEG, PNG o PDF, max 5MB)',
+          },
+        },
+      },
+    }),
+    SuccessMessage('Archivo subido correctamente'),
+    ApiOkResponseData(
+      EventResponseDto,
+      undefined,
+      'Archivo subido correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([400, 401, 403, 404, 500], {
+      404: {
+        type: 'https://api.tu-dominio.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'No existe un evento con ese id',
+        instance: '/api/v1/events/{id}/upload-file',
+        apiVersion: 'v1',
+      },
+    }),
+  );
+}

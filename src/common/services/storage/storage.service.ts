@@ -25,12 +25,6 @@ export class StorageService {
     this.logger.log('Supabase client initialized');
   }
 
-  /**
-   * Sube un archivo a Supabase Storage
-   * @param file - Archivo a subir (Express.Multer.File)
-   * @param folder - Carpeta donde se guardará el archivo
-   * @returns URL pública del archivo subido
-   */
   async uploadFile(
     file: Express.Multer.File,
     folder: string = 'eventos',
@@ -38,7 +32,11 @@ export class StorageService {
     try {
       // Generar nombre único para el archivo
       const timestamp = Date.now();
-      const fileName = `${timestamp}-${file.originalname}`;
+      // Sanitizar el nombre del archivo: reemplazar espacios y caracteres especiales
+      const sanitizedFileName = file.originalname
+        .replace(/\s+/g, '-') // Reemplazar espacios con guiones
+        .replace(/[^\w\-\.]/g, ''); // Remover caracteres especiales excepto guiones, puntos y letras
+      const fileName = `${timestamp}-${sanitizedFileName}`;
       const filePath = `${folder}/${fileName}`;
 
       // Subir archivo a Supabase Storage

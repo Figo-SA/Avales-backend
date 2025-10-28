@@ -385,3 +385,33 @@ export function ApiUpdateProfile() {
     }),
   );
 }
+
+/**
+ * Decorador para el endpoint de actualización de push token
+ */
+export function ApiUpdatePushToken() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Actualizar push token del usuario actual',
+      description:
+        'Permite al usuario autenticado actualizar su token de Expo para recibir push notifications',
+    }),
+    SuccessMessage('Push token actualizado correctamente'),
+    ApiOkResponseData(
+      ResponseUserDto,
+      undefined,
+      'Push token actualizado correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([401, 404, 500], {
+      404: {
+        type: 'https://api.tu-dominio.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'Usuario no encontrado',
+        instance: '/api/v1/users/me/push-token',
+        apiVersion: 'v1',
+      },
+    }),
+  );
+}

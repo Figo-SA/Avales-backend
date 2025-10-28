@@ -15,6 +15,7 @@ import { SeedingModule } from './modules/seeding/seeding.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
 import { EventsModule } from './modules/events/events.module';
 import { MailModule } from './modules/mail/mail.module';
+import { PushNotificationsModule } from './modules/push-notifications/push-notifications.module';
 
 @Module({
   imports: [
@@ -41,6 +42,8 @@ import { MailModule } from './modules/mail/mail.module';
     EventsModule,
 
     MailModule,
+
+    PushNotificationsModule,
   ],
   controllers: [],
   providers: [

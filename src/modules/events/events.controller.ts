@@ -11,6 +11,7 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  Patch,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EventsService } from './events.service';
@@ -23,6 +24,7 @@ import {
   ApiGetEvents,
   ApiGetEvent,
   ApiGetEventsPaginated,
+  ApiUploadEventFile,
 } from './decorators';
 import { EventFiltersDto } from './dto/event-filters.dto';
 
@@ -72,5 +74,26 @@ export class EventsController {
   @ApiGetEvent()
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.eventsService.findOne(id);
+  }
+
+  @Patch(':id/upload-file')
+  @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
+  @ApiUploadEventFile()
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('archivo'))
+  uploadFile(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|pdf)$/ }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    archivo: Express.Multer.File,
+  ) {
+    return this.eventsService.uploadFile(id, archivo);
   }
 }

@@ -70,6 +70,7 @@ model Usuario {
   disciplinaId       Int
   resetPasswordToken String?
   resetPasswordExpires DateTime?
+  pushToken          String?               @db.VarChar(255)
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   deleted            Boolean               @default(false)

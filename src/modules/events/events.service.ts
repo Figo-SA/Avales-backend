@@ -6,12 +6,14 @@ import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 import { EventResponseDto } from './dto/event-response.dto';
 import { Estado } from '@prisma/client';
 import { StorageService } from 'src/common/services/storage/storage.service';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 @Injectable()
 export class EventsService {
   constructor(
     private prisma: PrismaService,
     private storageService: StorageService,
+    private pushNotificationsService: PushNotificationsService,
   ) {}
 
   async create(createEventDto: CreateEventDto, archivo?: Express.Multer.File) {
@@ -79,7 +81,7 @@ export class EventsService {
           categoria: true,
         },
         orderBy: {
-          fechaInicio: 'desc',
+          updatedAt: 'desc',
         },
       }),
     ]);
@@ -108,5 +110,83 @@ export class EventsService {
         categoria: true,
       },
     });
+  }
+
+  async uploadFile(id: number, archivo: Express.Multer.File) {
+    const evento = await this.prisma.evento.findUnique({
+      where: { id, deleted: false },
+    });
+
+    if (!evento) {
+      throw new Error(`Evento con id ${id} no encontrado`);
+    }
+
+    const archivoUrl = await this.storageService.replaceFile(
+      evento.archivo,
+      archivo,
+      'eventos',
+    );
+
+    const eventoActualizado = await this.prisma.evento.update({
+      where: { id },
+      data: {
+        archivo: archivoUrl,
+        estado: 'SOLICITADO',
+      },
+      include: {
+        disciplina: true,
+        categoria: true,
+      },
+    });
+
+    // Enviar notificación a usuarios con rol DTM
+    await this.notifyDTMUsers(eventoActualizado.nombre);
+
+    return eventoActualizado;
+  }
+
+  /**
+   * Envía notificaciones push a todos los usuarios con rol DTM
+   */
+  private async notifyDTMUsers(eventoNombre: string) {
+    try {
+      // Buscar usuarios con rol DTM o DTM_EIDE que tengan pushToken
+      const dtmUsers = await this.prisma.usuario.findMany({
+        where: {
+          deleted: false,
+          pushToken: { not: null },
+          usuariosRol: {
+            some: {
+              rol: {
+                nombre: { in: ['DTM', 'DTM_EIDE'] },
+              },
+            },
+          },
+        },
+        select: {
+          pushToken: true,
+        },
+      });
+
+      const tokens = dtmUsers
+        .map((user) => user.pushToken)
+        .filter((token): token is string => token !== null);
+
+      if (tokens.length > 0) {
+        await this.pushNotificationsService.sendNotification(
+          tokens,
+          'Nueva Solicitud de Aval',
+          `Se ha subido un archivo para el evento "${eventoNombre}". Por favor revisa la solicitud.`,
+          {
+            type: 'event-file-uploaded',
+            eventoNombre,
+            requiresReview: true,
+          },
+        );
+      }
+    } catch (error) {
+      // Log error pero no fallar el upload
+      console.error('Error al enviar notificaciones a DTM:', error);
+    }
   }
 }
