@@ -9,6 +9,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Genero } from '@prisma/client';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateEventDto {
   @ApiProperty({
@@ -74,6 +75,7 @@ export class CreateEventDto {
     description: 'ID de la disciplina',
     example: 1,
   })
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   disciplinaId: number;
@@ -82,6 +84,7 @@ export class CreateEventDto {
     description: 'ID de la categoría',
     example: 1,
   })
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   categoriaId: number;
@@ -147,6 +150,7 @@ export class CreateEventDto {
     example: 5,
     minimum: 0,
   })
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   numEntrenadoresHombres: number;
@@ -156,6 +160,7 @@ export class CreateEventDto {
     example: 3,
     minimum: 0,
   })
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   numEntrenadoresMujeres: number;
@@ -165,6 +170,7 @@ export class CreateEventDto {
     example: 20,
     minimum: 0,
   })
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   numAtletasHombres: number;
@@ -174,6 +180,7 @@ export class CreateEventDto {
     example: 15,
     minimum: 0,
   })
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   numAtletasMujeres: number;

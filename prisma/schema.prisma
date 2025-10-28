@@ -177,6 +177,7 @@ model Evento {
   updatedAt                DateTime @updatedAt
   deleted                  Boolean  @default(false)
   estado                   Estado   @default(DISPONIBLE)
+  archivo                  String?  @db.VarChar(355)
   // Nota: las ediciones ahora se modelan como filas independientes en `Evento`.
   // Se eliminó `EventoEdicion` para usar solo la tabla `Evento`.
 

@@ -5,16 +5,28 @@ import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
 import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 import { EventResponseDto } from './dto/event-response.dto';
 import { Estado } from '@prisma/client';
+import { StorageService } from 'src/common/services/storage/storage.service';
 
 @Injectable()
 export class EventsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storageService: StorageService,
+  ) {}
 
-  async create(createEventDto: CreateEventDto) {
+  async create(createEventDto: CreateEventDto, archivo?: Express.Multer.File) {
+    let archivoUrl: string | undefined;
+
+    // Si hay un archivo, subirlo a Supabase
+    if (archivo) {
+      archivoUrl = await this.storageService.uploadFile(archivo, 'eventos');
+    }
+
     const data = {
       ...createEventDto,
       fechaInicio: new Date(createEventDto.fechaInicio),
       fechaFin: new Date(createEventDto.fechaFin),
+      archivo: archivoUrl,
     };
 
     return this.prisma.evento.create({

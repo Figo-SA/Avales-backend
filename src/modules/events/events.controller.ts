@@ -6,10 +6,16 @@ import {
   Param,
   ParseIntPipe,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiConsumes } from '@nestjs/swagger';
 import { ApiAuth } from 'src/common/decorators/api-auth.decorator';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 import {
@@ -28,8 +34,22 @@ export class EventsController {
   @Post()
   @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
   @ApiCreateEvent()
-  create(@Body() createEventDto: CreateEventDto) {
-    return this.eventsService.create(createEventDto);
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('archivo'))
+  create(
+    @Body() createEventDto: CreateEventDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|pdf)$/ }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    archivo?: Express.Multer.File,
+  ) {
+    return this.eventsService.create(createEventDto, archivo);
   }
 
   @Get('paginated')

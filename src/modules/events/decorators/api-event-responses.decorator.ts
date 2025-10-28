@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiBody } from '@nestjs/swagger';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 import {
   ApiCreatedResponseData,
@@ -15,6 +15,68 @@ import { EventResponseDto } from '../dto/event-response.dto';
 export function ApiCreateEvent() {
   return applyDecorators(
     ApiOperation({ summary: 'Crea un nuevo evento' }),
+    ApiBody({
+      schema: {
+        type: 'object',
+        required: [
+          'codigo',
+          'tipoParticipacion',
+          'tipoEvento',
+          'nombre',
+          'lugar',
+          'genero',
+          'disciplinaId',
+          'categoriaId',
+          'provincia',
+          'ciudad',
+          'pais',
+          'alcance',
+          'fechaInicio',
+          'fechaFin',
+          'numEntrenadoresHombres',
+          'numEntrenadoresMujeres',
+          'numAtletasHombres',
+          'numAtletasMujeres',
+        ],
+        properties: {
+          codigo: { type: 'string', example: 'EV-TEST-001' },
+          tipoParticipacion: { type: 'string', example: 'PARTICIPACION' },
+          tipoEvento: { type: 'string', example: 'CAMPEONATO' },
+          nombre: { type: 'string', example: 'Evento de Prueba' },
+          lugar: { type: 'string', example: 'Estadio Central' },
+          genero: {
+            type: 'string',
+            enum: ['MASCULINO', 'FEMENINO', 'MASCULINO_FEMENINO'],
+            example: 'MASCULINO_FEMENINO',
+          },
+          disciplinaId: { type: 'integer', example: 1 },
+          categoriaId: { type: 'integer', example: 1 },
+          provincia: { type: 'string', example: 'Pichincha' },
+          ciudad: { type: 'string', example: 'Quito' },
+          pais: { type: 'string', example: 'Ecuador' },
+          alcance: { type: 'string', example: 'NACIONAL' },
+          fechaInicio: {
+            type: 'string',
+            format: 'date-time',
+            example: '2025-12-01T08:00:00Z',
+          },
+          fechaFin: {
+            type: 'string',
+            format: 'date-time',
+            example: '2025-12-05T18:00:00Z',
+          },
+          numEntrenadoresHombres: { type: 'integer', example: 2 },
+          numEntrenadoresMujeres: { type: 'integer', example: 1 },
+          numAtletasHombres: { type: 'integer', example: 10 },
+          numAtletasMujeres: { type: 'integer', example: 8 },
+          archivo: {
+            type: 'string',
+            format: 'binary',
+            description: 'Archivo del evento (JPG, JPEG, PNG o PDF, max 5MB)',
+          },
+        },
+      },
+    }),
     SuccessMessage('Evento creado correctamente'),
     ApiCreatedResponseData(
       EventResponseDto,
