@@ -7,6 +7,9 @@ import { EventResponseDto } from './dto/event-response.dto';
 import { Estado } from '@prisma/client';
 import { StorageService } from 'src/common/services/storage/storage.service';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
+import { PrinterService } from '../reports/printer/printer.service';
+import { solicitudAvalReport } from '../reports/reports/solicitud-aval.report';
+import { certificacionPdaReport } from '../reports/reports/certificacion-pda.report';
 
 @Injectable()
 export class EventsService {
@@ -14,12 +17,12 @@ export class EventsService {
     private prisma: PrismaService,
     private storageService: StorageService,
     private pushNotificationsService: PushNotificationsService,
+    private printerService: PrinterService,
   ) {}
 
   async create(createEventDto: CreateEventDto, archivo?: Express.Multer.File) {
     let archivoUrl: string | undefined;
 
-    // Si hay un archivo, subirlo a Supabase
     if (archivo) {
       archivoUrl = await this.storageService.uploadFile(archivo, 'eventos');
     }
@@ -51,7 +54,6 @@ export class EventsService {
   }> {
     const { skip, take } = PaginationHelper.buildPagination(page, limit);
 
-    // Construir el where dinámicamente
     const where: any = { deleted: false };
 
     if (estado) {
@@ -139,18 +141,13 @@ export class EventsService {
       },
     });
 
-    // Enviar notificación a usuarios con rol DTM
     await this.notifyDTMUsers(eventoActualizado.nombre);
 
     return eventoActualizado;
   }
 
-  /**
-   * Envía notificaciones push a todos los usuarios con rol DTM
-   */
   private async notifyDTMUsers(eventoNombre: string) {
     try {
-      // Buscar usuarios con rol DTM o DTM_EIDE que tengan pushToken
       const dtmUsers = await this.prisma.usuario.findMany({
         where: {
           deleted: false,
@@ -185,8 +182,94 @@ export class EventsService {
         );
       }
     } catch (error) {
-      // Log error pero no fallar el upload
       console.error('Error al enviar notificaciones a DTM:', error);
     }
+  }
+
+  async generateDtmPdf(id: number): Promise<Buffer> {
+    const evento = await this.prisma.evento.findUnique({
+      where: { id, deleted: false },
+      include: {
+        categoria: true,
+        disciplina: true,
+      },
+    });
+
+    if (!evento) {
+      throw new Error(`Evento con id ${id} no encontrado`);
+    }
+
+    const reportData = {
+      codigo: evento.codigo,
+      disciplina: evento.disciplina.nombre,
+      categoria: evento.categoria.nombre,
+      genero: evento.genero,
+      nombre: evento.nombre,
+      lugar: evento.lugar,
+      fechaInicio: evento.fechaInicio,
+      fechaFin: evento.fechaFin,
+      numAtletasHombres: evento.numAtletasHombres,
+      numAtletasMujeres: evento.numAtletasMujeres,
+      numEntrenadoresHombres: evento.numEntrenadoresHombres,
+      numEntrenadoresMujeres: evento.numEntrenadoresMujeres,
+    };
+
+    const docDefinition = solicitudAvalReport(reportData);
+    const pdfDoc = this.printerService.createPdf(docDefinition);
+
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+
+      pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+      pdfDoc.on('error', reject);
+
+      pdfDoc.end();
+    });
+  }
+
+  async generatePdaPdf(id: number): Promise<Buffer> {
+    const evento = await this.prisma.evento.findUnique({
+      where: { id, deleted: false },
+      include: {
+        categoria: true,
+        disciplina: true,
+      },
+    });
+
+    if (!evento) {
+      throw new Error(`Evento con id ${id} no encontrado`);
+    }
+
+    const reportData = {
+      codigo: evento.codigo,
+      disciplina: evento.disciplina.nombre,
+      categoria: evento.categoria.nombre,
+      genero: evento.genero,
+      nombre: evento.nombre,
+      lugar: evento.lugar,
+      ciudad: evento.ciudad,
+      provincia: evento.provincia,
+      pais: evento.pais,
+      fechaInicio: evento.fechaInicio,
+      fechaFin: evento.fechaFin,
+      numAtletasHombres: evento.numAtletasHombres,
+      numAtletasMujeres: evento.numAtletasMujeres,
+      numEntrenadoresHombres: evento.numEntrenadoresHombres,
+      numEntrenadoresMujeres: evento.numEntrenadoresMujeres,
+    };
+
+    const docDefinition = certificacionPdaReport(reportData);
+    const pdfDoc = this.printerService.createPdf(docDefinition);
+
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+
+      pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+      pdfDoc.on('error', reject);
+
+      pdfDoc.end();
+    });
   }
 }

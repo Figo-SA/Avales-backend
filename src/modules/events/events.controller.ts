@@ -12,7 +12,9 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   Patch,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -25,6 +27,7 @@ import {
   ApiGetEvent,
   ApiGetEventsPaginated,
   ApiUploadEventFile,
+  ApiDownloadSolicitudPdf,
 } from './decorators';
 import { EventFiltersDto } from './dto/event-filters.dto';
 
@@ -95,5 +98,44 @@ export class EventsController {
     archivo: Express.Multer.File,
   ) {
     return this.eventsService.uploadFile(id, archivo);
+  }
+
+  @Get(':id/dtm-pdf')
+  @ApiAuth(
+    ValidRoles.dtm,
+    ValidRoles.dtm_eide,
+    ValidRoles.admin,
+    ValidRoles.superAdmin,
+  )
+  @ApiDownloadSolicitudPdf()
+  async downloadDtmPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.eventsService.generateDtmPdf(id);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=aval-dtm-${id}.pdf`,
+    );
+    res.send(pdfBuffer);
+  }
+
+  @Get(':id/pda-pdf')
+  @ApiAuth(ValidRoles.pda, ValidRoles.admin, ValidRoles.superAdmin)
+  @ApiDownloadSolicitudPdf()
+  async downloadPdaPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.eventsService.generatePdaPdf(id);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=certificacion-pda-${id}.pdf`,
+    );
+    res.send(pdfBuffer);
   }
 }

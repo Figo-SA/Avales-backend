@@ -1,5 +1,10 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOperation, ApiBody } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiBody,
+  ApiProduces,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 import {
   ApiCreatedResponseData,
@@ -340,6 +345,57 @@ Sube o reemplaza el archivo de un evento ya creado.
         status: 404,
         detail: 'No existe un evento con ese id',
         instance: '/api/v1/events/{id}/upload-file',
+        apiVersion: 'v1',
+      },
+    }),
+  );
+}
+
+/**
+ * Decorador para el endpoint de descarga del PDF de solicitud de aval
+ */
+export function ApiDownloadSolicitudPdf() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Generar y descargar PDF de solicitud de aval',
+      description: `
+Genera dinámicamente un PDF con el formato oficial de "Aval Técnico de Participación Competitiva" 
+para el evento especificado.
+
+**El PDF incluye:**
+- Datos informativos del evento (deporte, categorías, género, lugar, fechas)
+- Objetivos de participación
+- Criterios de selección
+- Conformación de la delegación (oficiales y atletas)
+- Requerimientos (transporte, alimentación, hospedaje)
+- Observaciones
+
+**Comportamiento:**
+- Se genera on-demand (siempre con información actualizada)
+- Se descarga como archivo adjunto
+- Nombre del archivo: solicitud-aval-{id}.pdf
+      `.trim(),
+    }),
+    ApiProduces('application/pdf'),
+    ApiResponse({
+      status: 200,
+      description: 'PDF generado y descargado correctamente',
+      content: {
+        'application/pdf': {
+          schema: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    }),
+    ApiErrorResponsesConfig([401, 403, 404, 500], {
+      404: {
+        type: 'https://api.tu-dominio.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'No existe un evento con ese id',
+        instance: '/api/v1/events/{id}/solicitud-pdf',
         apiVersion: 'v1',
       },
     }),
