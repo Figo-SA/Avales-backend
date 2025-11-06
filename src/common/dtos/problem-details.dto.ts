@@ -25,4 +25,11 @@ export class ProblemDetailsDto {
 
   @ApiProperty({ example: 123, required: false, description: 'Duración en ms' })
   durationMs?: number;
+
+  @ApiProperty({
+    required: false,
+    description: 'Información adicional sobre el error',
+    example: { field: 'email', errorCode: 'DUPLICATE_EMAIL' },
+  })
+  extensions?: Record<string, any>;
 }

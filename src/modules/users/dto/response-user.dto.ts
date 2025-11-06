@@ -55,6 +55,13 @@ export class ResponseUserDto {
   rolIds: number[];
 
   @ApiProperty({
+    description: 'Token de Expo para push notifications',
+    example: 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]',
+    required: false,
+  })
+  pushToken?: string;
+
+  @ApiProperty({
     description: 'Fecha de creación del usuario en el sistema',
     example: '2025-09-25T14:48:00.000Z',
     required: false,

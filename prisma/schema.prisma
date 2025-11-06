@@ -5,10 +5,10 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 enum Estado {
-  PENDIENTE
-  APROBADO
-  ACTIVO
+  DISPONIBLE
+  SOLICITADO
   RECHAZADO
+  ACEPTADO
 }
 
 enum Genero {
@@ -68,6 +68,9 @@ model Usuario {
   cedula             String                @unique
   categoriaId        Int
   disciplinaId       Int
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
+  pushToken          String?               @db.VarChar(255)
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   deleted            Boolean               @default(false)
@@ -84,6 +87,7 @@ model Usuario {
 
   @@index([nombre])
   @@index([deleted])
+  @@index([resetPasswordToken])
 }
 
 model UsuarioRol {
@@ -173,6 +177,8 @@ model Evento {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
   deleted                  Boolean  @default(false)
+  estado                   Estado   @default(DISPONIBLE)
+  archivo                  String?  @db.VarChar(355)
   // Nota: las ediciones ahora se modelan como filas independientes en `Evento`.
   // Se eliminó `EventoEdicion` para usar solo la tabla `Evento`.
 
