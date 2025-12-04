@@ -38,9 +38,13 @@ export class SeedingService {
       // Crear datos base
       await this.createCategorias();
       await this.createDisciplinas();
+      await this.createRubros();
       await this.createRoles();
       await this.createUsuarios();
+      // Crear entrenadores independientes (tabla separada)
+      await this.createEntrenadores();
       await this.createEventos();
+      await this.createDeportistas();
 
       this.logger.log('✅ Seeding completado exitosamente');
       return {
@@ -55,14 +59,52 @@ export class SeedingService {
   }
 
   private async clearDatabase() {
+    // Delete child/relationship tables first to avoid FK constraint violations
     await this.prisma.$transaction([
-      this.prisma.usuarioRol.deleteMany(),
+      // Deportista-related
+      this.prisma.deportistaAval.deleteMany(),
+
+      // PDA / Financiero / DTM related items & history
+      this.prisma.pdaItem.deleteMany(),
+      this.prisma.financieroItem.deleteMany(),
+      this.prisma.historialPda.deleteMany(),
+      this.prisma.historialDtm.deleteMany(),
+      this.prisma.historialFinanciero.deleteMany(),
+
+      // Main PDA/DTM/Financiero records
+      this.prisma.pda.deleteMany(),
+      this.prisma.dtm.deleteMany(),
+      this.prisma.financiero.deleteMany(),
+
+      // Aval (technical) related
+      this.prisma.avalRequerimiento.deleteMany(),
+      this.prisma.avalCriterio.deleteMany(),
+      this.prisma.avalObjetivo.deleteMany(),
+      this.prisma.historialAvalTecnico.deleteMany(),
+      this.prisma.avalTecnico.deleteMany(),
+
+      // Colección and its relations
+      this.prisma.coleccionEntrenador.deleteMany(),
+      // Entrenadores (delete colecciones first above)
+      this.prisma.entrenador.deleteMany(),
+      this.prisma.historialColeccion.deleteMany(),
       this.prisma.coleccionAval.deleteMany(),
+
+      // Deportistas (now safe to delete)
+      this.prisma.deportista.deleteMany(),
+
+      // Eventos
       this.prisma.evento.deleteMany(),
+
+      // Usuarios & roles
+      this.prisma.usuarioRol.deleteMany(),
       this.prisma.usuario.deleteMany(),
       this.prisma.rol.deleteMany(),
+
+      // Catalogs
       this.prisma.categoria.deleteMany(),
       this.prisma.disciplina.deleteMany(),
+      this.prisma.rubro.deleteMany(),
     ]);
     this.logger.log('🧹 Base de datos limpiada');
   }
@@ -76,9 +118,15 @@ export class SeedingService {
     await this.prisma
       .$executeRaw`ALTER SEQUENCE "Disciplina_id_seq" RESTART WITH 1;`;
     await this.prisma
+      .$executeRaw`ALTER SEQUENCE "Rubro_id_seq" RESTART WITH 1;`;
+    await this.prisma
+      .$executeRaw`ALTER SEQUENCE "Deportista_id_seq" RESTART WITH 1;`;
+    await this.prisma
       .$executeRaw`ALTER SEQUENCE "Evento_id_seq" RESTART WITH 1;`;
     await this.prisma
       .$executeRaw`ALTER SEQUENCE "ColeccionAval_id_seq" RESTART WITH 1;`;
+    await this.prisma
+      .$executeRaw`ALTER SEQUENCE "Entrenador_id_seq" RESTART WITH 1;`;
     this.logger.log('🔄 Secuencias de autoincremento reseteadas');
   }
 
@@ -110,6 +158,52 @@ export class SeedingService {
       skipDuplicates: true,
     });
     this.logger.log('🏅 Disciplinas creadas');
+  }
+
+  private async createRubros() {
+    const rubros = [
+      {
+        nombre: 'Hospedaje',
+        descripcion: 'Gastos de alojamiento',
+        createdAt: new Date(),
+      },
+      {
+        nombre: 'Alimentación',
+        descripcion: 'Gastos de alimentación',
+        createdAt: new Date(),
+      },
+      {
+        nombre: 'Transporte',
+        descripcion: 'Gastos de transporte terrestre',
+        createdAt: new Date(),
+      },
+      {
+        nombre: 'Transporte Aéreo',
+        descripcion: 'Gastos de pasajes aéreos',
+        createdAt: new Date(),
+      },
+      {
+        nombre: 'Inscripción',
+        descripcion: 'Costos de inscripción al evento',
+        createdAt: new Date(),
+      },
+      {
+        nombre: 'Implementación Deportiva',
+        descripcion: 'Equipamiento y materiales',
+        createdAt: new Date(),
+      },
+      {
+        nombre: 'Viáticos',
+        descripcion: 'Gastos varios del personal',
+        createdAt: new Date(),
+      },
+    ];
+
+    await this.prisma.rubro.createMany({
+      data: rubros,
+      skipDuplicates: true,
+    });
+    this.logger.log('💰 Rubros presupuestarios creados');
   }
 
   private async createRoles() {
@@ -310,6 +404,175 @@ export class SeedingService {
     this.logger.log(
       `👤 ${createdUsuarios.length} usuarios creados con roles asignados`,
     );
+    return createdUsuarios;
+  }
+
+  private async createEntrenadores() {
+    const entrenadores = [
+      {
+        nombres: 'Andrés',
+        apellidos: 'Mendoza',
+        cedula: '2000000001',
+        fechaNacimiento: new Date('1980-01-01'),
+        categoriaId: 1,
+        disciplinaId: 1,
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'María',
+        apellidos: 'Suárez',
+        cedula: '2000000002',
+        fechaNacimiento: new Date('1985-06-15'),
+        categoriaId: 1,
+        disciplinaId: 2,
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Carlos',
+        apellidos: 'Gómez',
+        cedula: '2000000003',
+        fechaNacimiento: new Date('1975-03-22'),
+        categoriaId: 2,
+        disciplinaId: 1,
+        afiliacion: false,
+        genero: Genero.MASCULINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Lucía',
+        apellidos: 'Fernández',
+        cedula: '2000000004',
+        fechaNacimiento: new Date('1990-11-11'),
+        categoriaId: 2,
+        disciplinaId: 3,
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Jorge',
+        apellidos: 'López',
+        cedula: '2000000005',
+        fechaNacimiento: new Date('1982-07-07'),
+        categoriaId: 3,
+        disciplinaId: 2,
+        afiliacion: false,
+        genero: Genero.MASCULINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Ana',
+        apellidos: 'Ramos',
+        cedula: '2000000006',
+        fechaNacimiento: new Date('1992-02-20'),
+        categoriaId: 3,
+        disciplinaId: 4,
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Fernando',
+        apellidos: 'Castillo',
+        cedula: '2000000007',
+        fechaNacimiento: new Date('1978-09-30'),
+        categoriaId: 1,
+        disciplinaId: 2,
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Paula',
+        apellidos: 'Vargas',
+        cedula: '2000000008',
+        fechaNacimiento: new Date('1988-12-05'),
+        categoriaId: 2,
+        disciplinaId: 1,
+        afiliacion: false,
+        genero: Genero.FEMENINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Diego',
+        apellidos: 'Rivera',
+        cedula: '2000000009',
+        fechaNacimiento: new Date('1984-04-18'),
+        categoriaId: 4,
+        disciplinaId: 3,
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Sofía',
+        apellidos: 'Morales',
+        cedula: '2000000010',
+        fechaNacimiento: new Date('1995-08-23'),
+        categoriaId: 4,
+        disciplinaId: 4,
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Miguel',
+        apellidos: 'Pineda',
+        cedula: '2000000011',
+        fechaNacimiento: new Date('1972-05-02'),
+        categoriaId: 1,
+        disciplinaId: 1,
+        afiliacion: false,
+        genero: Genero.MASCULINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+      {
+        nombres: 'Valeria',
+        apellidos: 'Quintero',
+        cedula: '2000000012',
+        fechaNacimiento: new Date('1987-10-10'),
+        categoriaId: 2,
+        disciplinaId: 2,
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: false,
+      },
+    ];
+
+    await this.prisma.entrenador.createMany({
+      data: entrenadores,
+      skipDuplicates: true,
+    });
+
+    this.logger.log(`🏋️ ${entrenadores.length} entrenadores seed creados`);
   }
 
   private async createEventos() {
@@ -686,31 +949,391 @@ export class SeedingService {
     );
   }
 
+  private async createDeportistas() {
+    const deportistas = [
+      // Fútbol
+      {
+        nombres: 'Carlos Andrés',
+        apellidos: 'González Pérez',
+        cedula: '1750123456',
+        fechaNacimiento: new Date('2005-03-15'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Fútbol',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Diego Alejandro',
+        apellidos: 'Morales Gómez',
+        cedula: '1750123460',
+        fechaNacimiento: new Date('2003-09-30'),
+        categoriaNombre: 'Adulto',
+        disciplinaNombre: 'Fútbol',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Fernando José',
+        apellidos: 'Sánchez Rojas',
+        cedula: '1750123464',
+        fechaNacimiento: new Date('2004-06-18'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Fútbol',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Mateo Santiago',
+        apellidos: 'Jiménez Vega',
+        cedula: '1750123465',
+        fechaNacimiento: new Date('2006-01-22'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Fútbol',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Sebastián',
+        apellidos: 'Ruiz Álvarez',
+        cedula: '1750123466',
+        fechaNacimiento: new Date('2005-09-14'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Fútbol',
+        afiliacion: false,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Gabriel Antonio',
+        apellidos: 'Medina Cruz',
+        cedula: '1750123467',
+        fechaNacimiento: new Date('2007-03-08'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Fútbol',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+
+      // Natación
+      {
+        nombres: 'María Fernanda',
+        apellidos: 'López Martínez',
+        cedula: '1750123457',
+        fechaNacimiento: new Date('2006-07-22'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Natación',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Sofía Isabel',
+        apellidos: 'Hernández Ruiz',
+        cedula: '1750123461',
+        fechaNacimiento: new Date('2008-05-18'),
+        categoriaNombre: 'Infantil',
+        disciplinaNombre: 'Natación',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Camila Andrea',
+        apellidos: 'Palacios Moreno',
+        cedula: '1750123468',
+        fechaNacimiento: new Date('2009-02-25'),
+        categoriaNombre: 'Infantil',
+        disciplinaNombre: 'Natación',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Isabella',
+        apellidos: 'Torres Delgado',
+        cedula: '1750123469',
+        fechaNacimiento: new Date('2005-11-30'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Natación',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Lucía Valentina',
+        apellidos: 'Reyes Castillo',
+        cedula: '1750123470',
+        fechaNacimiento: new Date('2007-08-12'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Natación',
+        afiliacion: false,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Emilia',
+        apellidos: 'Guerrero Lozano',
+        cedula: '1750123471',
+        fechaNacimiento: new Date('2004-04-17'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Natación',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+
+      // Atletismo
+      {
+        nombres: 'Juan Pablo',
+        apellidos: 'Rodríguez Silva',
+        cedula: '1750123458',
+        fechaNacimiento: new Date('2004-11-08'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Atletismo',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Andrés Felipe',
+        apellidos: 'Castro Vargas',
+        cedula: '1750123462',
+        fechaNacimiento: new Date('2005-12-25'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Atletismo',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Nicolás',
+        apellidos: 'Mendoza Paredes',
+        cedula: '1750123472',
+        fechaNacimiento: new Date('2003-07-05'),
+        categoriaNombre: 'Adulto',
+        disciplinaNombre: 'Atletismo',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Miguel Ángel',
+        apellidos: 'Flores Guzmán',
+        cedula: '1750123473',
+        fechaNacimiento: new Date('2006-10-20'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Atletismo',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Daniela',
+        apellidos: 'Navarro Ríos',
+        cedula: '1750123474',
+        fechaNacimiento: new Date('2005-05-14'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Atletismo',
+        afiliacion: false,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Paula Andrea',
+        apellidos: 'Vargas Soto',
+        cedula: '1750123475',
+        fechaNacimiento: new Date('2004-12-03'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Atletismo',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+
+      // Ciclismo
+      {
+        nombres: 'Ana Gabriela',
+        apellidos: 'Ramírez Torres',
+        cedula: '1750123459',
+        fechaNacimiento: new Date('2007-02-14'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Ciclismo',
+        afiliacion: false,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Valentina',
+        apellidos: 'Ortiz Mendoza',
+        cedula: '1750123463',
+        fechaNacimiento: new Date('2006-04-10'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Ciclismo',
+        afiliacion: false,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Ricardo Javier',
+        apellidos: 'Peña Salazar',
+        cedula: '1750123476',
+        fechaNacimiento: new Date('2003-01-28'),
+        categoriaNombre: 'Adulto',
+        disciplinaNombre: 'Ciclismo',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Alejandro',
+        apellidos: 'Cabrera Núñez',
+        cedula: '1750123477',
+        fechaNacimiento: new Date('2005-08-19'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Ciclismo',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Martina',
+        apellidos: 'Acosta Villalba',
+        cedula: '1750123478',
+        fechaNacimiento: new Date('2006-06-07'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Ciclismo',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Santiago',
+        apellidos: 'Bravo Chávez',
+        cedula: '1750123479',
+        fechaNacimiento: new Date('2004-03-26'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Ciclismo',
+        afiliacion: false,
+        genero: Genero.MASCULINO,
+      },
+
+      // Más deportistas de diferentes categorías
+      {
+        nombres: 'Roberto Carlos',
+        apellidos: 'Zamora León',
+        cedula: '1750123480',
+        fechaNacimiento: new Date('1998-05-12'),
+        categoriaNombre: 'Adulto',
+        disciplinaNombre: 'Fútbol',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Elena Patricia',
+        apellidos: 'Mora Espinoza',
+        cedula: '1750123481',
+        fechaNacimiento: new Date('1999-09-08'),
+        categoriaNombre: 'Adulto',
+        disciplinaNombre: 'Natación',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Joaquín',
+        apellidos: 'Sandoval Romero',
+        cedula: '1750123482',
+        fechaNacimiento: new Date('2008-11-15'),
+        categoriaNombre: 'Infantil',
+        disciplinaNombre: 'Atletismo',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Renata',
+        apellidos: 'Suárez Córdova',
+        cedula: '1750123483',
+        fechaNacimiento: new Date('2009-07-21'),
+        categoriaNombre: 'Infantil',
+        disciplinaNombre: 'Ciclismo',
+        afiliacion: false,
+        genero: Genero.FEMENINO,
+      },
+      {
+        nombres: 'Bruno',
+        apellidos: 'Herrera Ramos',
+        cedula: '1750123484',
+        fechaNacimiento: new Date('1997-02-18'),
+        categoriaNombre: 'Adulto',
+        disciplinaNombre: 'Ciclismo',
+        afiliacion: true,
+        genero: Genero.MASCULINO,
+      },
+      {
+        nombres: 'Valeria',
+        apellidos: 'Ibarra Molina',
+        cedula: '1750123485',
+        fechaNacimiento: new Date('2007-12-09'),
+        categoriaNombre: 'Juvenil',
+        disciplinaNombre: 'Fútbol',
+        afiliacion: true,
+        genero: Genero.FEMENINO,
+      },
+    ];
+
+    for (const deportista of deportistas) {
+      const disciplina = await this.prisma.disciplina.findFirst({
+        where: { nombre: deportista.disciplinaNombre },
+      });
+
+      const categoria = await this.prisma.categoria.findFirst({
+        where: { nombre: deportista.categoriaNombre },
+      });
+
+      if (!disciplina || !categoria) {
+        this.logger.warn(
+          `⚠️ No se encontró disciplina o categoría para deportista: ${deportista.nombres} ${deportista.apellidos}`,
+        );
+        continue;
+      }
+
+      await this.prisma.deportista.create({
+        data: {
+          nombres: deportista.nombres,
+          apellidos: deportista.apellidos,
+          cedula: deportista.cedula,
+          fechaNacimiento: deportista.fechaNacimiento,
+          categoriaId: categoria.id,
+          disciplinaId: disciplina.id,
+          afiliacion: deportista.afiliacion,
+          genero: deportista.genero,
+        },
+      });
+    }
+
+    this.logger.log(`👟 ${deportistas.length} deportistas creados`);
+  }
+
   async getDatabaseStatus() {
     try {
-      const [categorias, disciplinas, roles, usuarios, usuarioRoles, eventos] =
-        await Promise.all([
-          this.prisma.categoria.count(),
-          this.prisma.disciplina.count(),
-          this.prisma.rol.count(),
-          this.prisma.usuario.count(),
-          this.prisma.usuarioRol.count(),
-          this.prisma.evento.count(),
-        ]);
-
-      return {
+      const [
         categorias,
         disciplinas,
+        rubros,
         roles,
         usuarios,
         usuarioRoles,
         eventos,
+        deportistas,
+      ] = await Promise.all([
+        this.prisma.categoria.count(),
+        this.prisma.disciplina.count(),
+        this.prisma.rubro.count(),
+        this.prisma.rol.count(),
+        this.prisma.usuario.count(),
+        this.prisma.usuarioRol.count(),
+        this.prisma.evento.count(),
+        this.prisma.deportista.count(),
+      ]);
+
+      return {
+        categorias,
+        disciplinas,
+        rubros,
+        roles,
+        usuarios,
+        usuarioRoles,
+        eventos,
+        deportistas,
         isEmpty:
           categorias === 0 &&
           disciplinas === 0 &&
+          rubros === 0 &&
           roles === 0 &&
           usuarios === 0 &&
-          eventos === 0,
+          eventos === 0 &&
+          deportistas === 0,
       };
     } catch (error) {
       this.logger.error('Error obteniendo estado de la base de datos:', error);

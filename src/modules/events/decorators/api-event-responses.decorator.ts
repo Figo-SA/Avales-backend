@@ -303,47 +303,119 @@ export function ApiDeleteEvent() {
 export function ApiUploadEventFile() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Subir archivo a un evento existente',
+      summary: 'Enviar solicitud de aval completa con archivo',
       description: `
-Sube o reemplaza el archivo de un evento ya creado.
+Envía una solicitud de aval técnico completa para un evento.
+
+**El backend calcula automáticamente:**
+- descripcion: Se genera desde el nombre del evento
+- fechaHoraSalida / fechaHoraRetorno: Desde evento.fechaInicio / evento.fechaFin
+- transporteSalida / transporteRetorno: "Aéreo" si alcance es INTERNACIONAL, "Terrestre" en otros casos
+- oficiales: Conteo de entrenadores enviados
+- atletas: Conteo de deportistas enviados
 
 **Validaciones:**
-- El evento debe existir
-- Archivo requerido
-- Tamaño máximo: 5MB
-- Formatos permitidos: JPG, JPEG, PNG, PDF
+- El evento debe existir y estar en estado DISPONIBLE
+- Archivo requerido (max 5MB, formatos: JPG, JPEG, PNG, PDF)
+- solicitudData debe ser un JSON válido con la estructura de CreateSolicitudAvalDto
 
 **Comportamiento:**
-- Si el evento ya tiene un archivo, se elimina el anterior y se sube el nuevo
-- La URL del archivo se actualiza automáticamente en el evento
+- Crea ColeccionAval, AvalTecnico y todas las relaciones en una transacción
+- Cambia el estado del evento a SOLICITADO
+- Notifica a usuarios DTM/PDA
       `.trim(),
     }),
     ApiBody({
       schema: {
         type: 'object',
-        required: ['archivo'],
+        required: ['archivo', 'solicitudData'],
         properties: {
           archivo: {
             type: 'string',
             format: 'binary',
-            description: 'Archivo del evento (JPG, JPEG, PNG o PDF, max 5MB)',
+            description: 'Archivo del aval (JPG, JPEG, PNG o PDF, max 5MB)',
+          },
+          solicitudData: {
+            type: 'string',
+            description: 'JSON string con los datos de la solicitud',
+            example: JSON.stringify({
+              observaciones: 'Se requiere hospedaje para todo el equipo',
+              objetivos: [
+                {
+                  orden: 1,
+                  descripcion: 'Obtener experiencia en competencias nacionales',
+                },
+                {
+                  orden: 2,
+                  descripcion: 'Clasificar para la fase final',
+                },
+              ],
+              criterios: [
+                {
+                  orden: 1,
+                  descripcion: 'Rendimiento en entrenamientos',
+                },
+                {
+                  orden: 2,
+                  descripcion: 'Disciplina y compromiso',
+                },
+              ],
+              rubros: [
+                {
+                  rubroId: 1,
+                  cantidadDias: '5',
+                  valorUnitario: 35.0,
+                },
+                {
+                  rubroId: 2,
+                  cantidadDias: '5',
+                  valorUnitario: 15.0,
+                },
+              ],
+              deportistas: [
+                {
+                  deportistaId: 1,
+                  rol: 'ATLETA',
+                },
+                {
+                  deportistaId: 2,
+                  rol: 'ATLETA',
+                },
+              ],
+              entrenadores: [
+                {
+                  usuarioId: 7,
+                  rol: 'ENTRENADOR PRINCIPAL',
+                  esPrincipal: true,
+                },
+              ],
+            }),
           },
         },
       },
     }),
-    SuccessMessage('Archivo subido correctamente'),
+    SuccessMessage('Solicitud de aval enviada correctamente'),
     ApiOkResponseData(
       EventResponseDto,
       undefined,
-      'Archivo subido correctamente',
+      'Solicitud de aval enviada correctamente',
       true,
     ),
-    ApiErrorResponsesConfig([400, 401, 403, 404, 500], {
+    ApiErrorResponsesConfig([400, 401, 403, 404, 422, 500], {
       404: {
         type: 'https://api.tu-dominio.com/errors/not-found',
         title: 'Not Found',
         status: 404,
         detail: 'No existe un evento con ese id',
+        instance: '/api/v1/events/{id}/upload-file',
+        apiVersion: 'v1',
+      },
+      422: {
+        type: 'https://api.tu-dominio.com/errors/unprocessable-entity',
+        title: 'Unprocessable Entity',
+        status: 422,
+        detail:
+          'El evento no está en estado DISPONIBLE o hay errores de validación en solicitudData',
         instance: '/api/v1/events/{id}/upload-file',
         apiVersion: 'v1',
       },

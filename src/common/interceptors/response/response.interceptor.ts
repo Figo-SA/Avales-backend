@@ -62,17 +62,46 @@ export class ResponseInterceptor<T>
         const durationNs = Number(process.hrtime.bigint() - startedAt);
         const durationMs = Math.round(durationNs / 1_000_000);
 
-        const responseBody: ApiResponseDto<T> = {
-          status: 'success',
-          message,
-          meta: {
-            requestId, // <- SIEMPRE string
-            timestamp: new Date().toISOString(),
-            apiVersion: this.apiVersion,
-            durationMs,
-          },
-          data: payload ?? (null as unknown as T),
-        };
+        // If the handler returned a paginated shape { items, pagination },
+        // unwrap items into `data` and merge pagination fields into meta.
+        let responseBody: ApiResponseDto<T>;
+
+        if (
+          payload &&
+          typeof payload === 'object' &&
+          'items' in (payload as any) &&
+          'pagination' in (payload as any)
+        ) {
+          const p = (payload as any).pagination ?? {};
+          const items = (payload as any).items;
+
+          responseBody = {
+            status: 'success',
+            message,
+            meta: {
+              requestId,
+              timestamp: new Date().toISOString(),
+              apiVersion: this.apiVersion,
+              durationMs,
+              ...(p.page !== undefined ? { page: p.page } : {}),
+              ...(p.limit !== undefined ? { limit: p.limit } : {}),
+              ...(p.total !== undefined ? { total: p.total } : {}),
+            } as any,
+            data: items,
+          } as ApiResponseDto<T>;
+        } else {
+          responseBody = {
+            status: 'success',
+            message,
+            meta: {
+              requestId, // <- SIEMPRE string
+              timestamp: new Date().toISOString(),
+              apiVersion: this.apiVersion,
+              durationMs,
+            },
+            data: payload ?? (null as unknown as T),
+          };
+        }
 
         return responseBody;
       }),
