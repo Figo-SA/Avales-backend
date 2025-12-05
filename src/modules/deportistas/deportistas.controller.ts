@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DeportistasService } from './deportistas.service';
 import { ParticipantResponseDto } from './dto/participant-response.dto';
@@ -53,13 +60,13 @@ export class DeportistasController {
     return this.deportistasService.findOne(id);
   }
 
-  @Get('external/:id')
-  @SuccessMessage('Deportista obtenido desde API externa')
-  @ApiOperation({ summary: 'Obtener deportista desde API externa' })
-  @ApiParam({ name: 'id', description: 'ID del deportista en API externa' })
-  @ApiOkResponseData(DeportistaResponseDto)
-  @ApiErrorResponsesConfig([400, 404, 500])
-  getDeportistaFromExternal(@Param('id', ParseIntPipe) id: number) {
-    return this.deportistasService.getDeportistaFromExternalApi(id);
-  }
+  // @Get('external/:id')
+  // @SuccessMessage('Deportista obtenido desde API externa')
+  // @ApiOperation({ summary: 'Obtener deportista desde API externa' })
+  // @ApiParam({ name: 'id', description: 'ID del deportista en API externa' })
+  // @ApiOkResponseData(DeportistaResponseDto)
+  // @ApiErrorResponsesConfig([400, 404, 500])
+  // getDeportistaFromExternal(@Param('id', ParseIntPipe) id: number) {
+  //   return this.deportistasService.getDeportistaFromExternalApi(id);
+  // }
 }
