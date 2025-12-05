@@ -60,6 +60,18 @@ export class DeportistaResponseDto {
 
   @ApiProperty({
     example: '2024-01-01T00:00:00.000Z',
+    description: 'Fecha de inicio de afiliación',
+  })
+  afiliacionInicio: Date;
+
+  @ApiProperty({
+    example: '2025-01-01T00:00:00.000Z',
+    description: 'Fecha de fin de afiliación',
+  })
+  afiliacionFin: Date;
+
+  @ApiProperty({
+    example: '2024-01-01T00:00:00.000Z',
     description: 'Fecha de creación',
   })
   createdAt: Date;

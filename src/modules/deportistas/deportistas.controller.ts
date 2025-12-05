@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
@@ -13,6 +14,7 @@ import { ApiOkResponseData } from 'src/common/swagger/decorators/api-success-res
 import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error-responses.decorator';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 import { DeportistaResponseDto } from './dto/deportista-response.dto';
+import { CreateDeportistaDto } from './dto/create-deportista.dto';
 
 @ApiTags('Deportistas')
 @Controller('deportistas')
@@ -58,6 +60,15 @@ export class DeportistasController {
   @ApiErrorResponsesConfig([400, 404, 500])
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.deportistasService.findOne(id);
+  }
+
+  @Post()
+  @SuccessMessage('Deportista creado exitosamente')
+  @ApiOperation({ summary: 'Crear deportista' })
+  @ApiOkResponseData(DeportistaResponseDto)
+  @ApiErrorResponsesConfig([400, 500])
+  create(@Body() dto: CreateDeportistaDto) {
+    return this.deportistasService.create(dto);
   }
 
   // @Get('external/:id')

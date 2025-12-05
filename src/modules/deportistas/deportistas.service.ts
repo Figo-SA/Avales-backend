@@ -2,6 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateDeportistaDto } from './dto/create-deportista.dto';
 
 @Injectable()
 export class DeportistasService {
@@ -145,6 +146,25 @@ export class DeportistasService {
     }
 
     return this.mapDeportistaToParticipant(deportista);
+  }
+
+  async create(createDeportistaDto: CreateDeportistaDto) {
+    const now = new Date();
+    const fin = new Date(now);
+    fin.setFullYear(fin.getFullYear() + 1); // afiliación por 1 año
+
+    return this.prisma.deportista.create({
+      data: {
+        ...createDeportistaDto,
+        fechaNacimiento: new Date(createDeportistaDto.fechaNacimiento),
+
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
+
+        deleted: false,
+      },
+    });
   }
 
   /**
