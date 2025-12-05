@@ -43,46 +43,6 @@ export class DeportistasController {
     return this.deportistasService.findByCedula(cedula);
   }
 
-  // ---------------------- ENTRENADORES (local + externa) ----------------------
-  @Get('entrenadores')
-  @SuccessMessage('Entrenadores obtenidos')
-  @ApiOperation({ summary: 'Listar entrenadores registrados (BD local)' })
-  @ApiOkResponseData(ParticipantResponseDto, true)
-  @ApiErrorResponsesConfig([500])
-  findAllEntrenadores() {
-    return this.deportistasService.findAllEntrenadores();
-  }
-
-  @Get('entrenadores/buscar/cedula')
-  @SuccessMessage('Entrenador encontrado')
-  @ApiOperation({ summary: 'Buscar entrenador por cédula (BD local)' })
-  @ApiQuery({ name: 'cedula', description: 'Cédula del entrenador' })
-  @ApiOkResponseData(ParticipantResponseDto)
-  @ApiErrorResponsesConfig([400, 404, 500])
-  findEntrenadorByCedula(@Query('cedula') cedula: string) {
-    return this.deportistasService.findEntrenadorByCedula(cedula);
-  }
-
-  @Get('entrenadores/:id')
-  @SuccessMessage('Entrenador obtenido')
-  @ApiOperation({ summary: 'Obtener entrenador por ID (BD local)' })
-  @ApiParam({ name: 'id', description: 'ID del entrenador' })
-  @ApiOkResponseData(ParticipantResponseDto)
-  @ApiErrorResponsesConfig([400, 404, 500])
-  findEntrenador(@Param('id', ParseIntPipe) id: number) {
-    return this.deportistasService.findEntrenador(id);
-  }
-
-  @Get('entrenadores/external/:id')
-  @SuccessMessage('Entrenador obtenido desde API externa')
-  @ApiOperation({ summary: 'Obtener entrenador desde API externa' })
-  @ApiParam({ name: 'id', description: 'ID del entrenador en API externa' })
-  @ApiOkResponseData(ParticipantResponseDto)
-  @ApiErrorResponsesConfig([400, 404, 500])
-  getEntrenadorFromExternal(@Param('id', ParseIntPipe) id: number) {
-    return this.deportistasService.getEntrenadorFromExternalApi(id);
-  }
-
   @Get(':id')
   @SuccessMessage('Deportista obtenido exitosamente')
   @ApiOperation({ summary: 'Obtener deportista por ID' })
