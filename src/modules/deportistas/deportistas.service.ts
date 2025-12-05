@@ -3,6 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
+import { UpdateDeportistaDto } from './dto/update-deportista.dto';
 
 @Injectable()
 export class DeportistasService {
@@ -165,6 +166,64 @@ export class DeportistasService {
         deleted: false,
       },
     });
+  }
+
+  async update(id: number, updateDeportistaDto: UpdateDeportistaDto) {
+    // 1) Obtener el deportista actual
+    const current = await this.prisma.deportista.findUnique({
+      where: { id },
+    });
+
+    if (!current) {
+      throw new HttpException('Deportista no encontrado', HttpStatus.NOT_FOUND);
+    }
+
+    // 2) Preparar el objeto data a partir del DTO
+    const data: any = { ...updateDeportistaDto };
+
+    // Si viene fechaNacimiento en el DTO, convertirla a Date
+    if (updateDeportistaDto.fechaNacimiento) {
+      data.fechaNacimiento = new Date(updateDeportistaDto.fechaNacimiento);
+    }
+
+    // 3) Lógica de afiliación
+    if (typeof updateDeportistaDto.afiliacion === 'boolean') {
+      const nuevaAfiliacion = updateDeportistaDto.afiliacion;
+      const afiliacionActual = current.afiliacion;
+
+      // Solo si cambia el estado, ajustamos fechas
+      if (nuevaAfiliacion !== afiliacionActual) {
+        const now = new Date();
+
+        if (nuevaAfiliacion) {
+          // Se afilia (o se reactiva): inicio ahora, fin en 1 año
+          const fin = new Date(now);
+          fin.setFullYear(fin.getFullYear() + 1);
+
+          data.afiliacion = true;
+          data.afiliacionInicio = now;
+          data.afiliacionFin = fin;
+        } else {
+          // Se desafilía: marcamos fin ahora
+          data.afiliacion = false;
+          data.afiliacionFin = now;
+          // opcional: podrías dejar afiliacionInicio como está (histórico)
+        }
+      }
+      // Si el valor es el mismo, no tocamos fechas
+    }
+
+    // 4) Ejecutar update
+    const deportista = await this.prisma.deportista.update({
+      where: { id },
+      data,
+      include: {
+        categoria: true,
+        disciplina: true,
+      },
+    });
+
+    return deportista; // o tu mapper si usas uno
   }
 
   /**

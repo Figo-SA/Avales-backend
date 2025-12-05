@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 import { DeportistaResponseDto } from './dto/deportista-response.dto';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
+import { UpdateDeportistaDto } from './dto/update-deportista.dto';
 
 @ApiTags('Deportistas')
 @Controller('deportistas')
@@ -69,6 +71,19 @@ export class DeportistasController {
   @ApiErrorResponsesConfig([400, 500])
   create(@Body() dto: CreateDeportistaDto) {
     return this.deportistasService.create(dto);
+  }
+
+  @Patch(':id')
+  @SuccessMessage('Deportista actualizado exitosamente')
+  @ApiOperation({ summary: 'Actualizar deportista' })
+  @ApiParam({ name: 'id', description: 'ID del deportista' })
+  @ApiOkResponseData(DeportistaResponseDto)
+  @ApiErrorResponsesConfig([400, 404, 500])
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateDeportistaDto,
+  ) {
+    return this.deportistasService.update(id, dto);
   }
 
   // @Get('external/:id')
