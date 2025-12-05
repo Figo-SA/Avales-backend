@@ -1351,6 +1351,8 @@ export class SeedingService {
           categoriaId: categoria.id,
           disciplinaId: disciplina.id,
           afiliacion: deportista.afiliacion,
+          afiliacionInicio: deportista.afiliacionInicio,
+          afiliacionFin: deportista.afiliacionFin,
           genero: deportista.genero,
         },
       });
