@@ -3,6 +3,7 @@
 /node_modules
 /build
 settings.json
+/.vscode
 
 
 # Logs
