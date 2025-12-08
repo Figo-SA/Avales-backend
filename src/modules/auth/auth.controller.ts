@@ -43,6 +43,7 @@ export class AuthController {
       httpOnly: true,
       secure: true, // Poner true en producción con HTTPS
       sameSite: 'none', // 'none' + secure si front y back están en dominios distintos
+      partitioned: true,     // 🔥 evita el warning de Chrome
       maxAge: 60 * 60 * 1000, // 1 hora en milisegundos
       path: '/', // cookie visible en toda la app
     });
