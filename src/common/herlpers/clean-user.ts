@@ -15,7 +15,8 @@ export function cleanUser(user: UsuarioConRoles) {
     nombre: user.nombre,
     apellido: user.apellido,
     cedula: user.cedula,
-
-    roles: user.usuariosRol.map((ur) => ur.rol.nombre),
+    roles: Array.isArray(user.usuariosRol)
+      ? user.usuariosRol.map((ur) => ur.rol.nombre)
+      : [],
   };
 }

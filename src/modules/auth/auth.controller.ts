@@ -1,5 +1,6 @@
 // src/auth/auth.controller.ts
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ApiTags, ApiBody } from '@nestjs/swagger';
@@ -29,8 +30,25 @@ export class AuthController {
   @Post('login')
   @ApiBody({ type: LoginDto })
   @ApiLogin()
-  login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResponseDto> {
+    // 1) Login normal (como antes)
+    const loginResponse = await this.authService.login(loginDto);
+
+    // 2) Extra: poner el token en cookie HttpOnly para la web
+    //    (la app móvil simplemente ignora la cookie)
+    res.cookie('token', loginResponse.token, {
+      httpOnly: true,
+      secure: false, // Poner true en producción con HTTPS
+      sameSite: 'lax', // 'none' + secure si front y back están en dominios distintos
+      maxAge: 60 * 60 * 1000, // 1 hora en milisegundos
+      path: '/', // cookie visible en toda la app
+    });
+
+    // 3) Devuelves lo mismo que antes (token incluido) para la app móvil
+    return loginResponse;
   }
 
   @Get('check-status')
