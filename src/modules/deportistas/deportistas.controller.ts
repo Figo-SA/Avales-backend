@@ -1,4 +1,13 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DeportistasService } from './deportistas.service';
 import { ParticipantResponseDto } from './dto/participant-response.dto';
@@ -6,6 +15,8 @@ import { ApiOkResponseData } from 'src/common/swagger/decorators/api-success-res
 import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error-responses.decorator';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
 import { DeportistaResponseDto } from './dto/deportista-response.dto';
+import { CreateDeportistaDto } from './dto/create-deportista.dto';
+import { UpdateDeportistaDto } from './dto/update-deportista.dto';
 
 @ApiTags('Deportistas')
 @Controller('deportistas')
@@ -43,46 +54,6 @@ export class DeportistasController {
     return this.deportistasService.findByCedula(cedula);
   }
 
-  // ---------------------- ENTRENADORES (local + externa) ----------------------
-  @Get('entrenadores')
-  @SuccessMessage('Entrenadores obtenidos')
-  @ApiOperation({ summary: 'Listar entrenadores registrados (BD local)' })
-  @ApiOkResponseData(ParticipantResponseDto, true)
-  @ApiErrorResponsesConfig([500])
-  findAllEntrenadores() {
-    return this.deportistasService.findAllEntrenadores();
-  }
-
-  @Get('entrenadores/buscar/cedula')
-  @SuccessMessage('Entrenador encontrado')
-  @ApiOperation({ summary: 'Buscar entrenador por cédula (BD local)' })
-  @ApiQuery({ name: 'cedula', description: 'Cédula del entrenador' })
-  @ApiOkResponseData(ParticipantResponseDto)
-  @ApiErrorResponsesConfig([400, 404, 500])
-  findEntrenadorByCedula(@Query('cedula') cedula: string) {
-    return this.deportistasService.findEntrenadorByCedula(cedula);
-  }
-
-  @Get('entrenadores/:id')
-  @SuccessMessage('Entrenador obtenido')
-  @ApiOperation({ summary: 'Obtener entrenador por ID (BD local)' })
-  @ApiParam({ name: 'id', description: 'ID del entrenador' })
-  @ApiOkResponseData(ParticipantResponseDto)
-  @ApiErrorResponsesConfig([400, 404, 500])
-  findEntrenador(@Param('id', ParseIntPipe) id: number) {
-    return this.deportistasService.findEntrenador(id);
-  }
-
-  @Get('entrenadores/external/:id')
-  @SuccessMessage('Entrenador obtenido desde API externa')
-  @ApiOperation({ summary: 'Obtener entrenador desde API externa' })
-  @ApiParam({ name: 'id', description: 'ID del entrenador en API externa' })
-  @ApiOkResponseData(ParticipantResponseDto)
-  @ApiErrorResponsesConfig([400, 404, 500])
-  getEntrenadorFromExternal(@Param('id', ParseIntPipe) id: number) {
-    return this.deportistasService.getEntrenadorFromExternalApi(id);
-  }
-
   @Get(':id')
   @SuccessMessage('Deportista obtenido exitosamente')
   @ApiOperation({ summary: 'Obtener deportista por ID' })
@@ -93,13 +64,35 @@ export class DeportistasController {
     return this.deportistasService.findOne(id);
   }
 
-  @Get('external/:id')
-  @SuccessMessage('Deportista obtenido desde API externa')
-  @ApiOperation({ summary: 'Obtener deportista desde API externa' })
-  @ApiParam({ name: 'id', description: 'ID del deportista en API externa' })
+  @Post()
+  @SuccessMessage('Deportista creado exitosamente')
+  @ApiOperation({ summary: 'Crear deportista' })
+  @ApiOkResponseData(DeportistaResponseDto)
+  @ApiErrorResponsesConfig([400, 500])
+  create(@Body() dto: CreateDeportistaDto) {
+    return this.deportistasService.create(dto);
+  }
+
+  @Patch(':id')
+  @SuccessMessage('Deportista actualizado exitosamente')
+  @ApiOperation({ summary: 'Actualizar deportista' })
+  @ApiParam({ name: 'id', description: 'ID del deportista' })
   @ApiOkResponseData(DeportistaResponseDto)
   @ApiErrorResponsesConfig([400, 404, 500])
-  getDeportistaFromExternal(@Param('id', ParseIntPipe) id: number) {
-    return this.deportistasService.getDeportistaFromExternalApi(id);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateDeportistaDto,
+  ) {
+    return this.deportistasService.update(id, dto);
   }
+
+  // @Get('external/:id')
+  // @SuccessMessage('Deportista obtenido desde API externa')
+  // @ApiOperation({ summary: 'Obtener deportista desde API externa' })
+  // @ApiParam({ name: 'id', description: 'ID del deportista en API externa' })
+  // @ApiOkResponseData(DeportistaResponseDto)
+  // @ApiErrorResponsesConfig([400, 404, 500])
+  // getDeportistaFromExternal(@Param('id', ParseIntPipe) id: number) {
+  //   return this.deportistasService.getDeportistaFromExternalApi(id);
+  // }
 }

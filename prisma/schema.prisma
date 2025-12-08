@@ -137,7 +137,11 @@ model Deportista {
   fechaNacimiento DateTime
   categoriaId     Int
   disciplinaId    Int
+
   afiliacion      Boolean  @default(false)
+  afiliacionInicio DateTime?
+  afiliacionFin    DateTime?
+
   genero          Genero
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -151,7 +155,10 @@ model Deportista {
   @@index([categoriaId])
   @@index([deleted])
   @@index([cedula])
+  @@index([afiliacion])
+  @@index([afiliacionFin])
 }
+
 
 // ------------------
 // ENTRENADORES (tabla separada)

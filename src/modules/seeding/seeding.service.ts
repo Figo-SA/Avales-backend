@@ -950,6 +950,10 @@ export class SeedingService {
   }
 
   private async createDeportistas() {
+    const now = new Date();
+    const fin = new Date();
+    fin.setFullYear(fin.getFullYear() + 1);
+
     const deportistas = [
       // Fútbol
       {
@@ -959,8 +963,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2005-03-15'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Fútbol',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Diego Alejandro',
@@ -969,8 +975,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2003-09-30'),
         categoriaNombre: 'Adulto',
         disciplinaNombre: 'Fútbol',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Fernando José',
@@ -979,8 +987,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2004-06-18'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Fútbol',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Mateo Santiago',
@@ -989,8 +999,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2006-01-22'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Fútbol',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Sebastián',
@@ -999,8 +1011,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2005-09-14'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Fútbol',
-        afiliacion: false,
         genero: Genero.MASCULINO,
+        afiliacion: false,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Gabriel Antonio',
@@ -1009,8 +1023,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2007-03-08'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Fútbol',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
 
       // Natación
@@ -1021,8 +1037,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2006-07-22'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Natación',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Sofía Isabel',
@@ -1031,8 +1049,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2008-05-18'),
         categoriaNombre: 'Infantil',
         disciplinaNombre: 'Natación',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Camila Andrea',
@@ -1041,8 +1061,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2009-02-25'),
         categoriaNombre: 'Infantil',
         disciplinaNombre: 'Natación',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Isabella',
@@ -1051,8 +1073,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2005-11-30'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Natación',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Lucía Valentina',
@@ -1061,8 +1085,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2007-08-12'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Natación',
-        afiliacion: false,
         genero: Genero.FEMENINO,
+        afiliacion: false,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Emilia',
@@ -1071,8 +1097,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2004-04-17'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Natación',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
 
       // Atletismo
@@ -1083,8 +1111,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2004-11-08'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Atletismo',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Andrés Felipe',
@@ -1093,8 +1123,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2005-12-25'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Atletismo',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Nicolás',
@@ -1103,8 +1135,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2003-07-05'),
         categoriaNombre: 'Adulto',
         disciplinaNombre: 'Atletismo',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Miguel Ángel',
@@ -1113,8 +1147,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2006-10-20'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Atletismo',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Daniela',
@@ -1123,8 +1159,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2005-05-14'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Atletismo',
-        afiliacion: false,
         genero: Genero.FEMENINO,
+        afiliacion: false,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Paula Andrea',
@@ -1133,8 +1171,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2004-12-03'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Atletismo',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
 
       // Ciclismo
@@ -1145,8 +1185,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2007-02-14'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Ciclismo',
-        afiliacion: false,
         genero: Genero.FEMENINO,
+        afiliacion: false,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Valentina',
@@ -1155,8 +1197,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2006-04-10'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Ciclismo',
-        afiliacion: false,
         genero: Genero.FEMENINO,
+        afiliacion: false,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Ricardo Javier',
@@ -1165,8 +1209,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2003-01-28'),
         categoriaNombre: 'Adulto',
         disciplinaNombre: 'Ciclismo',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Alejandro',
@@ -1175,8 +1221,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2005-08-19'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Ciclismo',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Martina',
@@ -1185,8 +1233,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2006-06-07'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Ciclismo',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Santiago',
@@ -1195,11 +1245,13 @@ export class SeedingService {
         fechaNacimiento: new Date('2004-03-26'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Ciclismo',
-        afiliacion: false,
         genero: Genero.MASCULINO,
+        afiliacion: false,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
 
-      // Más deportistas de diferentes categorías
+      // Más deportistas
       {
         nombres: 'Roberto Carlos',
         apellidos: 'Zamora León',
@@ -1207,8 +1259,10 @@ export class SeedingService {
         fechaNacimiento: new Date('1998-05-12'),
         categoriaNombre: 'Adulto',
         disciplinaNombre: 'Fútbol',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Elena Patricia',
@@ -1217,8 +1271,10 @@ export class SeedingService {
         fechaNacimiento: new Date('1999-09-08'),
         categoriaNombre: 'Adulto',
         disciplinaNombre: 'Natación',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Joaquín',
@@ -1227,8 +1283,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2008-11-15'),
         categoriaNombre: 'Infantil',
         disciplinaNombre: 'Atletismo',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Renata',
@@ -1237,8 +1295,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2009-07-21'),
         categoriaNombre: 'Infantil',
         disciplinaNombre: 'Ciclismo',
-        afiliacion: false,
         genero: Genero.FEMENINO,
+        afiliacion: false,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Bruno',
@@ -1247,8 +1307,10 @@ export class SeedingService {
         fechaNacimiento: new Date('1997-02-18'),
         categoriaNombre: 'Adulto',
         disciplinaNombre: 'Ciclismo',
-        afiliacion: true,
         genero: Genero.MASCULINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
       {
         nombres: 'Valeria',
@@ -1257,8 +1319,10 @@ export class SeedingService {
         fechaNacimiento: new Date('2007-12-09'),
         categoriaNombre: 'Juvenil',
         disciplinaNombre: 'Fútbol',
-        afiliacion: true,
         genero: Genero.FEMENINO,
+        afiliacion: true,
+        afiliacionInicio: now,
+        afiliacionFin: fin,
       },
     ];
 
@@ -1287,6 +1351,8 @@ export class SeedingService {
           categoriaId: categoria.id,
           disciplinaId: disciplina.id,
           afiliacion: deportista.afiliacion,
+          afiliacionInicio: deportista.afiliacionInicio,
+          afiliacionFin: deportista.afiliacionFin,
           genero: deportista.genero,
         },
       });

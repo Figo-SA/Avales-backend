@@ -3,15 +3,28 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import { GlobalExceptionFilter } from './common/filters/global-exception/global-exception.filter';
-import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
+  app.use(cookieParser());
+
   // Configuración de CORS
-  app.enableCors();
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Permitir requests sin origen (Swagger, Postman, cURL)
+      if (!origin) return callback(null, true);
+
+      // Aquí podrías validar orígenes permitidos
+      // Por ahora aceptas todos en desarrollo:
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
