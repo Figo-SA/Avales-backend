@@ -51,6 +51,18 @@ export class AuthController {
     return loginResponse;
   }
 
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: false, // Poner true en producción con HTTPS
+      sameSite: 'lax', // 'none' + secure si front y back están en dominios distintos
+      path: '/', // cookie visible en toda la app
+    });
+
+    return { status: 'success', message: 'Sesión cerrada', data: null };
+  }
+
   @Get('check-status')
   @Auth()
   @ApiCheckStatus()

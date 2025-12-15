@@ -173,3 +173,16 @@ export function ApiChangePassword() {
     }),
   );
 }
+
+/**
+ * Decorador para el endpoint de logout
+ */
+export function ApiLogout() {
+  return applyDecorators(
+    ApiOperation({ summary: 'Cierra la sesión del usuario' }),
+    SuccessMessage('Sesión cerrada exitosamente'),
+    ApiBody({ description: 'No body required' }),
+    ApiOkResponse({ description: 'Sesión cerrada exitosamente' }),
+    ApiErrorResponsesConfig([500]),
+  );
+}
