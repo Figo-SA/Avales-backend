@@ -16,6 +16,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception/global-
 import { EventsModule } from './modules/events/events.module';
 import { MailModule } from './modules/mail/mail.module';
 import { PushNotificationsModule } from './modules/push-notifications/push-notifications.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
 
 @Module({
   imports: [
@@ -44,6 +45,8 @@ import { PushNotificationsModule } from './modules/push-notifications/push-notif
     MailModule,
 
     PushNotificationsModule,
+
+    CatalogModule,
   ],
   controllers: [],
   providers: [
