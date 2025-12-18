@@ -41,8 +41,9 @@ export class AuthController {
     //    (la app móvil simplemente ignora la cookie)
     res.cookie('token', loginResponse.token, {
       httpOnly: true,
-      secure: false, // Poner true en producción con HTTPS
-      sameSite: 'lax', // 'none' + secure si front y back están en dominios distintos
+      secure: true, // Poner true en producción con HTTPS
+      sameSite: 'none', // 'none' + secure si front y back están en dominios distintos
+      partitioned: true,     // 🔥 evita el warning de Chrome
       maxAge: 60 * 60 * 1000, // 1 hora en milisegundos
       path: '/', // cookie visible en toda la app
     });
