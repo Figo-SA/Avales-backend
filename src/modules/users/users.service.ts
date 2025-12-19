@@ -13,6 +13,7 @@ import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 import { ValidationService } from 'src/common/services/validation/validation.service';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { Rol } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +24,7 @@ export class UsersService {
   ) {}
 
   async create(data: CreateUserDto): Promise<ResponseUserDto> {
-    await this.validateUserData(data);
+    const roles = await this.validateUserData(data);
     const hashedPassword = await this.passwordService.hashPassword(
       data.password,
     );
@@ -42,9 +43,9 @@ export class UsersService {
       });
 
       await tx.usuarioRol.createMany({
-        data: data.rolIds.map((rolId) => ({
+        data: roles.map((rol) => ({
           usuarioId: usuario.id,
-          rolId,
+          rolId: rol.id,
           createdAt: new Date(),
           updatedAt: new Date(),
         })),
@@ -58,7 +59,7 @@ export class UsersService {
         cedula: usuario.cedula,
         categoriaId: usuario.categoriaId,
         disciplinaId: usuario.disciplinaId,
-        rolIds: data.rolIds,
+        roles: roles.map((rol) => rol.nombre),
       };
     });
   }
@@ -76,7 +77,11 @@ export class UsersService {
           disciplinaId: true,
           usuariosRol: {
             select: {
-              rolId: true,
+              rol: {
+                select: {
+                  nombre: true,
+                },
+              },
             },
           },
         },
@@ -93,7 +98,7 @@ export class UsersService {
           cedula: user.cedula,
           categoriaId: user.categoriaId,
           disciplinaId: user.disciplinaId,
-          rolIds: user.usuariosRol.map((ur) => ur.rolId),
+          roles: user.usuariosRol.map((ur) => ur.rol.nombre),
         })),
       );
   }
@@ -123,7 +128,13 @@ export class UsersService {
           disciplinaId: true,
           pushToken: true,
           usuariosRol: {
-            select: { rolId: true },
+            select: {
+              rol: {
+                select: {
+                  nombre: true,
+                },
+              },
+            },
           },
         },
       }),
@@ -138,7 +149,7 @@ export class UsersService {
       categoriaId: user.categoriaId,
       disciplinaId: user.disciplinaId,
       pushToken: user.pushToken ?? undefined,
-      rolIds: user.usuariosRol.map((ur) => ur.rolId),
+      roles: user.usuariosRol.map((ur) => ur.rol.nombre),
     }));
 
     return PaginationHelper.buildPaginatedResponse(items, total, page, limit);
@@ -160,7 +171,11 @@ export class UsersService {
         disciplinaId: true,
         usuariosRol: {
           select: {
-            rolId: true,
+            rol: {
+              select: {
+                nombre: true,
+              },
+            },
           },
         },
       },
@@ -178,7 +193,7 @@ export class UsersService {
       cedula: user.cedula,
       categoriaId: user.categoriaId,
       disciplinaId: user.disciplinaId,
-      rolIds: user.usuariosRol.map((ur) => ur.rolId),
+      roles: user.usuariosRol.map((ur) => ur.rol.nombre),
     };
   }
 
@@ -199,7 +214,11 @@ export class UsersService {
           disciplinaId: true,
           usuariosRol: {
             select: {
-              rolId: true,
+              rol: {
+                select: {
+                  nombre: true,
+                },
+              },
             },
           },
         },
@@ -213,13 +232,13 @@ export class UsersService {
           cedula: user.cedula,
           categoriaId: user.categoriaId,
           disciplinaId: user.disciplinaId,
-          rolIds: user.usuariosRol.map((ur) => ur.rolId),
+          roles: user.usuariosRol.map((ur) => ur.rol.nombre),
         })),
       );
   }
   async updateProfile(id: number, dto: UpdateUserProfileDto) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, rolIds, ...data } = dto;
+    const { password, roles, ...data } = dto;
     const hashedPassword = password
       ? await this.passwordService.hashPassword(password)
       : undefined;
@@ -247,11 +266,13 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado o deshabilitado');
     }
 
-    const { categoriaId, disciplinaId, rolIds, password, ...data } =
+    const { categoriaId, disciplinaId, roles: rolesInput, password, ...data } =
       updateUserDto;
+    const roles = await this.validateUserData(updateUserDto, true, id);
     const hashedPassword = password
       ? await this.passwordService.hashPassword(password)
       : undefined;
+    const shouldUpdateRoles = Array.isArray(rolesInput);
 
     return this.prisma.$transaction(async (tx) => {
       // Actualizar usuario y obtener datos completos
@@ -267,11 +288,11 @@ export class UsersService {
           updatedAt: new Date(),
           categoriaId,
           disciplinaId,
-          usuariosRol: rolIds
+          usuariosRol: shouldUpdateRoles
             ? {
                 deleteMany: {},
-                create: rolIds.map((rolId) => ({
-                  rolId,
+                create: roles.map((rol) => ({
+                  rolId: rol.id,
                   createdAt: new Date(),
                   updatedAt: new Date(),
                 })),
@@ -281,7 +302,11 @@ export class UsersService {
         include: {
           usuariosRol: {
             select: {
-              rolId: true,
+              rol: {
+                select: {
+                  nombre: true,
+                },
+              },
             },
           },
         },
@@ -295,7 +320,7 @@ export class UsersService {
         cedula: updatedUser.cedula,
         categoriaId: updatedUser.categoriaId,
         disciplinaId: updatedUser.disciplinaId,
-        rolIds: updatedUser.usuariosRol.map((ur) => ur.rolId),
+        roles: updatedUser.usuariosRol.map((ur) => ur.rol.nombre),
       };
     });
   }
@@ -363,7 +388,7 @@ export class UsersService {
     data: CreateUserDto | UpdateUserDto,
     isUpdate = false,
     excludeId?: number,
-  ): Promise<void> {
+  ): Promise<Rol[]> {
     if (!isUpdate || data.cedula) {
       await this.validationService.validateUniqueCedula(
         data.cedula || '',
@@ -371,12 +396,13 @@ export class UsersService {
       );
     }
 
-    if (!isUpdate || data.rolIds) {
-      const rolIds = data.rolIds || [];
-      if (rolIds.length === 0) {
+    let roles: Rol[] = [];
+    if (!isUpdate || data.roles) {
+      const rolesToValidate = data.roles || [];
+      if (rolesToValidate.length === 0) {
         throw new BadRequestException('Debe proporcionar al menos un rol');
       }
-      await this.validationService.validateRoles(rolIds);
+      roles = await this.validationService.validateRoles(rolesToValidate);
     }
 
     if (data.email) {
@@ -390,5 +416,7 @@ export class UsersService {
     if (data.disciplinaId) {
       await this.validationService.validateDisciplina(data.disciplinaId);
     }
+
+    return roles;
   }
 }

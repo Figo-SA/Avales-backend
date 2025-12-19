@@ -225,7 +225,7 @@ Actualiza los datos de un usuario existente con las siguientes validaciones:
 - Cédula debe ser única (exceptuando el usuario actual)
 
 **Validaciones de integridad referencial:**
-- Todos los rolIds deben existir en la tabla de roles (si se proporcionan)
+- Todos los roles (nombres) deben existir en la tabla de roles (si se proporcionan)
 - categoriaId debe existir (si se proporciona)
 - disciplinaId debe existir (si se proporciona)
 

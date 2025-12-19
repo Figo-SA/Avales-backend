@@ -1,5 +1,6 @@
 // dto/response-user.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
+import { TipoRol } from '@prisma/client';
 
 export class ResponseUserDto {
   @ApiProperty({
@@ -48,11 +49,12 @@ export class ResponseUserDto {
   disciplinaId?: number;
 
   @ApiProperty({
-    description: 'Lista de IDs de roles asignados al usuario',
-    example: [1, 2, 3],
-    type: [Number],
+    description: 'Lista de roles asignados al usuario',
+    example: [TipoRol.ADMIN, TipoRol.SECRETARIA],
+    enum: TipoRol,
+    isArray: true,
   })
-  rolIds: number[];
+  roles: TipoRol[];
 
   @ApiProperty({
     description: 'Token de Expo para push notifications',

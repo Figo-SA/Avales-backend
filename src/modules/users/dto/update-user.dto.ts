@@ -5,10 +5,9 @@ import {
   IsString,
   Length,
   IsArray,
-  IsInt,
-  Min,
+  IsEnum,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { TipoRol } from '@prisma/client';
 import { UserEditableDto } from './user-editable.dto';
 
 export class UpdateUserDto extends PartialType(UserEditableDto) {
@@ -19,11 +18,13 @@ export class UpdateUserDto extends PartialType(UserEditableDto) {
   password?: string;
 
   // Si permites cambiar roles en update:
-  @ApiPropertyOptional({ example: [3, 7] })
+  @ApiPropertyOptional({
+    example: [TipoRol.ADMIN, TipoRol.SECRETARIA],
+    isArray: true,
+    enum: TipoRol,
+  })
   @IsOptional()
-  @Type(() => Number)
   @IsArray()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
-  rolIds?: number[];
+  @IsEnum(TipoRol, { each: true })
+  roles?: TipoRol[];
 }
