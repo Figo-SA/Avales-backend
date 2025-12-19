@@ -10,9 +10,11 @@ import {
   IsInt,
   Min,
   IsArray,
+  IsEnum,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { trimAndLowercase, trimString } from 'src/common/herlpers/transformers';
+import { TipoRol } from '@prisma/client';
 
 export class UserEditableDto {
   @ApiProperty({
@@ -91,17 +93,13 @@ export class UserEditableDto {
   disciplinaId?: number;
 
   @ApiPropertyOptional({
-    example: [3, 7],
-    description:
-      'Array de IDs de roles a asignar. Cada rol debe existir en la tabla de roles.',
-    type: [Number],
+    example: [TipoRol.ADMIN, TipoRol.SECRETARIA],
+    description: 'Array de roles a asignar. Cada rol debe existir en la tabla de roles.',
     isArray: true,
-    minimum: 1,
+    enum: TipoRol,
   })
   @IsOptional()
-  @Type(() => Number)
   @IsArray()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
-  rolIds?: number[];
+  @IsEnum(TipoRol, { each: true })
+  roles?: TipoRol[];
 }

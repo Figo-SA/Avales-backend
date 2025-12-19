@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Rol, TipoRol } from '@prisma/client';
 
 @Injectable()
 export class ValidationService {
@@ -10,7 +11,7 @@ export class ValidationService {
       where: { email, deleted: false },
     });
     if (existingEmail && existingEmail.id !== excludeId) {
-      throw new BadRequestException('El correo electrónico ya está registrado');
+      throw new BadRequestException('El correo electr¢nico ya est  registrado');
     }
   }
 
@@ -22,7 +23,7 @@ export class ValidationService {
       where: { cedula, deleted: false },
     });
     if (existingCedula && existingCedula.id !== excludeId) {
-      throw new BadRequestException('La cédula ya está registrada');
+      throw new BadRequestException('La c‚dula ya est  registrada');
     }
   }
 
@@ -33,19 +34,32 @@ export class ValidationService {
     const existingCedula = await this.prisma.deportista.findFirst({
       where: { cedula, deleted: false },
     });
-    console.log('Validando cédula en deportista:', cedula, existingCedula);
+    console.log('Validando c‚dula en deportista:', cedula, existingCedula);
     if (existingCedula && existingCedula.id !== excludeId) {
-      throw new BadRequestException('La cédula ya está registrada');
+      throw new BadRequestException('La c‚dula ya est  registrada');
     }
   }
 
-  async validateRoles(rolIds: number[]): Promise<void> {
-    const roles = await this.prisma.rol.findMany({
-      where: { id: { in: rolIds }, deleted: false },
-    });
-    if (roles.length !== rolIds.length) {
-      throw new BadRequestException('Uno o más roles especificados no existen');
+  async validateRoles(roleNames: TipoRol[]): Promise<Rol[]> {
+    const uniqueRoles = Array.from(new Set(roleNames));
+    if (uniqueRoles.length === 0) {
+      throw new BadRequestException('Debe proporcionar al menos un rol');
     }
+
+    const roles = await this.prisma.rol.findMany({
+      where: { nombre: { in: uniqueRoles }, deleted: false },
+    });
+
+    if (roles.length !== uniqueRoles.length) {
+      const found = roles.map((rol) => rol.nombre);
+      const missing = uniqueRoles.filter((name) => !found.includes(name));
+
+      throw new BadRequestException(
+        `Uno o m s roles especificados no existen: ${missing.join(', ')}`,
+      );
+    }
+
+    return roles;
   }
 
   async validateCategoria(id: number): Promise<void> {
@@ -53,7 +67,7 @@ export class ValidationService {
       where: { id, deleted: false },
     });
     if (!categoria) {
-      throw new BadRequestException('La categoría especificada no existe');
+      throw new BadRequestException('La categor¡a especificada no existe');
     }
   }
 
