@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   Param,
   ParseIntPipe,
@@ -25,22 +26,39 @@ export class DeportistasController {
   @Get()
   @SuccessMessage('Deportistas obtenidos exitosamente')
   @ApiOperation({ summary: 'Listar deportistas (filtrable y paginado)' })
+  @ApiQuery({
+    name: 'sexo',
+    required: false,
+    description: 'Filtrar por sexo (M/F)',
+  })
+  @ApiQuery({
+    name: 'query',
+    required: false,
+    description: 'Buscar por nombres, apellidos o cédula',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Página (por defecto 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Resultados por página (por defecto 50)',
+  })
   @ApiOkResponseData(ParticipantResponseDto, true)
   @ApiErrorResponsesConfig([500])
   findAll(
     @Query('sexo') sexo?: string,
     @Query('query') query?: string,
-    @Query('page') page = '1',
-    @Query('limit') limit = '50',
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit = 50,
   ) {
-    const pageNum = parseInt(page as any, 10) || 1;
-    const limitNum = parseInt(limit as any, 10) || 50;
-
     return this.deportistasService.searchParticipants({
-      sexo,
-      query,
-      page: pageNum,
-      limit: limitNum,
+      sexo: sexo?.trim() || undefined,
+      query: query?.trim() || undefined,
+      page,
+      limit,
     });
   }
 

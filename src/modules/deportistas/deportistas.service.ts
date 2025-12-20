@@ -18,7 +18,7 @@ export class DeportistasService {
       nombres: d.nombres,
       apellidos: d.apellidos,
       cedula: d.cedula,
-      sexo: String(d.genero).toLowerCase(),
+      genero: String(d.genero).toLowerCase(),
       fechaNacimiento: d.fechaNacimiento
         ? d.fechaNacimiento.toISOString()
         : undefined,
