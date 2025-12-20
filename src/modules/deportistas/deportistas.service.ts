@@ -23,6 +23,18 @@ export class DeportistasService {
         ? d.fechaNacimiento.toISOString()
         : undefined,
       club: d.club ?? undefined,
+      disciplina: d.disciplina
+        ? {
+            id: d.disciplina.id,
+            nombre: d.disciplina.nombre,
+          }
+        : undefined,
+      categoria: d.categoria
+        ? {
+            id: d.categoria.id,
+            nombre: d.categoria.nombre,
+          }
+        : undefined,
       afiliacion: d.afiliacion,
       afiliacionInicio: d.afiliacionInicio?.toISOString(),
       afiliacionFin: d.afiliacionFin?.toISOString(),
