@@ -4,6 +4,7 @@ import {
   DefaultValuePipe,
   Get,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -46,6 +47,11 @@ export class DeportistasController {
     required: false,
     description: 'Resultados por página (por defecto 50)',
   })
+  @ApiQuery({
+    name: 'soloAfiliados',
+    required: false,
+    description: 'Por defecto true. Enviar false para incluir no afiliados.',
+  })
   @ApiOkResponseData(ParticipantResponseDto, true)
   @ApiErrorResponsesConfig([500])
   findAll(
@@ -53,12 +59,15 @@ export class DeportistasController {
     @Query('query') query?: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
     @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit = 50,
+    @Query('soloAfiliados', new DefaultValuePipe(true), ParseBoolPipe)
+    soloAfiliados = true,
   ) {
     return this.deportistasService.searchParticipants({
       sexo: sexo?.trim() || undefined,
       query: query?.trim() || undefined,
       page,
       limit,
+      onlyAffiliated: soloAfiliados,
     });
   }
 
