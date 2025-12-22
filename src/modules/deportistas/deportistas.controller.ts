@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
+  Delete,
   Get,
   Param,
   ParseBoolPipe,
@@ -19,6 +20,7 @@ import { SuccessMessage } from 'src/common/decorators/success-messages.decorator
 import { DeportistaResponseDto } from './dto/deportista-response.dto';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
 import { UpdateDeportistaDto } from './dto/update-deportista.dto';
+import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 
 @ApiTags('Deportistas')
 @Controller('deportistas')
@@ -111,6 +113,40 @@ export class DeportistasController {
     @Body() dto: UpdateDeportistaDto,
   ) {
     return this.deportistasService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @SuccessMessage('Deportista marcado como eliminado')
+  @ApiOperation({ summary: 'Marcar deportista como eliminado (soft delete)' })
+  @ApiParam({ name: 'id', description: 'ID del deportista' })
+  @ApiOkResponseData(DeletedResourceDto)
+  @ApiErrorResponsesConfig([400, 404, 500])
+  softDelete(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<DeletedResourceDto> {
+    return this.deportistasService.softDelete(id);
+  }
+
+  @Post(':id/restore')
+  @SuccessMessage('Deportista restaurado exitosamente')
+  @ApiOperation({ summary: 'Restaurar deportista eliminado' })
+  @ApiParam({ name: 'id', description: 'ID del deportista' })
+  @ApiOkResponseData(DeportistaResponseDto)
+  @ApiErrorResponsesConfig([400, 404, 500])
+  restore(@Param('id', ParseIntPipe) id: number) {
+    return this.deportistasService.restore(id);
+  }
+
+  @Delete(':id/permanent')
+  @SuccessMessage('Deportista eliminado permanentemente')
+  @ApiOperation({ summary: 'Eliminar deportista definitivamente' })
+  @ApiParam({ name: 'id', description: 'ID del deportista' })
+  @ApiOkResponseData(DeletedResourceDto)
+  @ApiErrorResponsesConfig([400, 404, 500])
+  hardDelete(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<DeletedResourceDto> {
+    return this.deportistasService.hardDelete(id);
   }
 
   // @Get('external/:id')

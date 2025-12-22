@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
 import { UpdateDeportistaDto } from './dto/update-deportista.dto';
+import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 
 @Injectable()
 export class DeportistasService {
@@ -274,6 +275,71 @@ export class DeportistasService {
     });
 
     return deportista; // o tu mapper si usas uno
+  }
+
+  async softDelete(id: number): Promise<DeletedResourceDto> {
+    const deportista = await this.prisma.deportista.findFirst({
+      where: { id, deleted: false },
+      select: { id: true },
+    });
+
+    if (!deportista) {
+      throw new HttpException(
+        'Deportista no encontrado o ya eliminado',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.prisma.deportista.update({
+      where: { id },
+      data: { deleted: true, updatedAt: new Date() },
+    });
+
+    return { id };
+  }
+
+  async restore(id: number) {
+    const deleted = await this.prisma.deportista.findFirst({
+      where: { id, deleted: true },
+    });
+
+    if (!deleted) {
+      throw new HttpException(
+        'Deportista no encontrado o no está eliminado',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const restored = await this.prisma.deportista.update({
+      where: { id },
+      data: { deleted: false, updatedAt: new Date() },
+      include: {
+        categoria: true,
+        disciplina: true,
+      },
+    });
+
+    return this.mapDeportistaToParticipant(restored);
+  }
+
+  async hardDelete(id: number): Promise<DeletedResourceDto> {
+    const deportista = await this.prisma.deportista.findFirst({
+      where: { id, deleted: true },
+      select: { id: true },
+    });
+
+    if (!deportista) {
+      throw new HttpException(
+        'Deportista no encontrado o no marcado como eliminado',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.prisma.deportista.delete({
+      where: { id },
+    });
+
+    return { id };
   }
 
   /**
