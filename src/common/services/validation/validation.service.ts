@@ -11,7 +11,7 @@ export class ValidationService {
       where: { email, deleted: false },
     });
     if (existingEmail && existingEmail.id !== excludeId) {
-      throw new BadRequestException('El correo electr¢nico ya est  registrado');
+      throw new BadRequestException('El correo electrónico ya está registrado');
     }
   }
 
@@ -23,7 +23,7 @@ export class ValidationService {
       where: { cedula, deleted: false },
     });
     if (existingCedula && existingCedula.id !== excludeId) {
-      throw new BadRequestException('La c‚dula ya est  registrada');
+      throw new BadRequestException('La cédula ya está registrada');
     }
   }
 
@@ -34,9 +34,9 @@ export class ValidationService {
     const existingCedula = await this.prisma.deportista.findFirst({
       where: { cedula, deleted: false },
     });
-    console.log('Validando c‚dula en deportista:', cedula, existingCedula);
+    console.log('Validando cedula en deportista:', cedula, existingCedula);
     if (existingCedula && existingCedula.id !== excludeId) {
-      throw new BadRequestException('La c‚dula ya est  registrada');
+      throw new BadRequestException('La cédula ya está registrada');
     }
   }
 
@@ -55,7 +55,7 @@ export class ValidationService {
       const missing = uniqueRoles.filter((name) => !found.includes(name));
 
       throw new BadRequestException(
-        `Uno o m s roles especificados no existen: ${missing.join(', ')}`,
+        `Uno o más roles especificados no existen: ${missing.join(', ')}`,
       );
     }
 
@@ -67,7 +67,7 @@ export class ValidationService {
       where: { id, deleted: false },
     });
     if (!categoria) {
-      throw new BadRequestException('La categor¡a especificada no existe');
+      throw new BadRequestException('La categoría especificada no existe');
     }
   }
 

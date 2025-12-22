@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
+  Delete,
   Get,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -17,6 +20,7 @@ import { SuccessMessage } from 'src/common/decorators/success-messages.decorator
 import { DeportistaResponseDto } from './dto/deportista-response.dto';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
 import { UpdateDeportistaDto } from './dto/update-deportista.dto';
+import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 
 @ApiTags('Deportistas')
 @Controller('deportistas')
@@ -25,22 +29,47 @@ export class DeportistasController {
   @Get()
   @SuccessMessage('Deportistas obtenidos exitosamente')
   @ApiOperation({ summary: 'Listar deportistas (filtrable y paginado)' })
+  @ApiQuery({
+    name: 'sexo',
+    required: false,
+    description: 'Filtrar por sexo (M/F)',
+  })
+  @ApiQuery({
+    name: 'query',
+    required: false,
+    description: 'Buscar por nombres, apellidos o cédula',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Página (por defecto 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Resultados por página (por defecto 50)',
+  })
+  @ApiQuery({
+    name: 'soloAfiliados',
+    required: false,
+    description: 'Por defecto true. Enviar false para incluir no afiliados.',
+  })
   @ApiOkResponseData(ParticipantResponseDto, true)
   @ApiErrorResponsesConfig([500])
   findAll(
     @Query('sexo') sexo?: string,
     @Query('query') query?: string,
-    @Query('page') page = '1',
-    @Query('limit') limit = '50',
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit = 50,
+    @Query('soloAfiliados', new DefaultValuePipe(true), ParseBoolPipe)
+    soloAfiliados = true,
   ) {
-    const pageNum = parseInt(page as any, 10) || 1;
-    const limitNum = parseInt(limit as any, 10) || 50;
-
     return this.deportistasService.searchParticipants({
-      sexo,
-      query,
-      page: pageNum,
-      limit: limitNum,
+      sexo: sexo?.trim() || undefined,
+      query: query?.trim() || undefined,
+      page,
+      limit,
+      onlyAffiliated: soloAfiliados,
     });
   }
 
@@ -84,6 +113,40 @@ export class DeportistasController {
     @Body() dto: UpdateDeportistaDto,
   ) {
     return this.deportistasService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @SuccessMessage('Deportista marcado como eliminado')
+  @ApiOperation({ summary: 'Marcar deportista como eliminado (soft delete)' })
+  @ApiParam({ name: 'id', description: 'ID del deportista' })
+  @ApiOkResponseData(DeletedResourceDto)
+  @ApiErrorResponsesConfig([400, 404, 500])
+  softDelete(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<DeletedResourceDto> {
+    return this.deportistasService.softDelete(id);
+  }
+
+  @Post(':id/restore')
+  @SuccessMessage('Deportista restaurado exitosamente')
+  @ApiOperation({ summary: 'Restaurar deportista eliminado' })
+  @ApiParam({ name: 'id', description: 'ID del deportista' })
+  @ApiOkResponseData(DeportistaResponseDto)
+  @ApiErrorResponsesConfig([400, 404, 500])
+  restore(@Param('id', ParseIntPipe) id: number) {
+    return this.deportistasService.restore(id);
+  }
+
+  @Delete(':id/permanent')
+  @SuccessMessage('Deportista eliminado permanentemente')
+  @ApiOperation({ summary: 'Eliminar deportista definitivamente' })
+  @ApiParam({ name: 'id', description: 'ID del deportista' })
+  @ApiOkResponseData(DeletedResourceDto)
+  @ApiErrorResponsesConfig([400, 404, 500])
+  hardDelete(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<DeletedResourceDto> {
+    return this.deportistasService.hardDelete(id);
   }
 
   // @Get('external/:id')

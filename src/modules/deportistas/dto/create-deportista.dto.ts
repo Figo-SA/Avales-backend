@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
@@ -7,6 +7,8 @@ import {
   IsEnum,
   Min,
   MaxLength,
+  IsOptional,
+  IsBoolean,
 } from 'class-validator';
 import { Genero } from '@prisma/client';
 
@@ -64,4 +66,27 @@ export class CreateDeportistaDto {
   })
   @IsInt()
   disciplinaId: number;
+
+  @ApiProperty({
+    description: 'Estado de afiliación (true si está afiliado)',
+    example: true,
+  })
+  @IsBoolean()
+  afiliacion: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Fecha de inicio de la afiliaci¢n (ISO 8601)',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  @IsOptional()
+  @IsDateString()
+  afiliacionInicio?: string;
+
+  @ApiPropertyOptional({
+    description: 'Fecha de fin de la afiliaci¢n (ISO 8601)',
+    example: '2025-01-01T00:00:00.000Z',
+  })
+  @IsOptional()
+  @IsDateString()
+  afiliacionFin?: string;
 }

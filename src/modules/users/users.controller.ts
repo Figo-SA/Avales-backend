@@ -18,6 +18,7 @@ import { UpdatePushTokenDto } from './dto/update-push-token.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
+import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 import { ApiAuth } from 'src/common/decorators/api-auth.decorator';
@@ -28,7 +29,6 @@ import {
   ApiDeleteUser,
   ApiRestoreUser,
   ApiGetUsers,
-  ApiGetUsersPaginated,
   ApiGetUsersDeleted,
   ApiHardDeleteUser,
   ApiUpdatePushToken,
@@ -48,21 +48,13 @@ export class UsersController {
     return this.usersService.create(dto);
   }
 
-  @Get('paginated')
-  @ApiAuth(ValidRoles.superAdmin, ValidRoles.admin)
-  @ApiGetUsersPaginated()
-  async findAllPaginated(@Query() paginationDto: PaginationQueryDto) {
-    return this.usersService.findAllPaginated(
-      paginationDto.page,
-      paginationDto.limit,
-    );
-  }
-
   @Get()
   @ApiAuth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiGetUsers()
-  findAll(): Promise<ResponseUserDto[]> {
-    return this.usersService.findAll();
+  findAll(
+    @Query() paginationDto: PaginationQueryDto,
+  ): Promise<{ items: ResponseUserDto[]; pagination: PaginationMetaDto }> {
+    return this.usersService.findAll(paginationDto.page, paginationDto.limit);
   }
 
   @Get('deleted')

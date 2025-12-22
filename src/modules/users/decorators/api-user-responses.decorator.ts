@@ -21,7 +21,7 @@ import {
 } from 'src/common/dtos/api-response.dto';
 
 /**
- * Decorador para el endpoint de creación de usuario
+ * Decorador para el endpoint de creacion de usuario
  */
 export function ApiCreateUser() {
   return applyDecorators(
@@ -38,7 +38,8 @@ export function ApiCreateUser() {
         type: 'https://api.tu-dominio.com/errors/conflict',
         title: 'Conflict',
         status: 409,
-        detail: 'El email o la cédula ya existe en el sistema. Debe ser único.',
+        detail:
+          'El email o la cedula ya existe en el sistema. Debe ser unico.',
         instance: '/api/v1/users/create',
         apiVersion: 'v1',
       },
@@ -47,7 +48,7 @@ export function ApiCreateUser() {
         title: 'Unprocessable Entity',
         status: 422,
         detail:
-          'Reglas de dominio no cumplidas. Posibles causas: rol inexistente, categoría inexistente, disciplina inexistente, o no se proporcionó al menos un rol.',
+          'Reglas de dominio no cumplidas. Posibles causas: rol inexistente, categoria inexistente, disciplina inexistente, o no se proporciono al menos un rol.',
         instance: '/api/v1/users/create',
         apiVersion: 'v1',
       },
@@ -56,76 +57,27 @@ export function ApiCreateUser() {
 }
 
 /**
- * Decorador para el endpoint de listado paginado de usuarios
+ * Decorador para el endpoint de listado de usuarios (paginado)
  */
-export function ApiGetUsersPaginated() {
+export function ApiGetUsers() {
   return applyDecorators(
     ApiOperation({
       summary: 'Obtiene la lista de usuarios (paginado)',
       description: `
-Retorna una lista paginada de usuarios activos (no eliminados) del sistema.
+Retorna una lista paginada de usuarios activos (deleted=false).
 
-**Parámetros de paginación:**
-- page: Número de página (default: 1)
-- limit: Cantidad de registros por página (default: 10)
-
-**Nota:** Solo retorna usuarios con deleted=false
+Parametros de paginacion:
+- page: Numero de pagina (default: 1)
+- limit: Cantidad de registros por pagina (default: 10)
       `.trim(),
     }),
-    SuccessMessage('Datos de usuarios obtenidos correctamente (paginado)'),
+    SuccessMessage('Datos de usuarios obtenidos correctamente'),
     ApiOkResponsePaginated(
       ResponseUserDto,
       undefined,
       'Usuarios obtenidos correctamente',
       true,
     ),
-    ApiErrorResponsesConfig([401, 403, 500]),
-  );
-}
-
-/**
- * Decorador para el endpoint de listado completo de usuarios
- */
-export function ApiGetUsers() {
-  return applyDecorators(
-    ApiOperation({
-      summary: 'Obtiene la lista de todos los usuarios (sin paginar)',
-      description: `
-Retorna todos los usuarios activos del sistema sin paginación.
-
-**Advertencia:** Este endpoint puede retornar una gran cantidad de datos.
-Para consultas con muchos usuarios, se recomienda usar el endpoint paginado.
-
-**Nota:** Solo retorna usuarios con deleted=false
-      `.trim(),
-    }),
-    SuccessMessage('Datos de usuarios obtenidos correctamente'),
-    ApiExtraModels(ApiResponseDto, GlobalMetaDto, ResponseUserDto),
-    ApiOkResponse({
-      description: 'Lista de usuarios obtenida correctamente',
-      content: {
-        'application/json': {
-          schema: {
-            allOf: [
-              { $ref: getSchemaPath(ApiResponseDto) },
-              {
-                properties: {
-                  message: {
-                    type: 'string',
-                    example: 'Datos de usuarios obtenidos correctamente',
-                  },
-                  meta: { $ref: getSchemaPath(GlobalMetaDto) },
-                  data: {
-                    type: 'array',
-                    items: { $ref: getSchemaPath(ResponseUserDto) },
-                  },
-                },
-              },
-            ],
-          },
-        },
-      },
-    }),
     ApiErrorResponsesConfig([401, 403, 500]),
   );
 }
@@ -140,9 +92,9 @@ export function ApiGetUsersDeleted() {
       description: `
 Retorna todos los usuarios que han sido deshabilitados mediante soft delete.
 
-**Uso típico:** Auditoría o recuperación de usuarios eliminados.
+Uso tipico: auditoria o recuperacion de usuarios eliminados.
 
-**Nota:** Solo retorna usuarios con deleted=true. Estos usuarios pueden ser restaurados usando el endpoint /users/:id/restore
+Nota: Solo retorna usuarios con deleted=true. Estos usuarios pueden ser restaurados usando el endpoint /users/:id/restore
       `.trim(),
     }),
     SuccessMessage('Usuarios eliminados obtenidos correctamente'),
@@ -185,9 +137,9 @@ export function ApiGetUser() {
       summary:
         'Obtiene los detalles de un usuario por ID (solo administradores)',
       description: `
-Retorna los detalles completos de un usuario específico incluyendo sus roles asignados.
+Retorna los detalles completos de un usuario especifico incluyendo sus roles asignados.
 
-**Nota:** Solo retorna usuarios activos (deleted=false)
+Nota: Solo retorna usuarios activos (deleted=false)
       `.trim(),
     }),
     SuccessMessage('Datos del usuario obtenidos correctamente'),
@@ -211,7 +163,7 @@ Retorna los detalles completos de un usuario específico incluyendo sus roles as
 }
 
 /**
- * Decorador para el endpoint de actualización de usuario
+ * Decorador para el endpoint de actualizacion de usuario
  */
 export function ApiUpdateUser() {
   return applyDecorators(
@@ -220,19 +172,19 @@ export function ApiUpdateUser() {
       description: `
 Actualiza los datos de un usuario existente con las siguientes validaciones:
 
-**Validaciones de unicidad:**
-- Email debe ser único (exceptuando el usuario actual)
-- Cédula debe ser única (exceptuando el usuario actual)
+Validaciones de unicidad:
+- Email debe ser unico (exceptuando el usuario actual)
+- Cedula debe ser unica (exceptuando el usuario actual)
 
-**Validaciones de integridad referencial:**
+Validaciones de integridad referencial:
 - Todos los roles (nombres) deben existir en la tabla de roles (si se proporcionan)
 - categoriaId debe existir (si se proporciona)
 - disciplinaId debe existir (si se proporciona)
 
-**Reglas de negocio:**
-- Si se actualizan roles, se eliminarán los roles anteriores y se asignarán los nuevos
-- Si se actualiza la contraseña, será hasheada automáticamente
-- Solo se actualizan los campos proporcionados (actualización parcial)
+Reglas de negocio:
+- Si se actualizan roles, se eliminaran los roles anteriores y se asignaran los nuevos
+- Si se actualiza la contrasena, sera hasheada automaticamente
+- Solo se actualizan los campos proporcionados (actualizacion parcial)
       `.trim(),
     }),
     SuccessMessage('Usuario actualizado correctamente'),
@@ -247,7 +199,7 @@ Actualiza los datos de un usuario existente con las siguientes validaciones:
         type: 'https://api.tu-dominio.com/errors/not-found',
         title: 'Not Found',
         status: 404,
-        detail: 'No existe un usuario con ese id o está deshabilitado',
+        detail: 'No existe un usuario con ese id o esta deshabilitado',
         instance: '/api/v1/users/{id}',
         apiVersion: 'v1',
       },
@@ -256,7 +208,7 @@ Actualiza los datos de un usuario existente con las siguientes validaciones:
         title: 'Conflict',
         status: 409,
         detail:
-          'El email o la cédula ya está en uso por otro usuario. Debe ser único.',
+          'El email o la cedula ya esta en uso por otro usuario. Debe ser unico.',
         instance: '/api/v1/users/{id}',
         apiVersion: 'v1',
       },
@@ -265,7 +217,7 @@ Actualiza los datos de un usuario existente con las siguientes validaciones:
         title: 'Unprocessable Entity',
         status: 422,
         detail:
-          'Reglas de dominio no cumplidas. Posibles causas: rol inexistente, categoría inexistente, o disciplina inexistente.',
+          'Reglas de dominio no cumplidas. Posibles causas: rol inexistente, categoria inexistente, o disciplina inexistente.',
         instance: '/api/v1/users/{id}',
         apiVersion: 'v1',
       },
@@ -329,7 +281,7 @@ export function ApiHardDeleteUser() {
 }
 
 /**
- * Decorador para el endpoint de restauración de usuario
+ * Decorador para el endpoint de restauracion de usuario
  */
 export function ApiRestoreUser() {
   return applyDecorators(
@@ -355,13 +307,13 @@ export function ApiRestoreUser() {
 }
 
 /**
- * Decorador para el endpoint de actualización de perfil de usuario
+ * Decorador para el endpoint de actualizacion de perfil de usuario
  * ApiAuth()
- @Patch('profile')
- @ApiUpdateUser()
- updateProfile(@GetUser() user: Usuario, @Body() dto: UpdateUserDto) {
-   return this.usersService.updateProfile(user.id, dto);
- }
+ * @Patch('profile')
+ * @ApiUpdateUser()
+ * updateProfile(@GetUser() user: Usuario, @Body() dto: UpdateUserDto) {
+ *   return this.usersService.updateProfile(user.id, dto);
+ * }
  */
 export function ApiUpdateProfile() {
   return applyDecorators(
@@ -387,7 +339,7 @@ export function ApiUpdateProfile() {
 }
 
 /**
- * Decorador para el endpoint de actualización de push token
+ * Decorador para el endpoint de actualizacion de push token
  */
 export function ApiUpdatePushToken() {
   return applyDecorators(

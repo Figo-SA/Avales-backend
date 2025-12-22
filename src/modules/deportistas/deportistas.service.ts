@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateDeportistaDto } from './dto/create-deportista.dto';
 import { UpdateDeportistaDto } from './dto/update-deportista.dto';
+import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 
 @Injectable()
 export class DeportistasService {
@@ -18,11 +19,23 @@ export class DeportistasService {
       nombres: d.nombres,
       apellidos: d.apellidos,
       cedula: d.cedula,
-      sexo: String(d.genero).toLowerCase(),
+      genero: String(d.genero).toLowerCase(),
       fechaNacimiento: d.fechaNacimiento
         ? d.fechaNacimiento.toISOString()
         : undefined,
       club: d.club ?? undefined,
+      disciplina: d.disciplina
+        ? {
+            id: d.disciplina.id,
+            nombre: d.disciplina.nombre,
+          }
+        : undefined,
+      categoria: d.categoria
+        ? {
+            id: d.categoria.id,
+            nombre: d.categoria.nombre,
+          }
+        : undefined,
       afiliacion: d.afiliacion,
       afiliacionInicio: d.afiliacionInicio?.toISOString(),
       afiliacionFin: d.afiliacionFin?.toISOString(),
@@ -40,31 +53,49 @@ export class DeportistasService {
     query?: string;
     page?: number;
     limit?: number;
+    onlyAffiliated?: boolean;
   }) {
     const page = options.page && options.page > 0 ? options.page : 1;
     const limit = options.limit && options.limit > 0 ? options.limit : 50;
     const skip = (page - 1) * limit;
+    const onlyAffiliated =
+      typeof options.onlyAffiliated === 'boolean'
+        ? options.onlyAffiliated
+        : true;
 
     const now = new Date();
 
-    const where: any = {
-      deleted: false,
-      afiliacion: true,
+    const filters: any[] = [{ deleted: false }];
+
+    if (onlyAffiliated) {
+      filters.push({
+        afiliacion: true,
+      });
+
       // si manejas expiración:
-      OR: [{ afiliacionFin: null }, { afiliacionFin: { gte: now } }],
-    };
+      filters.push({
+        OR: [{ afiliacionFin: null }, { afiliacionFin: { gte: now } }],
+      });
+    }
 
     if (options.sexo) {
-      where.genero = { equals: options.sexo.toUpperCase() } as any;
+      filters.push({
+        genero: { equals: options.sexo.toUpperCase() } as any,
+      });
     }
 
     if (options.query) {
-      where.OR = [
-        { nombres: { contains: options.query, mode: 'insensitive' } },
-        { apellidos: { contains: options.query, mode: 'insensitive' } },
-        { cedula: { contains: options.query, mode: 'insensitive' } },
-      ];
+      filters.push({
+        OR: [
+          { nombres: { contains: options.query, mode: 'insensitive' } },
+          { apellidos: { contains: options.query, mode: 'insensitive' } },
+          { cedula: { contains: options.query, mode: 'insensitive' } },
+        ],
+      });
     }
+
+    const where =
+      filters.length > 1 ? { AND: filters } : (filters[0] as Record<string, any>);
 
     const [total, deportistas] = await this.prisma.$transaction([
       this.prisma.deportista.count({ where }),
@@ -150,19 +181,39 @@ export class DeportistasService {
   }
 
   async create(createDeportistaDto: CreateDeportistaDto) {
-    const now = new Date();
-    const fin = new Date(now);
-    fin.setFullYear(fin.getFullYear() + 1); // afiliación por 1 año
+    const {
+      afiliacion,
+      afiliacionInicio: afiliacionInicioInput,
+      fechaNacimiento,
+      ...rest
+    } = createDeportistaDto;
+
+    let afiliacionInicio: Date | null | undefined = afiliacionInicioInput
+      ? new Date(afiliacionInicioInput)
+      : undefined;
+
+    let afiliacionFin: Date | null | undefined;
+
+    if (afiliacion) {
+      // siempre ignoramos la fecha fin entrante y calculamos 1 año despues
+      if (!afiliacionInicio) {
+        afiliacionInicio = new Date();
+      }
+      const fin = new Date(afiliacionInicio);
+      fin.setFullYear(fin.getFullYear() + 1);
+      afiliacionFin = fin;
+    } else {
+      afiliacionInicio = null;
+      afiliacionFin = null;
+    }
 
     return this.prisma.deportista.create({
       data: {
-        ...createDeportistaDto,
-        fechaNacimiento: new Date(createDeportistaDto.fechaNacimiento),
-
-        afiliacion: true,
-        afiliacionInicio: now,
-        afiliacionFin: fin,
-
+        ...rest,
+        fechaNacimiento: new Date(fechaNacimiento),
+        afiliacion,
+        afiliacionInicio,
+        afiliacionFin,
         deleted: false,
       },
     });
@@ -224,6 +275,71 @@ export class DeportistasService {
     });
 
     return deportista; // o tu mapper si usas uno
+  }
+
+  async softDelete(id: number): Promise<DeletedResourceDto> {
+    const deportista = await this.prisma.deportista.findFirst({
+      where: { id, deleted: false },
+      select: { id: true },
+    });
+
+    if (!deportista) {
+      throw new HttpException(
+        'Deportista no encontrado o ya eliminado',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.prisma.deportista.update({
+      where: { id },
+      data: { deleted: true, updatedAt: new Date() },
+    });
+
+    return { id };
+  }
+
+  async restore(id: number) {
+    const deleted = await this.prisma.deportista.findFirst({
+      where: { id, deleted: true },
+    });
+
+    if (!deleted) {
+      throw new HttpException(
+        'Deportista no encontrado o no está eliminado',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const restored = await this.prisma.deportista.update({
+      where: { id },
+      data: { deleted: false, updatedAt: new Date() },
+      include: {
+        categoria: true,
+        disciplina: true,
+      },
+    });
+
+    return this.mapDeportistaToParticipant(restored);
+  }
+
+  async hardDelete(id: number): Promise<DeletedResourceDto> {
+    const deportista = await this.prisma.deportista.findFirst({
+      where: { id, deleted: true },
+      select: { id: true },
+    });
+
+    if (!deportista) {
+      throw new HttpException(
+        'Deportista no encontrado o no marcado como eliminado',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.prisma.deportista.delete({
+      where: { id },
+    });
+
+    return { id };
   }
 
   /**
