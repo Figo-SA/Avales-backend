@@ -268,7 +268,7 @@ Actualiza los datos de un evento existente con las siguientes validaciones:
  */
 export function ApiDeleteEvent() {
   return applyDecorators(
-    ApiOperation({ summary: 'Eliminar un evento de forma permanente' }),
+    ApiOperation({ summary: 'Eliminar (soft delete) un evento' }),
     SuccessMessage('Evento eliminado correctamente'),
     ApiOkResponseData(
       EventResponseDto,
@@ -291,6 +291,37 @@ export function ApiDeleteEvent() {
         status: 409,
         detail: 'No se puede eliminar: dependencias existentes',
         instance: '/api/v1/events/{id}',
+        apiVersion: 'v1',
+      },
+    }),
+  );
+}
+
+export function ApiRestoreEvent() {
+  return applyDecorators(
+    ApiOperation({ summary: 'Restaurar un evento eliminado' }),
+    SuccessMessage('Evento restaurado correctamente'),
+    ApiOkResponseData(
+      EventResponseDto,
+      undefined,
+      'Evento restaurado correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([400, 401, 403, 404, 500], {
+      400: {
+        type: 'https://api.tu-dominio.com/errors/bad-request',
+        title: 'Bad Request',
+        status: 400,
+        detail: 'Solo se pueden restaurar eventos previamente eliminados',
+        instance: '/api/v1/events/{id}/restore',
+        apiVersion: 'v1',
+      },
+      404: {
+        type: 'https://api.tu-dominio.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'No existe un evento con ese id',
+        instance: '/api/v1/events/{id}/restore',
         apiVersion: 'v1',
       },
     }),

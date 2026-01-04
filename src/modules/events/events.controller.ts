@@ -11,6 +11,8 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  Patch,
+  Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EventsService } from './events.service';
@@ -21,10 +23,13 @@ import { ApiAuth } from 'src/common/decorators/api-auth.decorator';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 import {
   ApiCreateEvent,
-  ApiGetEvents,
   ApiGetEventsPaginated,
   ApiGetEvent,
+  ApiUpdateEvent,
+  ApiDeleteEvent,
+  ApiRestoreEvent,
 } from './decorators';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 @ApiTags('events')
 @Controller('events')
@@ -55,12 +60,33 @@ export class EventsController {
   @Get()
   @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
   @ApiGetEventsPaginated()
-  @Get()
-  @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
-  @ApiGetEvents()
   findAll(@Query() filters: EventFiltersDto) {
     const { page = 1, limit = 10, estado, search } = filters;
     return this.eventsService.findAllPaginated(page, limit, estado, search);
+  }
+
+  @Patch(':id')
+  @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
+  @ApiUpdateEvent()
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateEventDto: UpdateEventDto,
+  ) {
+    return this.eventsService.updateEvent(id, updateEventDto);
+  }
+
+  @Delete(':id')
+  @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
+  @ApiDeleteEvent()
+  delete(@Param('id', ParseIntPipe) id: number) {
+    return this.eventsService.softDeleteEvent(id);
+  }
+
+  @Patch(':id/restore')
+  @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
+  @ApiRestoreEvent()
+  restore(@Param('id', ParseIntPipe) id: number) {
+    return this.eventsService.restoreEvent(id);
   }
 
   @Get(':id')
