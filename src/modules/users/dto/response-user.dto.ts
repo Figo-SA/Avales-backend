@@ -35,18 +35,28 @@ export class ResponseUserDto {
   cedula: string;
 
   @ApiProperty({
-    description: 'ID de la categoría del usuario',
-    example: 1,
-    required: false,
+    description: 'Categoría del usuario',
+    example: {
+      id: 1,
+      nombre: 'Atleta',
+    },
   })
-  categoriaId?: number;
+  categoria: {
+    id: number;
+    nombre: string;
+  };
 
   @ApiProperty({
-    description: 'ID de la disciplina del usuario',
-    example: 5,
-    required: false,
+    description: 'Disciplina del usuario',
+    example: {
+      id: 1,
+      nombre: 'Fútbol',
+    },
   })
-  disciplinaId?: number;
+  disciplina: {
+    id: number;
+    nombre: string;
+  };
 
   @ApiProperty({
     description: 'Lista de roles asignados al usuario',

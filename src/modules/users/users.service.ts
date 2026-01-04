@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -13,7 +14,45 @@ import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 import { ValidationService } from 'src/common/services/validation/validation.service';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
-import { Rol } from '@prisma/client';
+import { Prisma, Rol } from '@prisma/client';
+
+const userSelect = {
+  id: true,
+  email: true,
+  nombre: true,
+  apellido: true,
+  cedula: true,
+  categoriaId: true,
+  disciplinaId: true,
+  pushToken: true,
+  createdAt: true,
+  updatedAt: true,
+  categoria: {
+    select: {
+      id: true,
+      nombre: true,
+    },
+  },
+  disciplina: {
+    select: {
+      id: true,
+      nombre: true,
+    },
+  },
+  usuariosRol: {
+    select: {
+      rol: {
+        select: {
+          nombre: true,
+        },
+      },
+    },
+  },
+} as const;
+
+type UserWithRelations = Prisma.UsuarioGetPayload<{
+  select: typeof userSelect;
+}>;
 
 @Injectable()
 export class UsersService {
@@ -51,66 +90,24 @@ export class UsersService {
         })),
       });
 
-      return {
-        id: usuario.id,
-        email: usuario.email,
-        nombre: usuario.nombre,
-        apellido: usuario.apellido,
-        cedula: usuario.cedula,
-        categoriaId: usuario.categoriaId,
-        disciplinaId: usuario.disciplinaId,
-        roles: roles.map((rol) => rol.nombre),
-      };
+      const createdUser = await tx.usuario.findUnique({
+        where: { id: usuario.id },
+        select: userSelect,
+      });
+
+      return this.mapUserToResponse(createdUser as UserWithRelations);
     });
   }
 
-  findAll(): Promise<ResponseUserDto[]> {
-    return this.prisma.usuario
-      .findMany({
-        select: {
-          id: true,
-          email: true,
-          nombre: true,
-          apellido: true,
-          cedula: true,
-          categoriaId: true,
-          disciplinaId: true,
-          usuariosRol: {
-            select: {
-              rol: {
-                select: {
-                  nombre: true,
-                },
-              },
-            },
-          },
-        },
-        where: {
-          deleted: false,
-        },
-      })
-      .then((users) =>
-        users.map((user) => ({
-          id: user.id,
-          email: user.email,
-          nombre: user.nombre,
-          apellido: user.apellido,
-          cedula: user.cedula,
-          categoriaId: user.categoriaId,
-          disciplinaId: user.disciplinaId,
-          roles: user.usuariosRol.map((ur) => ur.rol.nombre),
-        })),
-      );
-  }
-
-  async findAllPaginated(
-    page: number,
-    limit: number,
+  async findAll(
+    page = 1,
+    limit = 10,
   ): Promise<{
     items: ResponseUserDto[];
     pagination: PaginationMetaDto;
   }> {
-    const { skip, take } = PaginationHelper.buildPagination(page, limit);
+    const { skip, take, page: safePage, limit: safeLimit } =
+      PaginationHelper.buildPagination(page, limit);
 
     const [total, users] = await this.prisma.$transaction([
       this.prisma.usuario.count({ where: { deleted: false } }),
@@ -118,41 +115,20 @@ export class UsersService {
         skip,
         take,
         where: { deleted: false },
-        select: {
-          id: true,
-          email: true,
-          nombre: true,
-          apellido: true,
-          cedula: true,
-          categoriaId: true,
-          disciplinaId: true,
-          pushToken: true,
-          usuariosRol: {
-            select: {
-              rol: {
-                select: {
-                  nombre: true,
-                },
-              },
-            },
-          },
-        },
+        select: userSelect,
       }),
     ]);
 
-    const items: ResponseUserDto[] = users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      nombre: user.nombre,
-      apellido: user.apellido,
-      cedula: user.cedula,
-      categoriaId: user.categoriaId,
-      disciplinaId: user.disciplinaId,
-      pushToken: user.pushToken ?? undefined,
-      roles: user.usuariosRol.map((ur) => ur.rol.nombre),
-    }));
+    const items: ResponseUserDto[] = users.map((user) =>
+      this.mapUserToResponse(user),
+    );
 
-    return PaginationHelper.buildPaginatedResponse(items, total, page, limit);
+    return PaginationHelper.buildPaginatedResponse(
+      items,
+      total,
+      safePage,
+      safeLimit,
+    );
   }
 
   async findOne(id: number): Promise<ResponseUserDto> {
@@ -161,40 +137,14 @@ export class UsersService {
         id,
         deleted: false,
       },
-      select: {
-        id: true,
-        email: true,
-        nombre: true,
-        apellido: true,
-        cedula: true,
-        categoriaId: true,
-        disciplinaId: true,
-        usuariosRol: {
-          select: {
-            rol: {
-              select: {
-                nombre: true,
-              },
-            },
-          },
-        },
-      },
+      select: userSelect,
     });
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    return {
-      id: user.id,
-      email: user.email,
-      nombre: user.nombre,
-      apellido: user.apellido,
-      cedula: user.cedula,
-      categoriaId: user.categoriaId,
-      disciplinaId: user.disciplinaId,
-      roles: user.usuariosRol.map((ur) => ur.rol.nombre),
-    };
+    return this.mapUserToResponse(user);
   }
 
   /**
@@ -204,53 +154,32 @@ export class UsersService {
     return this.prisma.usuario
       .findMany({
         where: { deleted: true },
-        select: {
-          id: true,
-          email: true,
-          nombre: true,
-          apellido: true,
-          cedula: true,
-          categoriaId: true,
-          disciplinaId: true,
-          usuariosRol: {
-            select: {
-              rol: {
-                select: {
-                  nombre: true,
-                },
-              },
-            },
-          },
-        },
+        select: userSelect,
       })
-      .then((users) =>
-        users.map((user) => ({
-          id: user.id,
-          email: user.email,
-          nombre: user.nombre,
-          apellido: user.apellido,
-          cedula: user.cedula,
-          categoriaId: user.categoriaId,
-          disciplinaId: user.disciplinaId,
-          roles: user.usuariosRol.map((ur) => ur.rol.nombre),
-        })),
-      );
+      .then((users) => users.map((user) => this.mapUserToResponse(user)));
   }
-  async updateProfile(id: number, dto: UpdateUserProfileDto) {
+
+  async updateProfile(
+    id: number,
+    dto: UpdateUserProfileDto,
+  ): Promise<ResponseUserDto> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, roles, ...data } = dto;
     const hashedPassword = password
       ? await this.passwordService.hashPassword(password)
       : undefined;
 
-    return this.prisma.usuario.update({
+    const updatedUser = await this.prisma.usuario.update({
       where: { id, deleted: false },
       data: {
         ...data,
         password: hashedPassword,
         updatedAt: new Date(),
       },
+      select: userSelect,
     });
+
+    return this.mapUserToResponse(updatedUser);
   }
 
   async update(
@@ -266,8 +195,13 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado o deshabilitado');
     }
 
-    const { categoriaId, disciplinaId, roles: rolesInput, password, ...data } =
-      updateUserDto;
+    const {
+      categoriaId,
+      disciplinaId,
+      roles: rolesInput,
+      password,
+      ...data
+    } = updateUserDto;
     const roles = await this.validateUserData(updateUserDto, true, id);
     const hashedPassword = password
       ? await this.passwordService.hashPassword(password)
@@ -299,29 +233,10 @@ export class UsersService {
               }
             : undefined,
         },
-        include: {
-          usuariosRol: {
-            select: {
-              rol: {
-                select: {
-                  nombre: true,
-                },
-              },
-            },
-          },
-        },
+        select: userSelect,
       });
 
-      return {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        nombre: updatedUser.nombre,
-        apellido: updatedUser.apellido,
-        cedula: updatedUser.cedula,
-        categoriaId: updatedUser.categoriaId,
-        disciplinaId: updatedUser.disciplinaId,
-        roles: updatedUser.usuariosRol.map((ur) => ur.rol.nombre),
-      };
+      return this.mapUserToResponse(updatedUser);
     });
   }
 
@@ -418,5 +333,21 @@ export class UsersService {
     }
 
     return roles;
+  }
+
+  private mapUserToResponse(user: UserWithRelations): ResponseUserDto {
+    return {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      cedula: user.cedula,
+      categoria: user.categoria,
+      disciplina: user.disciplina,
+      roles: user.usuariosRol.map((ur) => ur.rol.nombre),
+      pushToken: user.pushToken ?? undefined,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }
