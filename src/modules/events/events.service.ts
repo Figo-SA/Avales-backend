@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
@@ -11,11 +11,17 @@ import { PrinterService } from '../reports/printer/printer.service';
 import { solicitudAvalReport } from '../reports/reports/solicitud-aval.report';
 import { certificacionPdaReport } from '../reports/reports/certificacion-pda.report';
 import { CreateSolicitudAvalDto } from './dto/create-solicitud-aval.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
 import axios from 'axios';
 import { PDFDocument } from 'pdf-lib';
 
 @Injectable()
 export class EventsService {
+  private readonly eventInclude = {
+    disciplina: true,
+    categoria: true,
+  };
+
   constructor(
     private prisma: PrismaService,
     private storageService: StorageService,
@@ -39,10 +45,7 @@ export class EventsService {
 
     return this.prisma.evento.create({
       data,
-      include: {
-        disciplina: true,
-        categoria: true,
-      },
+      include: this.eventInclude,
     });
   }
 
@@ -81,10 +84,7 @@ export class EventsService {
         skip,
         take,
         where,
-        include: {
-          disciplina: true,
-          categoria: true,
-        },
+        include: this.eventInclude,
         orderBy: {
           updatedAt: 'desc',
         },
@@ -97,10 +97,7 @@ export class EventsService {
   async findAll() {
     return await this.prisma.evento.findMany({
       where: { deleted: false },
-      include: {
-        disciplina: true,
-        categoria: true,
-      },
+      include: this.eventInclude,
       orderBy: {
         fechaInicio: 'desc',
       },
@@ -110,10 +107,73 @@ export class EventsService {
   async findOne(id: number) {
     return await this.prisma.evento.findFirst({
       where: { id, deleted: false },
-      include: {
-        disciplina: true,
-        categoria: true,
-      },
+      include: this.eventInclude,
+    });
+  }
+
+  async updateEvent(id: number, updateEventDto: UpdateEventDto) {
+    const evento = await this.prisma.evento.findUnique({ where: { id } });
+    if (!evento || evento.deleted) {
+      throw new NotFoundException(`Evento con id ${id} no encontrado`);
+    }
+
+    const data: Record<string, any> = {};
+    Object.entries(updateEventDto).forEach(([key, value]) => {
+      if (value !== undefined) {
+        data[key] = value;
+      }
+    });
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('No se proporcionaron campos para actualizar');
+    }
+
+    if (data.fechaInicio) {
+      data.fechaInicio = new Date(data.fechaInicio as string);
+    }
+
+    if (data.fechaFin) {
+      data.fechaFin = new Date(data.fechaFin as string);
+    }
+
+    return await this.prisma.evento.update({
+      where: { id },
+      data,
+      include: this.eventInclude,
+    });
+  }
+
+  async softDeleteEvent(id: number) {
+    const evento = await this.prisma.evento.findUnique({ where: { id } });
+    if (!evento) {
+      throw new NotFoundException(`Evento con id ${id} no encontrado`);
+    }
+
+    if (evento.deleted) {
+      throw new BadRequestException(`Evento con id ${id} ya está eliminado`);
+    }
+
+    return this.prisma.evento.update({
+      where: { id },
+      data: { deleted: true },
+      include: this.eventInclude,
+    });
+  }
+
+  async restoreEvent(id: number) {
+    const evento = await this.prisma.evento.findUnique({ where: { id } });
+    if (!evento) {
+      throw new NotFoundException(`Evento con id ${id} no encontrado`);
+    }
+
+    if (!evento.deleted) {
+      throw new BadRequestException(`Evento con id ${id} no está eliminado`);
+    }
+
+    return this.prisma.evento.update({
+      where: { id },
+      data: { deleted: false },
+      include: this.eventInclude,
     });
   }
 
