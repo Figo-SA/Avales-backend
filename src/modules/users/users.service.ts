@@ -1,21 +1,23 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ResponseUserDto } from './dto/response-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { UserQueryDto } from './dto/user-query.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PasswordService } from 'src/common/services/password/password.service';
-import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
-import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 import { ValidationService } from 'src/common/services/validation/validation.service';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { Prisma, Rol } from '@prisma/client';
+import {
+  UserNotFoundException,
+  UserNotDeletedException,
+  NoRolesProvidedException,
+} from './exceptions/users.exceptions';
 
+/**
+ * Select para obtener usuario con relaciones
+ */
 const userSelect = {
   id: true,
   email: true,
@@ -62,22 +64,43 @@ export class UsersService {
     private validationService: ValidationService,
   ) {}
 
-  async create(data: CreateUserDto): Promise<ResponseUserDto> {
-    const roles = await this.validateUserData(data);
-    const hashedPassword = await this.passwordService.hashPassword(
-      data.password,
-    );
+  /**
+   * Mapea el modelo de Prisma al DTO de respuesta
+   * Los campos se devuelven en español para el frontend
+   */
+  private mapToResponse(user: UserWithRelations): UserResponseDto {
+    return {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      cedula: user.cedula,
+      categoria: user.categoria,
+      disciplina: user.disciplina,
+      roles: user.usuariosRol.map((ur) => ur.rol.nombre),
+      pushToken: user.pushToken ?? undefined,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
+  /**
+   * Crear un nuevo usuario
+   */
+  async create(dto: CreateUserDto): Promise<UserResponseDto> {
+    const roles = await this.validateUserData(dto);
+    const hashedPassword = await this.passwordService.hashPassword(dto.password);
 
     return this.prisma.$transaction(async (tx) => {
       const usuario = await tx.usuario.create({
         data: {
-          email: data.email ?? '',
+          email: dto.email ?? '',
           password: hashedPassword,
-          nombre: data.nombre,
-          apellido: data.apellido ?? '',
-          cedula: data.cedula,
-          categoriaId: data.categoriaId ?? 1,
-          disciplinaId: data.disciplinaId ?? 1,
+          nombre: dto.nombre,
+          apellido: dto.apellido ?? '',
+          cedula: dto.cedula,
+          categoriaId: dto.categoriaId ?? 1,
+          disciplinaId: dto.disciplinaId ?? 1,
         },
       });
 
@@ -95,74 +118,74 @@ export class UsersService {
         select: userSelect,
       });
 
-      return this.mapUserToResponse(createdUser as UserWithRelations);
+      return this.mapToResponse(createdUser as UserWithRelations);
     });
   }
 
-  async findAll(
-    page = 1,
-    limit = 10,
-  ): Promise<{
-    items: ResponseUserDto[];
-    pagination: PaginationMetaDto;
+  /**
+   * Listar usuarios con paginación
+   */
+  async findAll(query: UserQueryDto): Promise<{
+    items: UserResponseDto[];
+    pagination: { page: number; limit: number; total: number };
   }> {
-    const { skip, take, page: safePage, limit: safeLimit } =
-      PaginationHelper.buildPagination(page, limit);
+    const { page, limit } = query;
+    const skip = (page - 1) * limit;
 
     const [total, users] = await this.prisma.$transaction([
       this.prisma.usuario.count({ where: { deleted: false } }),
       this.prisma.usuario.findMany({
         skip,
-        take,
+        take: limit,
         where: { deleted: false },
         select: userSelect,
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
-    const items: ResponseUserDto[] = users.map((user) =>
-      this.mapUserToResponse(user),
-    );
+    const items = users.map((user) => this.mapToResponse(user));
 
-    return PaginationHelper.buildPaginatedResponse(
+    return {
       items,
-      total,
-      safePage,
-      safeLimit,
-    );
+      pagination: { page, limit, total },
+    };
   }
 
-  async findOne(id: number): Promise<ResponseUserDto> {
+  /**
+   * Obtener un usuario por ID
+   */
+  async findOne(id: number): Promise<UserResponseDto> {
     const user = await this.prisma.usuario.findUnique({
-      where: {
-        id,
-        deleted: false,
-      },
+      where: { id, deleted: false },
       select: userSelect,
     });
 
     if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+      throw new UserNotFoundException();
     }
 
-    return this.mapUserToResponse(user);
+    return this.mapToResponse(user);
   }
 
   /**
-   * Devuelve todos los usuarios que fueron deshabilitados (deleted = true)
+   * Obtener usuarios eliminados (soft deleted)
    */
-  findDeleted(): Promise<ResponseUserDto[]> {
-    return this.prisma.usuario
-      .findMany({
-        where: { deleted: true },
-        select: userSelect,
-      })
-      .then((users) => users.map((user) => this.mapUserToResponse(user)));
+  async findDeleted(): Promise<UserResponseDto[]> {
+    const users = await this.prisma.usuario.findMany({
+      where: { deleted: true },
+      select: userSelect,
+    });
+
+    return users.map((user) => this.mapToResponse(user));
   }
 
+  /**
+   * Actualizar perfil del usuario autenticado
+   */
   async updateProfile(
     id: number,
     dto: UpdateUserProfileDto,
-  ): Promise<ResponseUserDto> {
+  ): Promise<UserResponseDto> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, roles, ...data } = dto;
     const hashedPassword = password
@@ -179,20 +202,20 @@ export class UsersService {
       select: userSelect,
     });
 
-    return this.mapUserToResponse(updatedUser);
+    return this.mapToResponse(updatedUser);
   }
 
-  async update(
-    id: number,
-    updateUserDto: UpdateUserDto,
-  ): Promise<ResponseUserDto> {
+  /**
+   * Actualizar un usuario (admin)
+   */
+  async update(id: number, dto: UpdateUserDto): Promise<UserResponseDto> {
     const user = await this.prisma.usuario.findUnique({
       where: { id, deleted: false },
       select: { id: true },
     });
 
     if (!user) {
-      throw new NotFoundException('Usuario no encontrado o deshabilitado');
+      throw new UserNotFoundException();
     }
 
     const {
@@ -201,23 +224,22 @@ export class UsersService {
       roles: rolesInput,
       password,
       ...data
-    } = updateUserDto;
-    const roles = await this.validateUserData(updateUserDto, true, id);
+    } = dto;
+    const roles = await this.validateUserData(dto, true, id);
     const hashedPassword = password
       ? await this.passwordService.hashPassword(password)
       : undefined;
     const shouldUpdateRoles = Array.isArray(rolesInput);
 
     return this.prisma.$transaction(async (tx) => {
-      // Actualizar usuario y obtener datos completos
       const updatedUser = await tx.usuario.update({
         where: { id },
         data: {
           ...data,
-          email: updateUserDto.email ?? undefined,
-          nombre: updateUserDto.nombre ?? undefined,
-          apellido: updateUserDto.apellido ?? undefined,
-          cedula: updateUserDto.cedula ?? undefined,
+          email: dto.email ?? undefined,
+          nombre: dto.nombre ?? undefined,
+          apellido: dto.apellido ?? undefined,
+          cedula: dto.cedula ?? undefined,
           password: hashedPassword,
           updatedAt: new Date(),
           categoriaId,
@@ -236,19 +258,20 @@ export class UsersService {
         select: userSelect,
       });
 
-      return this.mapUserToResponse(updatedUser);
+      return this.mapToResponse(updatedUser);
     });
   }
 
+  /**
+   * Soft delete - marcar como eliminado
+   */
   async softDelete(id: number): Promise<DeletedResourceDto> {
     const user = await this.prisma.usuario.findFirst({
       where: { id, deleted: false },
     });
 
     if (!user) {
-      throw new NotFoundException(
-        `Usuario con ID ${id} no encontrado o ya eliminado`,
-      );
+      throw new UserNotFoundException();
     }
 
     await this.prisma.usuario.update({
@@ -259,16 +282,17 @@ export class UsersService {
     return { id };
   }
 
-  async restore(id: number): Promise<ResponseUserDto> {
+  /**
+   * Restaurar un usuario eliminado
+   */
+  async restore(id: number): Promise<UserResponseDto> {
     const user = await this.prisma.usuario.findUnique({
       where: { id, deleted: true },
-      select: {
-        id: true,
-      },
+      select: { id: true },
     });
 
     if (!user) {
-      throw new NotFoundException('Usuario no encontrado o habilitado');
+      throw new UserNotDeletedException();
     }
 
     await this.prisma.usuario.update({
@@ -279,16 +303,19 @@ export class UsersService {
     return this.findOne(id);
   }
 
+  /**
+   * Actualizar push token del usuario
+   */
   async updatePushToken(
     userId: number,
     pushToken: string,
-  ): Promise<ResponseUserDto> {
+  ): Promise<UserResponseDto> {
     const user = await this.prisma.usuario.findUnique({
       where: { id: userId, deleted: false },
     });
 
     if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+      throw new UserNotFoundException();
     }
 
     await this.prisma.usuario.update({
@@ -299,6 +326,9 @@ export class UsersService {
     return this.findOne(userId);
   }
 
+  /**
+   * Validar datos del usuario (unicidad, roles, categoría, disciplina)
+   */
   private async validateUserData(
     data: CreateUserDto | UpdateUserDto,
     isUpdate = false,
@@ -315,7 +345,7 @@ export class UsersService {
     if (!isUpdate || data.roles) {
       const rolesToValidate = data.roles || [];
       if (rolesToValidate.length === 0) {
-        throw new BadRequestException('Debe proporcionar al menos un rol');
+        throw new NoRolesProvidedException();
       }
       roles = await this.validationService.validateRoles(rolesToValidate);
     }
@@ -333,21 +363,5 @@ export class UsersService {
     }
 
     return roles;
-  }
-
-  private mapUserToResponse(user: UserWithRelations): ResponseUserDto {
-    return {
-      id: user.id,
-      email: user.email,
-      nombre: user.nombre,
-      apellido: user.apellido,
-      cedula: user.cedula,
-      categoria: user.categoria,
-      disciplina: user.disciplina,
-      roles: user.usuariosRol.map((ur) => ur.rol.nombre),
-      pushToken: user.pushToken ?? undefined,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
   }
 }

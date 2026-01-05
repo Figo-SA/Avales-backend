@@ -1,9 +1,10 @@
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiOperation,
-  ApiNoContentResponse,
-  ApiOkResponse,
+  ApiParam,
+  ApiQuery,
   ApiExtraModels,
+  ApiOkResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
@@ -13,7 +14,7 @@ import {
   ApiOkResponsePaginated,
 } from 'src/common/swagger/decorators/api-success-responses.decorator';
 import { ApiErrorResponsesConfig } from 'src/common/swagger/decorators/api-error-responses.decorator';
-import { ResponseUserDto } from '../dto/response-user.dto';
+import { UserResponseDto } from '../dto/user-response.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
 import {
   ApiResponseDto,
@@ -21,14 +22,25 @@ import {
 } from 'src/common/dtos/api-response.dto';
 
 /**
- * Decorador para el endpoint de creacion de usuario
+ * Decorador para el endpoint de creación de usuario
  */
 export function ApiCreateUser() {
   return applyDecorators(
-    ApiOperation({ summary: 'Crea un nuevo usuario (solo administradores)' }),
+    ApiOperation({
+      summary: 'Crear usuario (solo administradores)',
+      description: `
+Crea un nuevo usuario en el sistema.
+
+Validaciones:
+- Email debe ser único
+- Cédula debe ser única (10 dígitos)
+- Debe proporcionar al menos un rol válido
+- Categoría y disciplina deben existir (si se proporcionan)
+      `.trim(),
+    }),
     SuccessMessage('Usuario creado correctamente'),
     ApiCreatedResponseData(
-      ResponseUserDto,
+      UserResponseDto,
       undefined,
       'Usuario creado correctamente',
       true,
@@ -38,19 +50,15 @@ export function ApiCreateUser() {
         type: 'https://api.tu-dominio.com/errors/conflict',
         title: 'Conflict',
         status: 409,
-        detail:
-          'El email o la cedula ya existe en el sistema. Debe ser unico.',
+        detail: 'El email o la cédula ya existe en el sistema',
         instance: '/api/v1/users/create',
-        apiVersion: 'v1',
       },
       422: {
         type: 'https://api.tu-dominio.com/errors/unprocessable-entity',
         title: 'Unprocessable Entity',
         status: 422,
-        detail:
-          'Reglas de dominio no cumplidas. Posibles causas: rol inexistente, categoria inexistente, disciplina inexistente, o no se proporciono al menos un rol.',
+        detail: 'Rol, categoría o disciplina no encontrada',
         instance: '/api/v1/users/create',
-        apiVersion: 'v1',
       },
     }),
   );
@@ -62,18 +70,30 @@ export function ApiCreateUser() {
 export function ApiGetUsers() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Obtiene la lista de usuarios (paginado)',
+      summary: 'Listar usuarios (paginado)',
       description: `
-Retorna una lista paginada de usuarios activos (deleted=false).
+Retorna una lista paginada de usuarios activos.
 
-Parametros de paginacion:
-- page: Numero de pagina (default: 1)
-- limit: Cantidad de registros por pagina (default: 10)
+Parámetros de paginación:
+- page: Número de página (default: 1)
+- limit: Cantidad de registros por página (default: 10)
       `.trim(),
     }),
-    SuccessMessage('Datos de usuarios obtenidos correctamente'),
+    SuccessMessage('Usuarios obtenidos correctamente'),
+    ApiQuery({
+      name: 'page',
+      required: false,
+      type: Number,
+      description: 'Página (default: 1)',
+    }),
+    ApiQuery({
+      name: 'limit',
+      required: false,
+      type: Number,
+      description: 'Resultados por página (default: 10)',
+    }),
     ApiOkResponsePaginated(
-      ResponseUserDto,
+      UserResponseDto,
       undefined,
       'Usuarios obtenidos correctamente',
       true,
@@ -88,19 +108,17 @@ Parametros de paginacion:
 export function ApiGetUsersDeleted() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Obtiene la lista de usuarios eliminados (soft deleted)',
+      summary: 'Listar usuarios eliminados (soft deleted)',
       description: `
-Retorna todos los usuarios que han sido deshabilitados mediante soft delete.
+Retorna todos los usuarios que han sido deshabilitados.
 
-Uso tipico: auditoria o recuperacion de usuarios eliminados.
-
-Nota: Solo retorna usuarios con deleted=true. Estos usuarios pueden ser restaurados usando el endpoint /users/:id/restore
+Uso: auditoría o recuperación de usuarios eliminados.
       `.trim(),
     }),
     SuccessMessage('Usuarios eliminados obtenidos correctamente'),
-    ApiExtraModels(ApiResponseDto, GlobalMetaDto, ResponseUserDto),
+    ApiExtraModels(ApiResponseDto, GlobalMetaDto, UserResponseDto),
     ApiOkResponse({
-      description: 'Lista de usuarios eliminados obtenida correctamente',
+      description: 'Lista de usuarios eliminados',
       content: {
         'application/json': {
           schema: {
@@ -115,7 +133,7 @@ Nota: Solo retorna usuarios con deleted=true. Estos usuarios pueden ser restaura
                   meta: { $ref: getSchemaPath(GlobalMetaDto) },
                   data: {
                     type: 'array',
-                    items: { $ref: getSchemaPath(ResponseUserDto) },
+                    items: { $ref: getSchemaPath(UserResponseDto) },
                   },
                 },
               },
@@ -129,22 +147,18 @@ Nota: Solo retorna usuarios con deleted=true. Estos usuarios pueden ser restaura
 }
 
 /**
- * Decorador para el endpoint de obtener un usuario por ID
+ * Decorador para el endpoint de obtener usuario por ID
  */
 export function ApiGetUser() {
   return applyDecorators(
     ApiOperation({
-      summary:
-        'Obtiene los detalles de un usuario por ID (solo administradores)',
-      description: `
-Retorna los detalles completos de un usuario especifico incluyendo sus roles asignados.
-
-Nota: Solo retorna usuarios activos (deleted=false)
-      `.trim(),
+      summary: 'Obtener usuario por ID',
+      description: 'Retorna los detalles de un usuario activo',
     }),
-    SuccessMessage('Datos del usuario obtenidos correctamente'),
+    SuccessMessage('Usuario obtenido correctamente'),
+    ApiParam({ name: 'id', type: Number, description: 'ID del usuario' }),
     ApiOkResponseData(
-      ResponseUserDto,
+      UserResponseDto,
       undefined,
       'Usuario obtenido correctamente',
       true,
@@ -154,42 +168,34 @@ Nota: Solo retorna usuarios activos (deleted=false)
         type: 'https://api.tu-dominio.com/errors/not-found',
         title: 'Not Found',
         status: 404,
-        detail: 'No existe un usuario activo con ese id',
+        detail: 'No existe un usuario con ese ID',
         instance: '/api/v1/users/{id}',
-        apiVersion: 'v1',
       },
     }),
   );
 }
 
 /**
- * Decorador para el endpoint de actualizacion de usuario
+ * Decorador para el endpoint de actualización de usuario
  */
 export function ApiUpdateUser() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Actualizar un usuario',
+      summary: 'Actualizar usuario',
       description: `
-Actualiza los datos de un usuario existente con las siguientes validaciones:
+Actualiza los datos de un usuario existente.
 
-Validaciones de unicidad:
-- Email debe ser unico (exceptuando el usuario actual)
-- Cedula debe ser unica (exceptuando el usuario actual)
-
-Validaciones de integridad referencial:
-- Todos los roles (nombres) deben existir en la tabla de roles (si se proporcionan)
-- categoriaId debe existir (si se proporciona)
-- disciplinaId debe existir (si se proporciona)
-
-Reglas de negocio:
-- Si se actualizan roles, se eliminaran los roles anteriores y se asignaran los nuevos
-- Si se actualiza la contrasena, sera hasheada automaticamente
-- Solo se actualizan los campos proporcionados (actualizacion parcial)
+Validaciones:
+- Email debe ser único (si se actualiza)
+- Cédula debe ser única (si se actualiza)
+- Roles deben existir (si se actualizan, reemplazan los anteriores)
+- Categoría y disciplina deben existir (si se proporcionan)
       `.trim(),
     }),
     SuccessMessage('Usuario actualizado correctamente'),
+    ApiParam({ name: 'id', type: Number, description: 'ID del usuario' }),
     ApiOkResponseData(
-      ResponseUserDto,
+      UserResponseDto,
       undefined,
       'Usuario actualizado correctamente',
       true,
@@ -199,39 +205,28 @@ Reglas de negocio:
         type: 'https://api.tu-dominio.com/errors/not-found',
         title: 'Not Found',
         status: 404,
-        detail: 'No existe un usuario con ese id o esta deshabilitado',
+        detail: 'No existe un usuario con ese ID',
         instance: '/api/v1/users/{id}',
-        apiVersion: 'v1',
       },
       409: {
         type: 'https://api.tu-dominio.com/errors/conflict',
         title: 'Conflict',
         status: 409,
-        detail:
-          'El email o la cedula ya esta en uso por otro usuario. Debe ser unico.',
+        detail: 'El email o la cédula ya está en uso',
         instance: '/api/v1/users/{id}',
-        apiVersion: 'v1',
-      },
-      422: {
-        type: 'https://api.tu-dominio.com/errors/unprocessable-entity',
-        title: 'Unprocessable Entity',
-        status: 422,
-        detail:
-          'Reglas de dominio no cumplidas. Posibles causas: rol inexistente, categoria inexistente, o disciplina inexistente.',
-        instance: '/api/v1/users/{id}',
-        apiVersion: 'v1',
       },
     }),
   );
 }
 
 /**
- * Decorador para el endpoint de soft delete de usuario
+ * Decorador para el endpoint de soft delete
  */
 export function ApiDeleteUser() {
   return applyDecorators(
-    ApiOperation({ summary: 'Deshabilitar (borrado logico) un usuario' }),
+    ApiOperation({ summary: 'Deshabilitar usuario (soft delete)' }),
     SuccessMessage('Usuario deshabilitado correctamente'),
+    ApiParam({ name: 'id', type: Number, description: 'ID del usuario' }),
     ApiOkResponseData(
       DeletedResourceDto,
       undefined,
@@ -243,52 +238,23 @@ export function ApiDeleteUser() {
         type: 'https://api.tu-dominio.com/errors/not-found',
         title: 'Not Found',
         status: 404,
-        detail: 'No existe un usuario activo con ese id',
+        detail: 'No existe un usuario con ese ID',
         instance: '/api/v1/users/{id}',
-        apiVersion: 'v1',
       },
     }),
   );
 }
 
 /**
- * Decorador para el endpoint de hard delete de usuario
- */
-export function ApiHardDeleteUser() {
-  return applyDecorators(
-    ApiOperation({ summary: 'Eliminar un usuario de forma permanente' }),
-    SuccessMessage('Usuario eliminado permanentemente'),
-    ApiNoContentResponse({ description: 'Eliminado permanentemente' }),
-    ApiErrorResponsesConfig([401, 403, 404, 409, 500], {
-      404: {
-        type: 'https://api.tu-dominio.com/errors/not-found',
-        title: 'Not Found',
-        status: 404,
-        detail: 'No existe un usuario activo con ese id',
-        instance: '/api/v1/users/{id}/hard',
-        apiVersion: 'v1',
-      },
-      409: {
-        type: 'https://api.tu-dominio.com/errors/conflict',
-        title: 'Conflict',
-        status: 409,
-        detail: 'No se puede eliminar: dependencias existentes',
-        instance: '/api/v1/users/{id}/hard',
-        apiVersion: 'v1',
-      },
-    }),
-  );
-}
-
-/**
- * Decorador para el endpoint de restauracion de usuario
+ * Decorador para el endpoint de restauración
  */
 export function ApiRestoreUser() {
   return applyDecorators(
-    ApiOperation({ summary: 'Restaurar un usuario eliminado' }),
+    ApiOperation({ summary: 'Restaurar usuario eliminado' }),
     SuccessMessage('Usuario restaurado correctamente'),
+    ApiParam({ name: 'id', type: Number, description: 'ID del usuario' }),
     ApiOkResponseData(
-      ResponseUserDto,
+      UserResponseDto,
       undefined,
       'Usuario restaurado correctamente',
       true,
@@ -298,59 +264,25 @@ export function ApiRestoreUser() {
         type: 'https://api.tu-dominio.com/errors/not-found',
         title: 'Not Found',
         status: 404,
-        detail: 'No existe un usuario eliminado con ese id',
+        detail: 'No existe un usuario eliminado con ese ID',
         instance: '/api/v1/users/{id}/restore',
-        apiVersion: 'v1',
       },
     }),
   );
 }
 
 /**
- * Decorador para el endpoint de actualizacion de perfil de usuario
- * ApiAuth()
- * @Patch('profile')
- * @ApiUpdateUser()
- * updateProfile(@GetUser() user: Usuario, @Body() dto: UpdateUserDto) {
- *   return this.usersService.updateProfile(user.id, dto);
- * }
- */
-export function ApiUpdateProfile() {
-  return applyDecorators(
-    ApiOperation({ summary: 'Actualizar perfil de usuario' }),
-    SuccessMessage('Perfil actualizado correctamente'),
-    ApiOkResponseData(
-      ResponseUserDto,
-      undefined,
-      'Perfil actualizado correctamente',
-      true,
-    ),
-    ApiErrorResponsesConfig([401, 403, 404, 500], {
-      404: {
-        type: 'https://api.tu-dominio.com/errors/not-found',
-        title: 'Not Found',
-        status: 404,
-        detail: 'No existe un usuario activo con ese id',
-        instance: '/api/v1/users/{id}/profile',
-        apiVersion: 'v1',
-      },
-    }),
-  );
-}
-
-/**
- * Decorador para el endpoint de actualizacion de push token
+ * Decorador para el endpoint de actualización de push token
  */
 export function ApiUpdatePushToken() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Actualizar push token del usuario actual',
-      description:
-        'Permite al usuario autenticado actualizar su token de Expo para recibir push notifications',
+      summary: 'Actualizar push token',
+      description: 'Permite al usuario actualizar su token de Expo para push notifications',
     }),
     SuccessMessage('Push token actualizado correctamente'),
     ApiOkResponseData(
-      ResponseUserDto,
+      UserResponseDto,
       undefined,
       'Push token actualizado correctamente',
       true,
@@ -362,7 +294,6 @@ export function ApiUpdatePushToken() {
         status: 404,
         detail: 'Usuario no encontrado',
         instance: '/api/v1/users/me/push-token',
-        apiVersion: 'v1',
       },
     }),
   );

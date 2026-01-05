@@ -1,8 +1,33 @@
-// dto/response-user.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TipoRol } from '@prisma/client';
 
-export class ResponseUserDto {
+/**
+ * DTO para categoría embebida en respuesta
+ */
+class CategoriaDto {
+  @ApiProperty({ example: 1, description: 'ID de la categoría' })
+  id: number;
+
+  @ApiProperty({ example: 'Atleta', description: 'Nombre de la categoría' })
+  nombre: string;
+}
+
+/**
+ * DTO para disciplina embebida en respuesta
+ */
+class DisciplinaDto {
+  @ApiProperty({ example: 1, description: 'ID de la disciplina' })
+  id: number;
+
+  @ApiProperty({ example: 'Fútbol', description: 'Nombre de la disciplina' })
+  nombre: string;
+}
+
+/**
+ * DTO de respuesta para usuario
+ * Los campos están en español para coincidir con la BD y el frontend
+ */
+export class UserResponseDto {
   @ApiProperty({
     description: 'Identificador único del usuario',
     example: 101,
@@ -15,10 +40,9 @@ export class ResponseUserDto {
   })
   nombre: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Apellido del usuario',
     example: 'Pérez',
-    required: false,
   })
   apellido?: string;
 
@@ -36,27 +60,15 @@ export class ResponseUserDto {
 
   @ApiProperty({
     description: 'Categoría del usuario',
-    example: {
-      id: 1,
-      nombre: 'Atleta',
-    },
+    type: CategoriaDto,
   })
-  categoria: {
-    id: number;
-    nombre: string;
-  };
+  categoria: CategoriaDto;
 
   @ApiProperty({
     description: 'Disciplina del usuario',
-    example: {
-      id: 1,
-      nombre: 'Fútbol',
-    },
+    type: DisciplinaDto,
   })
-  disciplina: {
-    id: number;
-    nombre: string;
-  };
+  disciplina: DisciplinaDto;
 
   @ApiProperty({
     description: 'Lista de roles asignados al usuario',
@@ -66,24 +78,21 @@ export class ResponseUserDto {
   })
   roles: TipoRol[];
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Token de Expo para push notifications',
     example: 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]',
-    required: false,
   })
   pushToken?: string;
 
-  @ApiProperty({
-    description: 'Fecha de creación del usuario en el sistema',
+  @ApiPropertyOptional({
+    description: 'Fecha de creación del usuario',
     example: '2025-09-25T14:48:00.000Z',
-    required: false,
   })
   createdAt?: Date;
 
-  @ApiProperty({
-    description: 'Fecha de última actualización del usuario en el sistema',
+  @ApiPropertyOptional({
+    description: 'Fecha de última actualización',
     example: '2025-10-01T10:15:30.000Z',
-    required: false,
   })
   updatedAt?: Date;
 }
