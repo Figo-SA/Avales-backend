@@ -8,7 +8,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { CommonModule } from './common/common.module';
 // import { UsuariosModule } from './usuarios/usuarios.module';
 import { UsersModule } from './modules/users/users.module';
-import { DeportistasModule } from './modules/deportistas/deportistas.module';
+import { AthletesModule } from './modules/athletes/athletes.module';
 
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 import { SeedingModule } from './modules/seeding/seeding.module';
@@ -36,7 +36,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
     ]),
     CommonModule,
     UsersModule,
-    DeportistasModule,
+    AthletesModule,
 
     SeedingModule,
 

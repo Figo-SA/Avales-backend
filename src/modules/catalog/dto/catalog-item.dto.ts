@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CatalogoItemDto {
+/**
+ * DTO para un ítem de catálogo (categoría o disciplina)
+ */
+export class CatalogItemDto {
   @ApiProperty({ example: 1, description: 'Identificador único' })
   id: number;
 

@@ -1,25 +1,27 @@
-// dto/update-user.dto.ts
 import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsOptional,
-  IsString,
-  Length,
-  IsArray,
-  IsEnum,
-} from 'class-validator';
+import { IsOptional, IsString, Length, IsArray, IsEnum } from 'class-validator';
 import { TipoRol } from '@prisma/client';
-import { UserEditableDto } from './user-editable.dto';
+import { UserBaseDto } from './user-base.dto';
 
-export class UpdateUserDto extends PartialType(UserEditableDto) {
-  @ApiPropertyOptional({ example: 'newpass123', minLength: 6, maxLength: 32 })
+/**
+ * DTO para actualizar un usuario
+ * Usa PartialType para hacer todos los campos opcionales
+ */
+export class UpdateUserDto extends PartialType(UserBaseDto) {
+  @ApiPropertyOptional({
+    example: 'newpass123',
+    description: 'Nueva contraseña (opcional)',
+    minLength: 6,
+    maxLength: 32,
+  })
   @IsOptional()
   @IsString()
   @Length(6, 32)
   password?: string;
 
-  // Si permites cambiar roles en update:
   @ApiPropertyOptional({
     example: [TipoRol.ADMIN, TipoRol.SECRETARIA],
+    description: 'Nuevos roles a asignar (reemplaza los anteriores)',
     isArray: true,
     enum: TipoRol,
   })

@@ -1,83 +1,185 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Este archivo proporciona guía a Claude Code (claude.ai/code) para trabajar con el código de este repositorio.
 
-## Project Overview
+## Descripción del Proyecto
 
-NestJS backend (TypeScript) for managing "avales" (endorsements/guarantees) for a sports federation. Uses Prisma ORM with PostgreSQL.
+Backend en NestJS (TypeScript) para gestionar "avales" de una federación deportiva. Usa Prisma ORM con PostgreSQL.
 
-## Common Commands
+## Comandos Comunes
 
 ```bash
-# Install dependencies (pnpm or npm)
-pnpm install
-npm install
-
-# Development server (watch mode)
-npm run start:dev
-
-# Build and run production
-npm run build
-npm start
-
-# Database migrations
-npx prisma migrate dev --name descriptive_name
-npx prisma generate
-
-# Tests
-npm run test                    # Unit tests
-npm run test:watch              # Watch mode
-npm run test:e2e                # E2E tests
-
-# Lint and format
-npm run lint
-npm run format
+npm run start:dev          # Servidor de desarrollo (watch mode)
+npm run build              # Compilar para producción
+npx prisma migrate dev     # Ejecutar migraciones
+npx prisma generate        # Generar cliente de Prisma
+npm run lint               # Verificar código
+npm run format             # Formatear código
 ```
 
-## Architecture
+## Arquitectura
 
-### Module Structure
-- `src/modules/` - Feature modules (auth, users, deportistas, events, catalog, mail, push-notifications, reports, seeding)
-- `src/common/` - Shared utilities (interceptors, filters, decorators, DTOs, pipes, swagger helpers)
+### Estructura de Módulos
+- `src/modules/` - Módulos de funcionalidad (users, athletes, events, catalog, mail, push-notifications, seeding)
+- `src/common/` - Utilidades compartidas (interceptors, filters, decorators, DTOs, pipes, helpers de swagger)
 - `src/prisma/` - PrismaModule (global)
-- `src/config/` - Configuration files (jwt.config, database.config)
+- `src/config/` - Archivos de configuración (jwt.config, database.config)
 
-### API Patterns
-- Global prefix: `/api/v1` (set in `main.ts`)
-- Swagger docs: `/api/docs`
-- Success responses wrapped by `ResponseInterceptor` into `ApiResponseDto` with metadata (requestId, timestamp, apiVersion, durationMs)
-- Errors follow RFC 7807 Problem Details (`application/problem+json`) via `GlobalExceptionFilter`
+### Patrones de API
+- Prefijo global: `/api/v1` (configurado en `main.ts`)
+- Documentación Swagger: `/api/docs`
+- Respuestas exitosas envueltas por `ResponseInterceptor` en `ApiResponseDto`
+- Errores siguen RFC 7807 Problem Details mediante `GlobalExceptionFilter`
 
-### Key Decorators and Helpers
-- `@SuccessMessage('text')` - Sets success message for response interceptor
-- `@Auth(ValidRoles.ADMIN, ...)` - Role-based authorization
-- Swagger: Use `ApiOkResponseData`, `ApiCreatedResponseData`, `ApiOkResponsePaginated` from `src/common/swagger/decorators/`
-- Error docs: `ApiErrorResponsesConfig`
-
-### Database (Prisma)
+### Base de Datos (Prisma)
 - Schema: `prisma/schema.prisma`
-- Primary keys: `Int` type (use `ParseIntPipe` in controllers)
-- Soft-delete pattern: Most models have `deleted: Boolean` column
-- Key enums: `Estado` (DISPONIBLE, SOLICITADO, RECHAZADO, ACEPTADO), `TipoRol` (user roles), `Genero`
+- Llaves primarias: tipo `Int` (usar `ParseIntPipe` en controllers)
+- Patrón soft-delete: La mayoría de modelos tienen columna `deleted: Boolean`
 
-### Domain Models
-- `Usuario` / `UsuarioRol` / `Rol` - Users with role-based access
-- `Evento` - Events/competitions with metadata
-- `ColeccionAval` - Collection of endorsement documents per event
-- `AvalTecnico` - Technical endorsement with objectives, criteria, requirements
-- `Deportista` / `Entrenador` - Athletes and coaches
-- `Pda` / `Dtm` / `Financiero` - Supporting documents with their own history tracking
-- `Categoria` / `Disciplina` - Catalog items for classification
+---
 
-### Environment Variables
-- `DATABASE_URL` - Prisma connection string
-- `PORT` - Server port (default 3000)
-- `API_VERSION` - Optional, used by ResponseInterceptor
-- `ERRORS_BASE_URL` - Optional, used by GlobalExceptionFilter
+## Convenciones para Crear Módulos
 
-## Key Files Reference
-- `src/main.ts` - Bootstrap, global pipes, CORS, Swagger setup
-- `src/common/interceptors/response/response.interceptor.ts` - Success response wrapper
-- `src/common/filters/global-exception/global-exception.filter.ts` - Error handling
-- `src/common/dtos/api-response.dto.ts` - Response envelope structure
-- `src/common/handlers/` - Specialized error handlers (Prisma errors)
+### Idioma del Código
+- **Nombres de clases, funciones, variables**: En inglés
+- **Documentación Swagger y comentarios**: En español
+- **Campos de DTOs**: En español, deben coincidir exactamente con el schema de Prisma
+
+### Estructura de Carpetas por Módulo
+
+```
+src/modules/{module-name}/
+├── decorators/
+│   └── api-{module}-responses.decorator.ts
+├── dto/
+│   ├── {entity}-base.dto.ts
+│   ├── create-{entity}.dto.ts
+│   ├── update-{entity}.dto.ts
+│   ├── {entity}-query.dto.ts
+│   └── {entity}-response.dto.ts
+├── exceptions/
+│   └── {module}.exceptions.ts
+├── {module}.controller.ts
+├── {module}.service.ts
+└── {module}.module.ts
+```
+
+### Archivos y su Propósito
+
+| Archivo | Propósito |
+|---------|-----------|
+| `{entity}-base.dto.ts` | DTO base con campos compartidos entre Create y Update |
+| `create-{entity}.dto.ts` | Extiende del base, sin modificaciones |
+| `update-{entity}.dto.ts` | Usa `PartialType` del base para hacer campos opcionales |
+| `{entity}-query.dto.ts` | Parámetros de paginación (`page`, `limit`) y filtros |
+| `{entity}-response.dto.ts` | Estructura de respuesta al frontend |
+| `{module}.exceptions.ts` | Excepciones tipadas del módulo |
+| `api-{module}-responses.decorator.ts` | Decoradores Swagger que encapsulan la documentación |
+
+### Excepciones Tipadas
+
+Cada módulo define sus propias excepciones que extienden de `HttpException`:
+
+- `{Entity}Exception` - Clase base con `message`, `errorCode`, `field` y `statusCode`
+- `{Entity}NotFoundException` - 404, entidad no encontrada
+- `{Entity}AlreadyDeletedException` - 400, entidad ya eliminada
+- `{Entity}NotDeletedException` - 400, entidad no está eliminada (para restore/hardDelete)
+
+### DTOs
+
+**Reglas generales:**
+- Usar decoradores de `class-validator` para validación
+- Usar `@Transform` de `class-transformer` para sanitizar (trim, uppercase, etc.)
+- Usar `@ApiProperty` / `@ApiPropertyOptional` para documentación Swagger
+- Los nombres de campos deben coincidir con el schema de Prisma
+
+**Base DTO:**
+- Contiene todos los campos compartidos entre crear y actualizar
+- Strings deben usar `@Transform` para hacer trim
+- IDs de relaciones usan `@Type(() => Number)` para conversión
+
+**Create DTO:**
+- Simplemente extiende del Base DTO: `extends {Entity}BaseDto`
+
+**Update DTO:**
+- Usa `PartialType` de `@nestjs/swagger`: `extends PartialType({Entity}BaseDto)`
+
+**Query DTO:**
+- `page` y `limit` con valores por defecto (1 y 50)
+- Filtros opcionales según el módulo
+- Usar `@Type(() => Number)` para query params numéricos
+- Usar `@Transform` para booleans desde strings
+
+**Response DTO:**
+- Define la estructura exacta de respuesta
+- Fechas como `string` (ISO 8601)
+- Relaciones como objetos embebidos con `id` y `nombre`
+
+### Decoradores Swagger Personalizados
+
+Cada endpoint tiene su decorador que encapsula:
+- `ApiOperation` - summary y description
+- `SuccessMessage` - mensaje de éxito para el interceptor
+- `ApiParam` / `ApiQuery` - parámetros de ruta y query
+- `ApiOkResponseData` / `ApiCreatedResponseData` / `ApiOkResponsePaginated` - respuestas exitosas
+- `ApiErrorResponsesConfig` - códigos de error posibles con ejemplos
+
+Nombres de decoradores: `ApiGet{Entities}`, `ApiGet{Entity}`, `ApiCreate{Entity}`, `ApiUpdate{Entity}`, `ApiDelete{Entity}`, `ApiRestore{Entity}`, `ApiHardDelete{Entity}`
+
+### Controller
+
+**Endpoints estándar:**
+- `GET /` - Listar con paginación y filtros
+- `GET /:id` - Obtener por ID
+- `POST /` - Crear
+- `PATCH /:id` - Actualizar
+- `DELETE /:id` - Soft delete
+- `PATCH /:id/restore` - Restaurar
+- `DELETE /:id/permanent` - Hard delete
+
+**Reglas:**
+- Usar `ParseIntPipe` para IDs en rutas
+- Usar decoradores Swagger personalizados (no inline)
+- Métodos delegando al service
+
+### Service
+
+**Métodos estándar:**
+- `findAll(query)` - Listado paginado con filtros
+- `findOne(id)` - Obtener por ID
+- `create(dto)` - Crear
+- `update(id, dto)` - Actualizar
+- `softDelete(id)` - Marcar como eliminado
+- `restore(id)` - Restaurar eliminado
+- `hardDelete(id)` - Eliminar permanentemente
+
+**Patrones:**
+- Método privado `mapToResponse()` para transformar entidad de Prisma a DTO
+- Usar `$transaction` para queries que necesitan count + findMany
+- Soft delete: filtrar siempre por `deleted: false`
+- Hard delete: solo permitido si ya está soft-deleted
+- Lanzar excepciones tipadas del módulo
+
+### Module
+
+- Importar Controller y Service
+- Exportar Service si otros módulos lo necesitan
+
+---
+
+## Helpers de Swagger Disponibles
+
+| Helper | Uso |
+|--------|-----|
+| `@SuccessMessage('texto')` | Define mensaje de éxito para ResponseInterceptor |
+| `ApiOkResponseData(Dto)` | Respuesta 200 con data |
+| `ApiCreatedResponseData(Dto)` | Respuesta 201 con data |
+| `ApiOkResponsePaginated(Dto)` | Respuesta 200 paginada |
+| `ApiErrorResponsesConfig([400, 404, ...])` | Documenta errores posibles |
+| `@Auth(ValidRoles.ADMIN)` | Autorización por roles |
+
+---
+
+## Módulo de Referencia
+
+Ver `src/modules/athletes/` como implementación de referencia de estas convenciones.

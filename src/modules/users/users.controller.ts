@@ -15,10 +15,9 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdatePushTokenDto } from './dto/update-push-token.dto';
-import { ResponseUserDto } from './dto/response-user.dto';
-import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { UserQueryDto } from './dto/user-query.dto';
 import { DeletedResourceDto } from 'src/common/dtos/deleted-resource.dto';
-import { PaginationMetaDto } from 'src/common/dtos/pagination-meta.dto';
 
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 import { ApiAuth } from 'src/common/decorators/api-auth.decorator';
@@ -30,13 +29,12 @@ import {
   ApiRestoreUser,
   ApiGetUsers,
   ApiGetUsersDeleted,
-  ApiHardDeleteUser,
   ApiUpdatePushToken,
 } from './decorators/api-user-responses.decorator';
 import { GetUser } from '../auth/decorators';
 import { Usuario } from '@prisma/client';
 
-@ApiTags('users')
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -44,30 +42,28 @@ export class UsersController {
   @Post('create')
   @ApiAuth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiCreateUser()
-  create(@Body() dto: CreateUserDto): Promise<ResponseUserDto> {
+  create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
     return this.usersService.create(dto);
   }
 
   @Get()
   @ApiAuth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiGetUsers()
-  findAll(
-    @Query() paginationDto: PaginationQueryDto,
-  ): Promise<{ items: ResponseUserDto[]; pagination: PaginationMetaDto }> {
-    return this.usersService.findAll(paginationDto.page, paginationDto.limit);
+  findAll(@Query() query: UserQueryDto) {
+    return this.usersService.findAll(query);
   }
 
   @Get('deleted')
   @ApiAuth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiGetUsersDeleted()
-  findDeleted(): Promise<ResponseUserDto[]> {
+  findDeleted(): Promise<UserResponseDto[]> {
     return this.usersService.findDeleted();
   }
 
   @Get(':id')
   @ApiAuth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiGetUser()
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<ResponseUserDto> {
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<UserResponseDto> {
     return this.usersService.findOne(id);
   }
 
@@ -80,10 +76,11 @@ export class UsersController {
 
   @ApiAuth(ValidRoles.superAdmin, ValidRoles.admin)
   @Patch(':id')
-  updateUserByAdmin(
+  @ApiUpdateUser()
+  update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserDto,
-  ) {
+  ): Promise<UserResponseDto> {
     return this.usersService.update(id, dto);
   }
 
@@ -99,7 +96,7 @@ export class UsersController {
   @Post(':id/restore')
   @ApiAuth(ValidRoles.superAdmin, ValidRoles.admin)
   @ApiRestoreUser()
-  restore(@Param('id', ParseIntPipe) id: number): Promise<ResponseUserDto> {
+  restore(@Param('id', ParseIntPipe) id: number): Promise<UserResponseDto> {
     return this.usersService.restore(id);
   }
 
@@ -109,7 +106,7 @@ export class UsersController {
   updateMyPushToken(
     @GetUser() user: Usuario,
     @Body() dto: UpdatePushTokenDto,
-  ): Promise<ResponseUserDto> {
+  ): Promise<UserResponseDto> {
     return this.usersService.updatePushToken(user.id, dto.pushToken);
   }
 }

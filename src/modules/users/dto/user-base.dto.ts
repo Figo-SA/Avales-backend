@@ -1,4 +1,3 @@
-// dto/user-editable.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
@@ -16,12 +15,15 @@ import { Transform, Type } from 'class-transformer';
 import { trimAndLowercase, trimString } from 'src/common/herlpers/transformers';
 import { TipoRol } from '@prisma/client';
 
-export class UserEditableDto {
+/**
+ * DTO base con campos compartidos entre Create y Update
+ * Los nombres de campos coinciden con el schema de Prisma
+ */
+export class UserBaseDto {
   @ApiProperty({
     example: 'Juan',
     description: 'Nombre del usuario',
     maxLength: 150,
-    required: true,
   })
   @IsString()
   @Transform(({ value }) => trimString(value))
@@ -42,11 +44,9 @@ export class UserEditableDto {
 
   @ApiProperty({
     example: '1234567890',
-    description:
-      'Cédula de identidad (10 dígitos). Debe ser única en el sistema.',
+    description: 'Cédula de identidad (10 dígitos). Debe ser única en el sistema.',
     minLength: 10,
     maxLength: 10,
-    required: true,
   })
   @IsString()
   @Transform(({ value }) => trimString(value))
@@ -55,11 +55,9 @@ export class UserEditableDto {
 
   @ApiProperty({
     example: 'usuario@ejemplo.com',
-    description:
-      'Email del usuario. Debe ser único en el sistema y válido según RFC 5322.',
+    description: 'Email del usuario. Debe ser único en el sistema.',
     format: 'email',
     maxLength: 150,
-    required: true,
   })
   @IsEmail({}, { message: 'El email debe ser válido' })
   @Transform(({ value }) => trimAndLowercase(value))
@@ -68,10 +66,8 @@ export class UserEditableDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description:
-      'ID de la categoría del usuario. Por defecto 1 si no se envía. Debe existir en la tabla de categorías.',
+    description: 'ID de la categoría del usuario',
     minimum: 1,
-    type: 'integer',
   })
   @IsOptional()
   @Type(() => Number)
@@ -81,10 +77,8 @@ export class UserEditableDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description:
-      'ID de la disciplina del usuario. Por defecto 1 si no se envía. Debe existir en la tabla de disciplinas.',
+    description: 'ID de la disciplina del usuario',
     minimum: 1,
-    type: 'integer',
   })
   @IsOptional()
   @Type(() => Number)
@@ -94,7 +88,7 @@ export class UserEditableDto {
 
   @ApiPropertyOptional({
     example: [TipoRol.ADMIN, TipoRol.SECRETARIA],
-    description: 'Array de roles a asignar. Cada rol debe existir en la tabla de roles.',
+    description: 'Array de roles a asignar',
     isArray: true,
     enum: TipoRol,
   })
