@@ -27,7 +27,18 @@ enum TipoRol {
   USUARIO
   DEPORTISTA
   PDA
+  CONTROL_PREVIO
   FINANCIERO
+}
+
+// Etapas del flujo de aprobación de avales
+enum EtapaFlujo {
+  SOLICITUD        // Entrenador crea la solicitud
+  REVISION_DTM     // DTM revisa la solicitud
+  PDA              // PDA crea el presupuesto
+  CONTROL_PREVIO   // Control previo revisa
+  SECRETARIA       // Secretaría revisa
+  FINANCIERO       // Financiero aprueba
 }
 
 generator client {
@@ -77,10 +88,6 @@ model Usuario {
   disciplina           Disciplina             @relation(fields: [disciplinaId], references: [id])
   usuariosRol          UsuarioRol[]
   historialColeccion   HistorialColeccion[]
-  historialSolicitud   HistorialAvalTecnico[]
-  historialPda         HistorialPda[]
-  historialDtm         HistorialDtm[]
-  historialFinanciero  HistorialFinanciero[]
 
   @@index([nombre])
   @@index([deleted])
@@ -216,10 +223,12 @@ model Evento {
   // Nota: las ediciones ahora se modelan como filas independientes en `Evento`.
   // Se eliminó `EventoEdicion` para usar solo la tabla `Evento`.
 
-  disciplina  Disciplina      @relation(fields: [disciplinaId], references: [id])
-  categoria   Categoria       @relation(fields: [categoriaId], references: [id])
+  disciplina   Disciplina      @relation(fields: [disciplinaId], references: [id])
+  categoria    Categoria       @relation(fields: [categoriaId], references: [id])
   // Colecciones (antes estaban en EventoEdicion)
-  colecciones ColeccionAval[]
+  colecciones  ColeccionAval[]
+  // Items presupuestarios asignados al evento desde la carga masiva
+  eventoItems  EventoItem[]
 
   @@index([nombre])
   @@index([fechaInicio])
@@ -256,24 +265,27 @@ model ColeccionAval {
 }
 
 // ------------------
-// HISTORIAL DE LA COLECCIÓN
+// HISTORIAL UNIFICADO DE LA COLECCIÓN DE AVALES
+// Registra todos los eventos del flujo de aprobación
 // ------------------
 model HistorialColeccion {
-  id              Int      @id @default(autoincrement())
-  fecha           DateTime
+  id              Int        @id @default(autoincrement())
   estado          Estado
+  etapa           EtapaFlujo // En qué etapa del flujo ocurrió este evento
+  comentario      String?    @db.VarChar(600) // Motivo de rechazo o comentario
   usuarioId       Int
   coleccionAvalId Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   usuario       Usuario       @relation(fields: [usuarioId], references: [id])
   coleccionAval ColeccionAval @relation(fields: [coleccionAvalId], references: [id])
 
   @@index([usuarioId])
   @@index([estado])
+  @@index([etapa])
   @@index([createdAt])
+  @@index([coleccionAvalId])
 }
 
 // =====================================================================
@@ -302,7 +314,6 @@ model AvalTecnico {
   objetivos       AvalObjetivo[]
   criterios       AvalCriterio[]
   requerimientos  AvalRequerimiento[]
-  historial       HistorialAvalTecnico[]
   deportistasAval DeportistaAval[]
 
   @@index([coleccionAvalId])
@@ -344,6 +355,9 @@ model AvalCriterio {
 
 // ------------------
 // CATÁLOGO DE RUBROS PRESUPUESTARIOS
+// ADVERTENCIA: Este modelo puede estar duplicando el concepto de "Item".
+// Ambos representan conceptos de gasto (pasajes, alimentación, etc.)
+// Considerar unificar en el futuro si se confirma que son lo mismo.
 // ------------------
 model Rubro {
   id          Int      @id @default(autoincrement())
@@ -376,26 +390,6 @@ model AvalRequerimiento {
 
   @@index([avalTecnicoId])
   @@index([rubroId])
-}
-
-// ------------------
-// HISTORIAL DEL AVAL TÉCNICO (antes HistorialSolicitud)
-// ------------------
-model HistorialAvalTecnico {
-  id            Int      @id @default(autoincrement())
-  estado        Estado
-  usuarioId     Int
-  avalTecnicoId Int
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
-  avalTecnico AvalTecnico @relation(fields: [avalTecnicoId], references: [id])
-
-  @@index([usuarioId])
-  @@index([estado])
-  @@index([createdAt])
-  @@index([avalTecnicoId])
 }
 
 // ------------------
@@ -463,13 +457,35 @@ model Item {
   actividad       Actividad        @relation(fields: [actividadId], references: [id])
   pdaItems        PdaItem[]
   financieroItems FinancieroItem[]
+  eventoItems     EventoItem[]
 
   @@index([actividadId])
   @@index([numero])
 }
 
 // ------------------
-//  PDA y su historial (sin cambios salvo FK)
+// ITEMS PRESUPUESTARIOS POR EVENTO (carga masiva)
+// ------------------
+model EventoItem {
+  id          Int      @id @default(autoincrement())
+  eventoId    Int
+  itemId      Int
+  mes         Int      // 1-12 (mes donde se asigna el presupuesto)
+  presupuesto Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  evento Evento @relation(fields: [eventoId], references: [id])
+  item   Item   @relation(fields: [itemId], references: [id])
+
+  @@unique([eventoId, itemId, mes]) // Un item por evento por mes
+  @@index([eventoId])
+  @@index([itemId])
+  @@index([mes])
+}
+
+// ------------------
+//  PDA (el historial se maneja en HistorialColeccion con etapa=PDA)
 // ------------------
 model Pda {
   id                  Int      @id @default(autoincrement())
@@ -481,29 +497,11 @@ model Pda {
   updatedAt           DateTime @updatedAt
   deleted             Boolean  @default(false)
 
-  coleccionAval ColeccionAval  @relation(fields: [coleccionAvalId], references: [id])
-  historialPda  HistorialPda[]
+  coleccionAval ColeccionAval @relation(fields: [coleccionAvalId], references: [id])
   pdaItems      PdaItem[]
 
   @@index([createdAt])
   @@index([deleted])
-}
-
-model HistorialPda {
-  id        Int      @id @default(autoincrement())
-  estado    Estado
-  usuarioId Int
-  pdaId     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  usuario Usuario @relation(fields: [usuarioId], references: [id])
-  pda     Pda     @relation(fields: [pdaId], references: [id])
-
-  @@index([usuarioId])
-  @@index([estado])
-  @@index([createdAt])
-  @@index([pdaId])
 }
 
 model PdaItem {
@@ -522,7 +520,7 @@ model PdaItem {
 }
 
 // ------------------
-//  DTM y su historial
+//  DTM (el historial se maneja en HistorialColeccion con etapa=REVISION_DTM)
 // ------------------
 model Dtm {
   id                Int      @id @default(autoincrement())
@@ -535,8 +533,7 @@ model Dtm {
   updatedAt         DateTime @updatedAt
   deleted           Boolean  @default(false)
 
-  coleccionAval ColeccionAval  @relation(fields: [coleccionAvalId], references: [id])
-  historialDtm  HistorialDtm[]
+  coleccionAval ColeccionAval @relation(fields: [coleccionAvalId], references: [id])
 
   @@index([createdAt])
   @@index([fechaPresentacion])
@@ -544,25 +541,8 @@ model Dtm {
   @@index([deleted])
 }
 
-model HistorialDtm {
-  id        Int      @id @default(autoincrement())
-  estado    Estado
-  usuarioId Int
-  dtmId     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  usuario Usuario @relation(fields: [usuarioId], references: [id])
-  dtm     Dtm     @relation(fields: [dtmId], references: [id])
-
-  @@index([usuarioId])
-  @@index([estado])
-  @@index([createdAt])
-  @@index([dtmId])
-}
-
 // ------------------
-//  FINANCIERO y su historial / ítems
+//  FINANCIERO (el historial se maneja en HistorialColeccion con etapa=FINANCIERO)
 // ------------------
 model Financiero {
   id              Int      @id @default(autoincrement())
@@ -579,30 +559,12 @@ model Financiero {
   updatedAt       DateTime @updatedAt
   deleted         Boolean  @default(false)
 
-  coleccionAval       ColeccionAval         @relation(fields: [coleccionAvalId], references: [id])
-  historialFinanciero HistorialFinanciero[]
-  financieroItems     FinancieroItem[]
+  coleccionAval   ColeccionAval    @relation(fields: [coleccionAvalId], references: [id])
+  financieroItems FinancieroItem[]
 
   @@index([createdAt])
   @@index([descripcion])
   @@index([deleted])
-}
-
-model HistorialFinanciero {
-  id           Int      @id @default(autoincrement())
-  estado       Estado
-  usuarioId    Int
-  financieroId Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  usuario    Usuario    @relation(fields: [usuarioId], references: [id])
-  financiero Financiero @relation(fields: [financieroId], references: [id])
-
-  @@index([usuarioId])
-  @@index([estado])
-  @@index([createdAt])
-  @@index([financieroId])
 }
 
 model FinancieroItem {

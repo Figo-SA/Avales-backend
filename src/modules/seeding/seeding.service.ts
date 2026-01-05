@@ -58,12 +58,9 @@ export class SeedingService {
       // Deportista-related
       this.prisma.deportistaAval.deleteMany(),
 
-      // PDA / Financiero / DTM related items & history
+      // PDA / Financiero / DTM related items
       this.prisma.pdaItem.deleteMany(),
       this.prisma.financieroItem.deleteMany(),
-      this.prisma.historialPda.deleteMany(),
-      this.prisma.historialDtm.deleteMany(),
-      this.prisma.historialFinanciero.deleteMany(),
 
       // Main PDA/DTM/Financiero records
       this.prisma.pda.deleteMany(),
@@ -74,7 +71,6 @@ export class SeedingService {
       this.prisma.avalRequerimiento.deleteMany(),
       this.prisma.avalCriterio.deleteMany(),
       this.prisma.avalObjetivo.deleteMany(),
-      this.prisma.historialAvalTecnico.deleteMany(),
       this.prisma.avalTecnico.deleteMany(),
 
       // Colección and its relations
@@ -87,7 +83,8 @@ export class SeedingService {
       // Deportistas (now safe to delete)
       this.prisma.deportista.deleteMany(),
 
-      // Eventos
+      // Eventos y sus items presupuestarios
+      this.prisma.eventoItem.deleteMany(),
       this.prisma.evento.deleteMany(),
 
       // Usuarios & roles
