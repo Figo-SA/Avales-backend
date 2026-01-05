@@ -22,6 +22,25 @@ Obtener disciplinas
 Response: CatalogItem[]
 ```
 
+### GET /actividades
+Obtener actividades presupuestarias
+```
+Response: CatalogItem[]
+```
+
+### GET /items
+Obtener items presupuestarios
+```
+Query: { actividadId?: number }
+Response: ItemResponse[]
+```
+
+### GET /items/:id
+Obtener item presupuestario por ID
+```
+Response: ItemResponse
+```
+
 ---
 
 ## DTOs
@@ -39,5 +58,22 @@ Response: CatalogItem[]
 {
   id: number,
   nombre: string
+}
+```
+
+### ItemResponse
+```typescript
+{
+  id: number,
+  nombre: string,
+  numero: number,
+  descripcion: string,
+  actividad?: {
+    id: number,
+    nombre: string,
+    numero: number
+  },
+  createdAt: string,
+  updatedAt: string
 }
 ```
