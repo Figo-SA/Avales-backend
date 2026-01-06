@@ -17,6 +17,7 @@ import { EventsModule } from './modules/events/events.module';
 import { MailModule } from './modules/mail/mail.module';
 import { PushNotificationsModule } from './modules/push-notifications/push-notifications.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { AvalesModule } from './modules/avales/avales.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
     CommonModule,
     UsersModule,
     AthletesModule,
+    AvalesModule,
 
     SeedingModule,
 

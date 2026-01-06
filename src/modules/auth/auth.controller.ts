@@ -56,8 +56,9 @@ export class AuthController {
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('token', {
       httpOnly: true,
-      secure: false, // Poner true en producción con HTTPS
-      sameSite: 'lax', // 'none' + secure si front y back están en dominios distintos
+      secure: true, // Debe coincidir con login
+      sameSite: 'none', // Debe coincidir con login
+      partitioned: true, // Debe coincidir con login
       path: '/', // cookie visible en toda la app
     });
 
