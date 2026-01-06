@@ -361,3 +361,65 @@ Response: AvalResponse
 - **Validaciones de Estado**: Solo se puede aprobar o rechazar un aval en estado SOLICITADO.
 
 - **Multipart Form Data**: Los endpoints que suben archivos usan `multipart/form-data` con validaciones de tipo (jpg/jpeg/png/pdf) y tamaño máximo (5MB).
+
+---
+
+## ⚠️ Endpoints Deprecados (Compatibilidad)
+
+Los siguientes endpoints en `/api/v1/events` están **DEPRECADOS** pero siguen funcionando para compatibilidad con clientes existentes:
+
+| Endpoint Deprecado | Nuevo Endpoint | Estado |
+|-------------------|----------------|--------|
+| `POST /events/:id/aval` | `POST /avales` | ⚠️ DEPRECATED |
+| `PATCH /events/:id/aval/archivo` | `PATCH /avales/:avalId/archivo` | ⚠️ DEPRECATED |
+| `GET /events/:id/dtm-pdf` | `GET /avales/:avalId/dtm-pdf` | ⚠️ DEPRECATED |
+| `GET /events/:id/pda-pdf` | `GET /avales/:avalId/pda-pdf` | ⚠️ DEPRECATED |
+| `PATCH /events/:id/aprobar` | `PATCH /avales/:avalId/aprobar` | ⚠️ DEPRECATED |
+| `PATCH /events/:id/rechazar` | `PATCH /avales/:avalId/rechazar` | ⚠️ DEPRECATED |
+
+**Importante**:
+- Los endpoints deprecados usan el **ID del evento** como parámetro
+- Los nuevos endpoints usan el **ID del aval** (ColeccionAval)
+- Se recomienda migrar a los nuevos endpoints
+- Los endpoints deprecados se eliminarán en versiones futuras
+
+---
+
+## Filtrado por Disciplina (Seguridad)
+
+### Contexto
+Los entrenadores tienen asignada una disciplina en su perfil:
+```typescript
+Usuario {
+  disciplinaId: number,  // Ej: 1 = Atletismo, 2 = Natación
+  categoriaId: number,
+  roles: ["entrenador"]
+}
+```
+
+### Comportamiento con Eventos
+
+Cuando un entrenador lista eventos para crear un aval:
+1. El sistema filtra automáticamente eventos por su `disciplinaId`
+2. Solo ve eventos de su disciplina
+3. Esto asegura que solo pueda crear avales para eventos de su deporte
+
+**Ejemplo**:
+```
+Entrenador: María (disciplinaId: 2 - Natación)
+
+GET /api/v1/events (para seleccionar evento)
+→ Solo retorna eventos de Natación
+→ No puede crear avales para eventos de Atletismo, Fútbol, etc.
+
+POST /api/v1/avales
+Body: { eventoId: 123, ... }
+→ Solo puede crear aval si evento 123 es de Natación
+```
+
+### Ventajas
+
+✅ **Seguridad**: Entrenadores solo gestionan avales de su disciplina
+✅ **Datos Consistentes**: Los usuarios ya tienen `disciplinaId` en su perfil
+✅ **Sin Migración**: No se requieren cambios en la base de datos
+✅ **Filtrado Automático**: Se aplica desde el JWT del usuario

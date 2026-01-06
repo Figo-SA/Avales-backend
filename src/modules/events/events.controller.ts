@@ -30,6 +30,8 @@ import {
   ApiRestoreEvent,
 } from './decorators';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { UsuarioConRoles } from '../auth/interfaces/usuario-roles';
 
 @ApiTags('events')
 @Controller('events')
@@ -60,9 +62,25 @@ export class EventsController {
   @Get()
   @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
   @ApiGetEventsPaginated()
-  findAll(@Query() filters: EventFiltersDto) {
+  findAll(
+    @Query() filters: EventFiltersDto,
+    @GetUser() user: UsuarioConRoles,
+  ) {
     const { page = 1, limit = 10, estado, search } = filters;
-    return this.eventsService.findAllPaginated(page, limit, estado, search);
+
+    // Si el usuario es entrenador, filtrar solo eventos de su disciplina
+    const isEntrenador = user.usuariosRol.some(
+      (ur) => ur.rol.nombre === ValidRoles.entrenador,
+    );
+    const disciplinaId = isEntrenador ? user.disciplinaId : undefined;
+
+    return this.eventsService.findAllPaginated(
+      page,
+      limit,
+      estado,
+      search,
+      disciplinaId,
+    );
   }
 
   @Patch(':id')

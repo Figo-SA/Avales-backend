@@ -64,6 +64,7 @@ export class EventsService {
     limit: number,
     estado?: Estado,
     search?: string,
+    disciplinaId?: number,
   ): Promise<{
     items: EventResponseDto[];
     pagination: PaginationMetaDto;
@@ -74,6 +75,11 @@ export class EventsService {
 
     if (estado) {
       where.estado = estado;
+    }
+
+    // Filtrar por disciplina si se proporciona (para entrenadores)
+    if (disciplinaId) {
+      where.disciplinaId = disciplinaId;
     }
 
     if (search) {

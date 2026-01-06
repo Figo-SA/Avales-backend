@@ -13,10 +13,19 @@ Response: EventResponse
 
 ### GET /
 Listar eventos (paginado y filtrable)
+
+**Acceso**: Entrenador, Admin, SuperAdmin
+
+**Filtrado Automático por Rol**:
+- **Entrenadores**: Solo ven eventos de su disciplina (filtro automático por `disciplinaId` del usuario)
+- **Admins/SuperAdmins**: Ven todos los eventos sin restricción
+
 ```
 Query: { page?, limit?, estado?, search? }
 Response: { items: EventResponse[], pagination: { page, limit, total } }
 ```
+
+**Nota**: El filtro por disciplina se aplica automáticamente desde el JWT del usuario. No es necesario enviarlo en el query.
 
 ### GET /:id
 Obtener evento por ID
@@ -136,3 +145,62 @@ Response: EventResponse
 Genero: "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO"
 Estado: "DISPONIBLE" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO"
 ```
+
+---
+
+## Filtrado por Disciplina (Seguridad)
+
+### Contexto
+Los usuarios tienen asignada una disciplina y categoría en su perfil:
+```typescript
+Usuario {
+  disciplinaId: number,  // Ej: 1 = Atletismo, 2 = Natación
+  categoriaId: number,
+  ...
+}
+```
+
+### Comportamiento Automático
+
+#### Para Entrenadores
+Cuando un entrenador hace login, el sistema:
+1. Extrae su `disciplinaId` del JWT
+2. Automáticamente filtra eventos: `WHERE disciplinaId = usuario.disciplinaId`
+3. Solo retorna eventos de su disciplina
+
+**Ejemplo**:
+```
+Usuario: Juan (entrenadorId: 10, disciplinaId: 1 - Atletismo)
+
+GET /api/v1/events
+→ Solo retorna eventos donde disciplinaId = 1 (Atletismo)
+→ No puede ver eventos de Natación, Fútbol, etc.
+```
+
+#### Para Admins y SuperAdmins
+- **Sin filtro**: Ven todos los eventos de todas las disciplinas
+- Pueden gestionar eventos de cualquier deporte
+
+### Casos de Uso
+
+**Caso 1: Entrenador crea solicitud de aval**
+```
+1. Entrenador de Atletismo hace login
+2. Lista eventos disponibles → Solo ve eventos de Atletismo
+3. Selecciona un evento de su disciplina
+4. Crea solicitud de aval para ese evento
+```
+
+**Caso 2: Admin gestiona todos los eventos**
+```
+1. Admin hace login
+2. Lista eventos → Ve TODOS los eventos (Atletismo, Natación, Fútbol, etc.)
+3. Puede administrar cualquier evento
+```
+
+### Ventajas de este Enfoque
+
+✅ **Seguridad**: El entrenador no puede manipular el filtro
+✅ **Automático**: No requiere parámetros adicionales en el frontend
+✅ **Transparente**: El JWT ya contiene la información necesaria
+✅ **Escalable**: Fácil agregar más reglas de filtrado por rol
