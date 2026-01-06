@@ -3,7 +3,9 @@
     "allow": [
       "Bash(find:*)",
       "Bash(npx tsc:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
