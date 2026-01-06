@@ -4,6 +4,8 @@
 /build
 settings.json
 /.vscode
+nul
+settings.local.json
 
 
 # Logs
