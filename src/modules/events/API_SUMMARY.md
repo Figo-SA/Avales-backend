@@ -94,6 +94,29 @@ Response: EventResponse
   numAtletasHombres: number,
   numAtletasMujeres: number,
   createdAt: Date,
+  updatedAt: Date,
+  eventoItems?: EventoItemResponse[]  // Items presupuestarios asignados
+}
+```
+
+### EventoItemResponse
+```typescript
+{
+  id: number,
+  mes: number,                    // 1-12
+  presupuesto: string,            // "1500.00"
+  item: {
+    id: number,
+    nombre: string,
+    numero: number,
+    descripcion: string,
+    actividad?: {
+      id: number,
+      nombre: string,
+      numero: number
+    }
+  },
+  createdAt: Date,
   updatedAt: Date
 }
 ```

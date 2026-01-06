@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Genero } from '@prisma/client';
+import { EventoItemResponseDto } from './evento-item-response.dto';
 
 export class EventResponseDto {
   @ApiProperty({
@@ -128,4 +129,10 @@ export class EventResponseDto {
     example: '2025-01-20T14:45:00.000Z',
   })
   updatedAt: Date;
+
+  @ApiPropertyOptional({
+    description: 'Items presupuestarios asignados al evento',
+    type: [EventoItemResponseDto],
+  })
+  eventoItems?: EventoItemResponseDto[];
 }

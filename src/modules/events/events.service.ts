@@ -20,6 +20,16 @@ export class EventsService {
   private readonly eventInclude = {
     disciplina: true,
     categoria: true,
+    eventoItems: {
+      include: {
+        item: {
+          include: {
+            actividad: true,
+          },
+        },
+      },
+      orderBy: { mes: 'asc' as const },
+    },
   };
 
   constructor(

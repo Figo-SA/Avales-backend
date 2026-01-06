@@ -9,6 +9,8 @@ import { usuariosSeed } from './data/usuarios';
 import { entrenadoresSeed } from './data/entrenadores';
 import { eventosSeed } from './data/eventos';
 import { deportistasSeed } from './data/deportistas';
+import { actividadesSeed } from './data/actividades';
+import { itemsSeed } from './data/items';
 
 @Injectable()
 export class SeedingService {
@@ -37,6 +39,10 @@ export class SeedingService {
       await this.createUsuarios();
       // Crear entrenadores independientes (tabla separada)
       await this.createEntrenadores();
+      // Crear actividades e items presupuestarios
+      await this.createActividades();
+      await this.createItems();
+      // Crear eventos y asignarles items presupuestarios
       await this.createEventos();
       await this.createDeportistas();
 
@@ -96,6 +102,10 @@ export class SeedingService {
       this.prisma.categoria.deleteMany(),
       this.prisma.disciplina.deleteMany(),
       this.prisma.rubro.deleteMany(),
+
+      // Items presupuestarios y actividades
+      this.prisma.item.deleteMany(),
+      this.prisma.actividad.deleteMany(),
     ]);
     this.logger.log('🧹 Base de datos limpiada');
   }
@@ -118,6 +128,12 @@ export class SeedingService {
       .$executeRaw`ALTER SEQUENCE "ColeccionAval_id_seq" RESTART WITH 1;`;
     await this.prisma
       .$executeRaw`ALTER SEQUENCE "Entrenador_id_seq" RESTART WITH 1;`;
+    await this.prisma
+      .$executeRaw`ALTER SEQUENCE "Actividad_id_seq" RESTART WITH 1;`;
+    await this.prisma
+      .$executeRaw`ALTER SEQUENCE "Item_id_seq" RESTART WITH 1;`;
+    await this.prisma
+      .$executeRaw`ALTER SEQUENCE "EventoItem_id_seq" RESTART WITH 1;`;
     this.logger.log('🔄 Secuencias de autoincremento reseteadas');
   }
 
@@ -199,10 +215,45 @@ export class SeedingService {
       skipDuplicates: true,
     });
 
-    this.logger.log(`??? ${entrenadoresSeed.length} entrenadores seed creados`);
+    this.logger.log(`🏋️ ${entrenadoresSeed.length} entrenadores seed creados`);
+  }
+
+  private async createActividades() {
+    await this.prisma.actividad.createMany({
+      data: actividadesSeed,
+      skipDuplicates: true,
+    });
+    this.logger.log(`📂 ${actividadesSeed.length} actividades presupuestarias creadas`);
+  }
+
+  private async createItems() {
+    for (const item of itemsSeed) {
+      const actividad = await this.prisma.actividad.findFirst({
+        where: { numero: item.actividadNumero },
+      });
+
+      if (!actividad) {
+        this.logger.warn(`⚠️ No se encontró actividad con número ${item.actividadNumero} para item: ${item.nombre}`);
+        continue;
+      }
+
+      await this.prisma.item.create({
+        data: {
+          actividadId: actividad.id,
+          nombre: item.nombre,
+          numero: item.numero,
+          descripcion: item.descripcion,
+        },
+      });
+    }
+    this.logger.log(`📋 ${itemsSeed.length} items presupuestarios creados`);
   }
 
   private async createEventos() {
+    // Obtener todos los items para asignar a eventos
+    const allItems = await this.prisma.item.findMany();
+    let eventoItemsCount = 0;
+
     for (const evento of eventosSeed) {
       const disciplina = await this.prisma.disciplina.findFirst({
         where: { nombre: evento.disciplinaNombre },
@@ -213,11 +264,11 @@ export class SeedingService {
       });
 
       if (!disciplina || !categoria) {
-        this.logger.warn(`?? No se encontró disciplina o categoría para evento: ${evento.nombre}`);
+        this.logger.warn(`⚠️ No se encontró disciplina o categoría para evento: ${evento.nombre}`);
         continue;
       }
 
-      await this.prisma.evento.create({
+      const createdEvento = await this.prisma.evento.create({
         data: {
           codigo: evento.codigo,
           tipoParticipacion: evento.tipoParticipacion,
@@ -240,9 +291,34 @@ export class SeedingService {
           estado: evento.estado,
         },
       });
+
+      // Asignar items presupuestarios aleatorios al evento
+      // Seleccionamos entre 3 y 6 items aleatorios para cada evento
+      const numItems = Math.floor(Math.random() * 4) + 3; // 3 a 6 items
+      const shuffledItems = [...allItems].sort(() => Math.random() - 0.5);
+      const selectedItems = shuffledItems.slice(0, Math.min(numItems, allItems.length));
+
+      // Mes del evento basado en fechaInicio
+      const eventoMonth = evento.fechaInicio.getMonth() + 1; // 1-12
+
+      for (const item of selectedItems) {
+        // Presupuesto aleatorio entre 500 y 5000
+        const presupuesto = Math.floor(Math.random() * 4500) + 500;
+
+        await this.prisma.eventoItem.create({
+          data: {
+            eventoId: createdEvento.id,
+            itemId: item.id,
+            mes: eventoMonth,
+            presupuesto: presupuesto,
+          },
+        });
+        eventoItemsCount++;
+      }
     }
 
-    this.logger.log(`?? ${eventosSeed.length} eventos creados con estados variados`);
+    this.logger.log(`🎯 ${eventosSeed.length} eventos creados con estados variados`);
+    this.logger.log(`💰 ${eventoItemsCount} items presupuestarios asignados a eventos`);
   }
 
   private async createDeportistas() {
@@ -292,6 +368,9 @@ export class SeedingService {
         usuarioRoles,
         eventos,
         deportistas,
+        actividades,
+        items,
+        eventoItems,
       ] = await Promise.all([
         this.prisma.categoria.count(),
         this.prisma.disciplina.count(),
@@ -301,6 +380,9 @@ export class SeedingService {
         this.prisma.usuarioRol.count(),
         this.prisma.evento.count(),
         this.prisma.deportista.count(),
+        this.prisma.actividad.count(),
+        this.prisma.item.count(),
+        this.prisma.eventoItem.count(),
       ]);
 
       return {
@@ -312,6 +394,9 @@ export class SeedingService {
         usuarioRoles,
         eventos,
         deportistas,
+        actividades,
+        items,
+        eventoItems,
         isEmpty:
           categorias === 0 &&
           disciplinas === 0 &&
