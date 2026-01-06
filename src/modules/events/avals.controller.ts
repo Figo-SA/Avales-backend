@@ -15,26 +15,26 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { ApiAuth } from 'src/common/decorators/api-auth.decorator';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 import { EventsService } from './events.service';
 import { CreateSolicitudAvalDto } from './dto/create-solicitud-aval.dto';
 import { ApproveRejectDto } from './dto/approve-reject.dto';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
-import {
-  ApiDownloadSolicitudPdf,
-  ApiUploadEventFile,
-} from './decorators';
 
-@ApiTags('avals')
+@ApiTags('avals (DEPRECATED - Use /avales instead)')
 @Controller('events')
-export class AvalesController {
+export class AvalsDeprecatedController {
   constructor(private readonly eventsService: EventsService) {}
 
   @Post(':id/aval')
   @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
-  // @ApiCreateAval() // TODO: Crear decorador de Swagger
+  @ApiOperation({
+    summary: 'Crear solicitud de aval (DEPRECATED)',
+    description: '⚠️ DEPRECADO: Use POST /api/v1/avales en su lugar. Este endpoint se eliminará en versiones futuras.',
+    deprecated: true,
+  })
   @SuccessMessage('Solicitud de aval creada correctamente')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('solicitud'))
@@ -57,7 +57,11 @@ export class AvalesController {
 
   @Patch(':id/aval/archivo')
   @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
-  @ApiUploadEventFile()
+  @ApiOperation({
+    summary: 'Subir archivo del aval (DEPRECATED)',
+    description: '⚠️ DEPRECADO: Use PATCH /api/v1/avales/:avalId/archivo en su lugar. Este endpoint se eliminará en versiones futuras.',
+    deprecated: true,
+  })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('archivo'))
   @SuccessMessage('Archivo del aval subido correctamente')
@@ -84,7 +88,11 @@ export class AvalesController {
     ValidRoles.admin,
     ValidRoles.superAdmin,
   )
-  @ApiDownloadSolicitudPdf()
+  @ApiOperation({
+    summary: 'Descargar PDF DTM (DEPRECATED)',
+    description: '⚠️ DEPRECADO: Use GET /api/v1/avales/:avalId/dtm-pdf en su lugar. Este endpoint se eliminará en versiones futuras.',
+    deprecated: true,
+  })
   async downloadDtmPdf(
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
@@ -101,7 +109,11 @@ export class AvalesController {
 
   @Get(':id/pda-pdf')
   @ApiAuth(ValidRoles.pda, ValidRoles.admin, ValidRoles.superAdmin)
-  @ApiDownloadSolicitudPdf()
+  @ApiOperation({
+    summary: 'Descargar PDF PDA (DEPRECATED)',
+    description: '⚠️ DEPRECADO: Use GET /api/v1/avales/:avalId/pda-pdf en su lugar. Este endpoint se eliminará en versiones futuras.',
+    deprecated: true,
+  })
   async downloadPdaPdf(
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
@@ -123,6 +135,12 @@ export class AvalesController {
     ValidRoles.admin,
     ValidRoles.superAdmin,
   )
+  @ApiOperation({
+    summary: 'Aprobar solicitud de aval (DEPRECATED)',
+    description: '⚠️ DEPRECADO: Use PATCH /api/v1/avales/:avalId/aprobar en su lugar. Este endpoint se eliminará en versiones futuras.',
+    deprecated: true,
+  })
+  @SuccessMessage('Solicitud aprobada')
   aprobarSolicitud(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: ApproveRejectDto,
@@ -137,6 +155,12 @@ export class AvalesController {
     ValidRoles.admin,
     ValidRoles.superAdmin,
   )
+  @ApiOperation({
+    summary: 'Rechazar solicitud de aval (DEPRECATED)',
+    description: '⚠️ DEPRECADO: Use PATCH /api/v1/avales/:avalId/rechazar en su lugar. Este endpoint se eliminará en versiones futuras.',
+    deprecated: true,
+  })
+  @SuccessMessage('Solicitud rechazada')
   rechazarSolicitud(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: ApproveRejectDto,
