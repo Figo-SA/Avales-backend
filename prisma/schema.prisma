@@ -6,6 +6,7 @@
 
 enum Estado {
   DISPONIBLE
+  BORRADOR     // Convocatoria subida, esperando creación del AvalTecnico
   SOLICITADO
   RECHAZADO
   ACEPTADO

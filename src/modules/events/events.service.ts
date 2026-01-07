@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
@@ -65,6 +70,7 @@ export class EventsService {
     estado?: Estado,
     search?: string,
     disciplinaId?: number,
+    sinAval?: boolean,
   ): Promise<{
     items: EventResponseDto[];
     pagination: PaginationMetaDto;
@@ -80,6 +86,13 @@ export class EventsService {
     // Filtrar por disciplina si se proporciona (para entrenadores)
     if (disciplinaId) {
       where.disciplinaId = disciplinaId;
+    }
+
+    // Filtrar solo eventos SIN aval (ColeccionAval)
+    if (sinAval === true) {
+      where.coleccionesAval = {
+        none: {}, // No tiene ninguna ColeccionAval asociada
+      };
     }
 
     if (search) {
@@ -141,7 +154,9 @@ export class EventsService {
     });
 
     if (Object.keys(data).length === 0) {
-      throw new BadRequestException('No se proporcionaron campos para actualizar');
+      throw new BadRequestException(
+        'No se proporcionaron campos para actualizar',
+      );
     }
 
     if (data.fechaInicio) {
@@ -940,9 +955,8 @@ export class EventsService {
           if (!full) continue;
 
           // Build report data
-          const { avalCompletoReport } = await import(
-            '../reports/reports/aval-completo.report'
-          );
+          const { avalCompletoReport } =
+            await import('../reports/reports/aval-completo.report');
 
           const reportData: any = {
             codigo: full.evento.codigo,

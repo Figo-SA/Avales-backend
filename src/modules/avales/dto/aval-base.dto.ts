@@ -114,10 +114,10 @@ export class EntrenadorAvalDto {
 
 // DTO base para crear aval (solicitud)
 export class AvalBaseDto {
-  @ApiProperty({ example: 1, description: 'ID del evento' })
+  @ApiProperty({ example: 1, description: 'ID de la colección de aval' })
   @IsInt()
   @Type(() => Number)
-  eventoId: number;
+  coleccionAvalId: number;
 
   @ApiProperty({
     example: '2025-06-01T06:00:00Z',

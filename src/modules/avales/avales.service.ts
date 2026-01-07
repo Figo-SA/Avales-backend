@@ -33,6 +33,7 @@ export class AvalesService {
       },
     },
     avalTecnico: {
+      where: { deleted: false },
       include: {
         objetivos: { orderBy: { orden: 'asc' as const } },
         criterios: { orderBy: { orden: 'asc' as const } },
@@ -186,15 +187,12 @@ export class AvalesService {
   }
 
   /**
-   * Crear solicitud de aval
+   * PASO 1: Subir convocatoria y crear ColeccionAval
    */
-  async create(
-    createAvalDto: CreateAvalDto,
-    solicitudFile?: Express.Multer.File,
+  async uploadConvocatoria(
+    eventoId: number,
+    convocatoriaFile: Express.Multer.File,
   ): Promise<AvalResponseDto> {
-    const { eventoId, entrenadores, deportistas, rubros, ...solicitudData } =
-      createAvalDto;
-
     // Verificar que el evento existe y está disponible
     const evento = await this.prisma.evento.findFirst({
       where: { id: eventoId, deleted: false },
@@ -217,42 +215,80 @@ export class AvalesService {
       throw new AvalAlreadyExistsException();
     }
 
-    // Calcular totales
-    const totalEntrenadores = entrenadores.length;
-    const totalDeportistas = deportistas.length;
+    // Subir archivo de convocatoria
+    const convocatoriaUrl = await this.storageService.uploadFile(
+      convocatoriaFile,
+      'avales/convocatorias',
+    );
 
     // Crear descripción automática
     const descripcion = `Solicitud de aval para ${evento.nombre} - ${evento.lugar}, ${evento.ciudad}`;
 
-    // Subir archivo de solicitud si fue enviado
-    let solicitudUrl: string | undefined;
-    if (solicitudFile) {
-      try {
-        solicitudUrl = await this.storageService.uploadFile(
-          solicitudFile,
-          'avales',
-        );
-      } catch (err) {
-        console.error('Error subiendo archivo de solicitud:', err);
-      }
+    // Crear ColeccionAval con la convocatoria (sin AvalTecnico todavía)
+    const coleccion = await this.prisma.coleccionAval.create({
+      data: {
+        descripcion,
+        eventoId,
+        estado: Estado.BORRADOR, // Convocatoria subida, esperando AvalTecnico
+        convocatoriaUrl,
+      } as any,
+    });
+
+    // Retornar la colección creada
+    return this.findOne(coleccion.id);
+  }
+
+  /**
+   * PASO 2: Crear solicitud de aval técnico
+   */
+  async create(createAvalDto: CreateAvalDto): Promise<AvalResponseDto> {
+    const { coleccionAvalId, entrenadores, deportistas, rubros, ...solicitudData } =
+      createAvalDto;
+
+    // Verificar que la ColeccionAval existe
+    const coleccion = await this.prisma.coleccionAval.findUnique({
+      where: { id: coleccionAvalId },
+      include: {
+        evento: true,
+        avalTecnico: true,
+      },
+    });
+
+    if (!coleccion) {
+      throw new AvalNotFoundException();
     }
+
+    // Verificar que no tenga ya un AvalTecnico activo (no eliminado)
+    if (coleccion.avalTecnico && !coleccion.avalTecnico.deleted) {
+      throw new BadRequestException(
+        'Esta colección de aval ya tiene un AvalTecnico activo',
+      );
+    }
+
+    const evento = coleccion.evento;
+
+    // Calcular totales
+    const totalEntrenadores = entrenadores.length;
+    const totalDeportistas = deportistas.length;
+
+    // Validar que el número de deportistas coincida con el evento
+    const totalDeportistasEvento = evento.numAtletasHombres + evento.numAtletasMujeres;
+    if (totalDeportistas !== totalDeportistasEvento) {
+      throw new BadRequestException(
+        `El número de deportistas (${totalDeportistas}) no coincide con el evento (${totalDeportistasEvento}). ` +
+        `Evento requiere: ${evento.numAtletasHombres} hombres + ${evento.numAtletasMujeres} mujeres = ${totalDeportistasEvento} total.`
+      );
+    }
+
+    // Crear descripción automática
+    const descripcion = `Solicitud de aval para ${evento.nombre} - ${evento.lugar}, ${evento.ciudad}`;
 
     // Crear todo en una transacción
     const resultado = await this.prisma.$transaction(async (tx) => {
-      // 1. Crear ColeccionAval
-      const coleccion = await tx.coleccionAval.create({
-        data: {
-          descripcion,
-          eventoId,
-          solicitudUrl,
-          estado: Estado.SOLICITADO,
-        } as any,
-      });
-
-      // 2. Crear AvalTecnico
+      // 1. Crear AvalTecnico (solicitud)
       const avalTecnico = await tx.avalTecnico.create({
         data: {
-          coleccionAvalId: coleccion.id,
+          coleccionAvalId,
           descripcion,
           fechaHoraSalida: new Date(solicitudData.fechaHoraSalida),
           fechaHoraRetorno: new Date(solicitudData.fechaHoraRetorno),
@@ -264,7 +300,7 @@ export class AvalesService {
         },
       });
 
-      // 3. Crear objetivos
+      // 2. Crear objetivos
       if (solicitudData.objetivos && solicitudData.objetivos.length > 0) {
         await tx.avalObjetivo.createMany({
           data: solicitudData.objetivos.map((obj) => ({
@@ -275,7 +311,7 @@ export class AvalesService {
         });
       }
 
-      // 4. Crear criterios
+      // 3. Crear criterios
       if (solicitudData.criterios && solicitudData.criterios.length > 0) {
         await tx.avalCriterio.createMany({
           data: solicitudData.criterios.map((crit) => ({
@@ -286,7 +322,7 @@ export class AvalesService {
         });
       }
 
-      // 5. Crear rubros presupuestarios
+      // 4. Crear rubros presupuestarios
       if (rubros && rubros.length > 0) {
         await tx.avalRequerimiento.createMany({
           data: rubros.map((rubro) => ({
@@ -298,7 +334,7 @@ export class AvalesService {
         });
       }
 
-      // 6. Crear deportistas del aval
+      // 5. Crear deportistas del aval
       if (deportistas && deportistas.length > 0) {
         await tx.deportistaAval.createMany({
           data: deportistas.map((dep) => ({
@@ -309,7 +345,7 @@ export class AvalesService {
         });
       }
 
-      // 7. Crear entrenadores de la colección
+      // 6. Crear entrenadores de la colección
       if (entrenadores && entrenadores.length > 0) {
         // Validar que los entrenadores existen
         const entrenadorIds = entrenadores.map((ent) => ent.entrenadorId);
@@ -329,7 +365,7 @@ export class AvalesService {
 
         await tx.coleccionEntrenador.createMany({
           data: entrenadores.map((ent) => ({
-            coleccionAvalId: coleccion.id,
+            coleccionAvalId,
             entrenadorId: ent.entrenadorId,
             rol: ent.rol,
             esPrincipal: ent.esPrincipal ?? false,
@@ -337,13 +373,30 @@ export class AvalesService {
         });
       }
 
-      // 8. Actualizar estado del evento a SOLICITADO
-      await tx.evento.update({
-        where: { id: eventoId },
+      // 7. Actualizar la ColeccionAval a estado SOLICITADO
+      await tx.coleccionAval.update({
+        where: { id: coleccionAvalId },
         data: { estado: Estado.SOLICITADO },
       });
 
-      return coleccion.id;
+      // 8. Actualizar estado del evento a SOLICITADO
+      await tx.evento.update({
+        where: { id: evento.id },
+        data: { estado: Estado.SOLICITADO },
+      });
+
+      // 9. Crear registro en el historial
+      await tx.historialColeccion.create({
+        data: {
+          coleccionAvalId,
+          estado: Estado.SOLICITADO,
+          etapa: EtapaFlujo.SOLICITUD,
+          usuarioId: 1, // TODO: Obtener del usuario actual
+          comentario: 'Solicitud de aval creada',
+        },
+      });
+
+      return coleccionAvalId;
     });
 
     // TODO: Generar PDF DTM automáticamente y notificar usuarios
@@ -615,6 +668,7 @@ export class AvalesService {
       descripcion: aval.descripcion ?? undefined,
       estado: aval.estado,
       comentario: aval.comentario ?? undefined,
+      convocatoriaUrl: aval.convocatoriaUrl ?? undefined,
       dtmUrl: aval.dtmUrl ?? undefined,
       pdaUrl: aval.pdaUrl ?? undefined,
       solicitudUrl: aval.solicitudUrl ?? undefined,

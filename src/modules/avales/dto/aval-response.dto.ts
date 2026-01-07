@@ -192,6 +192,9 @@ export class AvalResponseDto {
   @ApiPropertyOptional({ example: 'Comentario del revisor' })
   comentario?: string;
 
+  @ApiPropertyOptional({ example: 'https://storage.com/convocatoria.pdf' })
+  convocatoriaUrl?: string;
+
   @ApiPropertyOptional({ example: 'https://storage.com/dtm.pdf' })
   dtmUrl?: string;
 

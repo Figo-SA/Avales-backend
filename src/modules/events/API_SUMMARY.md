@@ -21,11 +21,27 @@ Listar eventos (paginado y filtrable)
 - **Admins/SuperAdmins**: Ven todos los eventos sin restricción
 
 ```
-Query: { page?, limit?, estado?, search? }
+Query: {
+  page?: number,      // default: 1
+  limit?: number,     // default: 10
+  estado?: Estado,    // DISPONIBLE | BORRADOR | SOLICITADO | RECHAZADO | ACEPTADO
+  search?: string,    // Buscar por nombre, código, lugar, ciudad, provincia
+  sinAval?: boolean   // true = solo eventos SIN aval, false/undefined = todos
+}
 Response: { items: EventResponse[], pagination: { page, limit, total } }
 ```
 
-**Nota**: El filtro por disciplina se aplica automáticamente desde el JWT del usuario. No es necesario enviarlo en el query.
+**Filtros Disponibles**:
+- `page` y `limit`: Paginación
+- `estado`: Filtrar por estado del evento
+- `search`: Búsqueda de texto libre
+- `sinAval`: **NUEVO** - Filtrar solo eventos que NO tienen ningún aval (ColeccionAval) asociado
+  - `?sinAval=true` → Solo eventos sin aval (útil para crear nuevos avales)
+  - `?sinAval=false` o sin parámetro → Todos los eventos
+
+**Notas**:
+- El filtro por disciplina se aplica automáticamente desde el JWT del usuario
+- El filtro `sinAval=true` es útil para mostrar al entrenador solo eventos disponibles para crear aval
 
 ### GET /:id
 Obtener evento por ID

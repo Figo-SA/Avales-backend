@@ -104,45 +104,100 @@ Retorna el detalle completo de un aval incluyendo:
 }
 
 /**
- * Decorador para el endpoint de creación de aval
+ * Decorador para el endpoint de subir convocatoria (Paso 1)
  */
-export function ApiCreateAval() {
+export function ApiUploadConvocatoria() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Crear solicitud de aval',
+      summary: 'Subir convocatoria y crear colección de aval (Paso 1)',
       description: `
-Crea una nueva solicitud de aval (colección de documentos) para un evento.
+Primer paso para crear un aval: Sube la convocatoria del evento y crea la ColeccionAval.
+
+Este endpoint:
+1. Valida que el evento exista y esté DISPONIBLE
+2. Valida que no exista un aval previo para el evento
+3. Sube el archivo de convocatoria al storage
+4. Crea la ColeccionAval con el archivo de convocatoria
+5. Retorna el ID de la colección para usarlo en el paso 2
+
+Una vez creada la colección, el entrenador puede proceder a crear el AvalTecnico (solicitud).
 
 Validaciones:
-- El evento (eventoId) debe existir y estar en estado DISPONIBLE
-- No debe existir un aval previo para el mismo evento
-- Todos los deportistas referenciados deben existir
-- Todos los entrenadores referenciados deben existir
-- Todos los rubros referenciados deben existir
-
-El archivo de solicitud es opcional y puede subirse posteriormente.
-
-Al crear el aval:
-- Se crea automáticamente el AvalTecnico con sus objetivos, criterios y requerimientos
-- Se registra el historial inicial en estado SOLICITADO
-- Se actualiza el estado del evento a SOLICITADO
+- Archivo de convocatoria requerido
+- Tamaño máximo: 5MB
+- Acepta cualquier formato de archivo
       `.trim(),
     }),
-    SuccessMessage('Solicitud de aval creada exitosamente'),
-    ApiCreatedResponseData(AvalResponseDto, undefined, 'Solicitud de aval creada exitosamente'),
+    SuccessMessage('Convocatoria subida y colección de aval creada exitosamente'),
+    ApiCreatedResponseData(AvalResponseDto, undefined, 'Convocatoria subida exitosamente'),
     ApiErrorResponsesConfig([400, 401, 403, 404, 409, 500], {
       404: {
         type: 'https://api.tu-dominio.com/errors/not-found',
         title: 'Not Found',
         status: 404,
-        detail: 'Evento, deportista, entrenador o rubro no encontrado',
-        instance: '/api/v1/avales',
+        detail: 'Evento no encontrado',
+        instance: '/api/v1/avales/convocatoria',
       },
       409: {
         type: 'https://api.tu-dominio.com/errors/conflict',
         title: 'Conflict',
         status: 409,
         detail: 'El evento ya tiene un aval creado',
+        instance: '/api/v1/avales/convocatoria',
+      },
+    }),
+  );
+}
+
+/**
+ * Decorador para el endpoint de crear aval técnico (Paso 2)
+ */
+export function ApiCreateAval() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Crear solicitud de aval técnico (Paso 2)',
+      description: `
+Segundo paso para crear un aval: Crea el AvalTecnico asociado a una ColeccionAval existente.
+
+El entrenador debe proporcionar:
+- ID de la ColeccionAval creada en el paso 1
+- Datos de transporte (salida y retorno)
+- Objetivos de participación
+- Criterios de selección
+- Requerimientos presupuestarios
+- Deportistas participantes con sus roles
+- Entrenadores participantes con sus roles
+- Observaciones (opcional)
+
+Validaciones:
+- La ColeccionAval debe existir
+- La ColeccionAval NO debe tener ya un AvalTecnico ACTIVO (no eliminado lógicamente)
+  * Si existe un AvalTecnico pero está eliminado (deleted: true), se permite crear uno nuevo
+  * Si existe un AvalTecnico activo (deleted: false), se rechaza la creación
+- El número de deportistas debe coincidir con el evento
+- Todos los deportistas, entrenadores y rubros deben existir
+
+Al crear el aval técnico:
+- Se crea el AvalTecnico con todos los datos de la solicitud
+- Se registra el historial en estado SOLICITADO
+- Se actualiza el estado del evento a SOLICITADO
+      `.trim(),
+    }),
+    SuccessMessage('Solicitud de aval creada exitosamente'),
+    ApiCreatedResponseData(AvalResponseDto, undefined, 'Solicitud de aval creada exitosamente'),
+    ApiErrorResponsesConfig([400, 401, 403, 404, 409, 500], {
+      400: {
+        type: 'https://api.tu-dominio.com/errors/bad-request',
+        title: 'Bad Request',
+        status: 400,
+        detail: 'El número de deportistas no coincide con el evento o la colección ya tiene un aval técnico',
+        instance: '/api/v1/avales',
+      },
+      404: {
+        type: 'https://api.tu-dominio.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'ColeccionAval, deportista, entrenador o rubro no encontrado',
         instance: '/api/v1/avales',
       },
     }),
