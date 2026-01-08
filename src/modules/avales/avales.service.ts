@@ -48,7 +48,7 @@ export class AvalesService {
     },
     entrenadores: {
       include: {
-        entrenador: true,
+        usuario: true,
       },
     },
     historial: {
@@ -311,15 +311,15 @@ export class AvalesService {
 
       // 7. Crear entrenadores de la colección
       if (entrenadores && entrenadores.length > 0) {
-        // Validar que los entrenadores existen
-        const entrenadorIds = entrenadores.map((ent) => ent.entrenadorId);
-        const entrenadoresExistentes = await tx.entrenador.findMany({
-          where: { id: { in: entrenadorIds } },
+        // Validar que los entrenadores existen (tabla Usuario)
+        const usuarioIds = entrenadores.map((ent) => ent.entrenadorId);
+        const usuariosExistentes = await tx.usuario.findMany({
+          where: { id: { in: usuarioIds }, deleted: false },
           select: { id: true },
         });
 
-        const existentesIds = entrenadoresExistentes.map((e) => e.id);
-        const faltantes = entrenadorIds.filter(
+        const existentesIds = usuariosExistentes.map((u) => u.id);
+        const faltantes = usuarioIds.filter(
           (id) => !existentesIds.includes(id),
         );
 
@@ -330,7 +330,7 @@ export class AvalesService {
         await tx.coleccionEntrenador.createMany({
           data: entrenadores.map((ent) => ({
             coleccionAvalId: coleccion.id,
-            entrenadorId: ent.entrenadorId,
+            usuarioId: ent.entrenadorId,
             rol: ent.rol,
             esPrincipal: ent.esPrincipal ?? false,
           })),
@@ -506,7 +506,7 @@ export class AvalesService {
           },
         },
         entrenadores: {
-          include: { entrenador: true },
+          include: { usuario: true },
         },
       },
     });
@@ -541,9 +541,9 @@ export class AvalesService {
         cedula: d.deportista.cedula,
       })) ?? [],
       entrenadores: aval.entrenadores.map((e) => ({
-        nombres: e.entrenador.nombres,
-        apellidos: e.entrenador.apellidos,
-        cedula: e.entrenador.cedula,
+        nombres: e.usuario.nombre,
+        apellidos: e.usuario.apellido,
+        cedula: e.usuario.cedula,
         rol: e.rol,
       })),
     };
@@ -673,9 +673,9 @@ export class AvalesService {
         rol: e.rol,
         esPrincipal: e.esPrincipal,
         entrenador: {
-          id: e.entrenador.id,
-          nombre: `${e.entrenador.nombres} ${e.entrenador.apellidos}`,
-          email: e.entrenador.email,
+          id: e.usuario.id,
+          nombre: `${e.usuario.nombre} ${e.usuario.apellido}`,
+          email: e.usuario.email,
         },
       })) ?? [],
       historial: aval.historial?.map((h: any) => ({
