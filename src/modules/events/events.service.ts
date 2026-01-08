@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PaginationHelper } from 'src/common/herlpers/pagination.helper';
@@ -141,7 +146,9 @@ export class EventsService {
     });
 
     if (Object.keys(data).length === 0) {
-      throw new BadRequestException('No se proporcionaron campos para actualizar');
+      throw new BadRequestException(
+        'No se proporcionaron campos para actualizar',
+      );
     }
 
     if (data.fechaInicio) {
@@ -940,9 +947,8 @@ export class EventsService {
           if (!full) continue;
 
           // Build report data
-          const { avalCompletoReport } = await import(
-            '../reports/reports/aval-completo.report'
-          );
+          const { avalCompletoReport } =
+            await import('../reports/reports/aval-completo.report');
 
           const reportData: any = {
             codigo: full.evento.codigo,

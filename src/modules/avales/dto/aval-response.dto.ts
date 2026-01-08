@@ -1,5 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Estado, EtapaFlujo } from '@prisma/client';
+import { Estado, EtapaFlujo, Genero } from '@prisma/client';
+
+export class DisciplinaSimpleDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty({ example: 'Atletismo' })
+  nombre: string;
+}
+
+export class CategoriaSimpleDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty({ example: 'Mayores' })
+  nombre: string;
+}
 
 export class EventoSimpleDto {
   @ApiProperty({ example: 1 })
@@ -11,17 +27,65 @@ export class EventoSimpleDto {
   @ApiProperty({ example: 'Campeonato Nacional de Atletismo 2025' })
   nombre: string;
 
-  @ApiProperty({ example: '2025-12-01T08:00:00Z' })
-  fechaInicio: string;
+  @ApiProperty({ example: 'Nacional' })
+  tipoParticipacion: string;
 
-  @ApiProperty({ example: '2025-12-05T18:00:00Z' })
-  fechaFin: string;
+  @ApiProperty({ example: 'Campeonato' })
+  tipoEvento: string;
+
+  @ApiProperty({ example: 'Estadio Olímpico Atahualpa' })
+  lugar: string;
+
+  @ApiProperty({ enum: Genero, example: 'MASCULINO_FEMENINO' })
+  genero: Genero;
+
+  @ApiProperty({ type: DisciplinaSimpleDto })
+  disciplina: DisciplinaSimpleDto;
+
+  @ApiProperty({ type: CategoriaSimpleDto })
+  categoria: CategoriaSimpleDto;
+
+  @ApiProperty({ example: 'Pichincha' })
+  provincia: string;
 
   @ApiProperty({ example: 'Quito' })
   ciudad: string;
 
   @ApiProperty({ example: 'Ecuador' })
   pais: string;
+
+  @ApiProperty({ example: 'Nacional' })
+  alcance: string;
+
+  @ApiProperty({ example: '2025-12-01T08:00:00Z' })
+  fechaInicio: string;
+
+  @ApiProperty({ example: '2025-12-05T18:00:00Z' })
+  fechaFin: string;
+
+  @ApiProperty({ example: 2 })
+  numEntrenadoresHombres: number;
+
+  @ApiProperty({ example: 1 })
+  numEntrenadoresMujeres: number;
+
+  @ApiProperty({ example: 10 })
+  numAtletasHombres: number;
+
+  @ApiProperty({ example: 8 })
+  numAtletasMujeres: number;
+
+  @ApiProperty({ enum: Estado, example: 'SOLICITADO' })
+  estado: Estado;
+
+  @ApiPropertyOptional({ example: 'https://storage.com/evento.pdf' })
+  archivo?: string;
+
+  @ApiProperty({ example: '2025-01-01T10:00:00Z' })
+  createdAt: string;
+
+  @ApiProperty({ example: '2025-01-05T15:30:00Z' })
+  updatedAt: string;
 }
 
 export class AvalObjetivoResponseDto {
@@ -191,6 +255,9 @@ export class AvalResponseDto {
 
   @ApiPropertyOptional({ example: 'Comentario del revisor' })
   comentario?: string;
+
+  @ApiPropertyOptional({ example: 'https://storage.com/convocatoria.pdf' })
+  convocatoriaUrl?: string;
 
   @ApiPropertyOptional({ example: 'https://storage.com/dtm.pdf' })
   dtmUrl?: string;
