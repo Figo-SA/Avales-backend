@@ -346,12 +346,34 @@ Response: AvalResponse
 ```typescript
 {
   id: number,
-  codigo: string,
-  nombre: string,
-  fechaInicio: string,
-  fechaFin: string,
-  ciudad: string,
-  pais: string
+  codigo: string,                    // "EVT-2025-001"
+  nombre: string,                    // "Campeonato Nacional de Atletismo 2025"
+  tipoParticipacion: string,         // "Nacional", "Internacional"
+  tipoEvento: string,                // "Campeonato", "Torneo", etc.
+  lugar: string,                     // "Estadio Olímpico Atahualpa"
+  genero: Genero,                    // "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO"
+  disciplina: {                      // Disciplina del evento
+    id: number,
+    nombre: string                   // "Atletismo"
+  },
+  categoria: {                       // Categoría del evento
+    id: number,
+    nombre: string                   // "Mayores"
+  },
+  provincia: string,                 // "Pichincha"
+  ciudad: string,                    // "Quito"
+  pais: string,                      // "Ecuador"
+  alcance: string,                   // "Local", "Regional", "Nacional", "Internacional"
+  fechaInicio: string,               // ISO 8601: "2025-12-01T08:00:00Z"
+  fechaFin: string,                  // ISO 8601: "2025-12-05T18:00:00Z"
+  numEntrenadoresHombres: number,    // 2
+  numEntrenadoresMujeres: number,    // 1
+  numAtletasHombres: number,         // 10
+  numAtletasMujeres: number,         // 8
+  estado: Estado,                    // "DISPONIBLE" | "BORRADOR" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO"
+  archivo?: string,                  // URL del archivo del evento (opcional)
+  createdAt: string,                 // ISO 8601: "2025-01-01T10:00:00Z"
+  updatedAt: string                  // ISO 8601: "2025-01-05T15:30:00Z"
 }
 ```
 
