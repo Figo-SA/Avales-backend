@@ -425,7 +425,10 @@ export class AvalesService {
       throw new AvalNotFoundException();
     }
 
-    const archivoUrl = await this.storageService.uploadFile(archivo, 'avales');
+    const archivoUrl = await this.storageService.uploadFile(
+      archivo,
+      'avales/solicitud',
+    );
 
     await this.prisma.coleccionAval.update({
       where: { id },
