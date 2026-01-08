@@ -219,7 +219,7 @@ export class EventsService {
         },
         pda: true,
         dtm: true,
-        entrenadores: { include: { entrenador: true } },
+        entrenadores: { include: { usuario: true } },
         financiero: true,
       },
     });
@@ -270,7 +270,7 @@ export class EventsService {
           },
           pda: true,
           dtm: true,
-          entrenadores: { include: { entrenador: true } },
+          entrenadores: { include: { usuario: true } },
           financiero: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -398,17 +398,17 @@ export class EventsService {
 
       // 7. Crear entrenadores de la colección
       if (solicitudData.entrenadores && solicitudData.entrenadores.length > 0) {
-        // Validar que los entrenadores existen (tabla Entrenador) para evitar violaciones de FK
-        const entrenadorIds = solicitudData.entrenadores.map(
+        // Validar que los entrenadores existen (tabla Usuario) para evitar violaciones de FK
+        const usuarioIds = solicitudData.entrenadores.map(
           (ent) => ent.entrenadorId,
         );
-        const entrenadoresExistentes = await tx.entrenador.findMany({
-          where: { id: { in: entrenadorIds } },
+        const usuariosExistentes = await tx.usuario.findMany({
+          where: { id: { in: usuarioIds }, deleted: false },
           select: { id: true },
         });
 
-        const existentesIds = entrenadoresExistentes.map((u) => u.id);
-        const faltantes = entrenadorIds.filter(
+        const existentesIds = usuariosExistentes.map((u) => u.id);
+        const faltantes = usuarioIds.filter(
           (id) => !existentesIds.includes(id),
         );
 
@@ -421,7 +421,7 @@ export class EventsService {
         await tx.coleccionEntrenador.createMany({
           data: solicitudData.entrenadores.map((ent) => ({
             coleccionAvalId: coleccion.id,
-            entrenadorId: ent.entrenadorId,
+            usuarioId: ent.entrenadorId,
             rol: ent.rol,
             esPrincipal: ent.esPrincipal ?? false,
           })),
@@ -897,7 +897,7 @@ export class EventsService {
             colecciones: {
               include: {
                 avalTecnico: true,
-                entrenadores: { include: { entrenador: true } },
+                entrenadores: { include: { usuario: true } },
               },
             },
           },
@@ -940,7 +940,7 @@ export class EventsService {
               },
               pda: true,
               dtm: true,
-              entrenadores: { include: { entrenador: true } },
+              entrenadores: { include: { usuario: true } },
             },
           });
 
@@ -968,9 +968,9 @@ export class EventsService {
               habilitado: !!d.deportista.afiliacion,
             })),
             entrenadores: (full.entrenadores ?? []).map((e) => ({
-              nombres: e.entrenador.nombres,
-              apellidos: e.entrenador.apellidos,
-              cedula: e.entrenador.cedula,
+              nombres: e.usuario.nombre,
+              apellidos: e.usuario.apellido,
+              cedula: e.usuario.cedula,
               rol: e.rol,
             })),
           };
@@ -1124,7 +1124,7 @@ export class EventsService {
             colecciones: {
               include: {
                 avalTecnico: true,
-                entrenadores: { include: { entrenador: true } },
+                entrenadores: { include: { usuario: true } },
               },
             },
           },
@@ -1164,33 +1164,17 @@ export class EventsService {
     try {
       const tokens: string[] = [];
 
-      // Intentamos obtener push tokens de usuarios asociados a los entrenadores.
-      // Como ahora `ColeccionEntrenador` referencia `Entrenador` (dominio),
-      // buscamos un `Usuario` con la misma cédula para obtener `pushToken`.
+      // Como ahora `ColeccionEntrenador` referencia directamente a `Usuario`,
+      // obtenemos el pushToken directamente del usuario asociado
       for (const coleccion of colecciones) {
         if (coleccion.entrenadores) {
           for (const entrenadorEntry of coleccion.entrenadores) {
-            const entrenador = entrenadorEntry.entrenador;
-            if (!entrenador) continue;
+            const usuario = entrenadorEntry.usuario;
+            if (!usuario) continue;
 
-            // Buscar usuario con misma cédula para notificaciones (si existe)
-            try {
-              const usuario = await this.prisma.usuario.findFirst({
-                where: {
-                  cedula: entrenador.cedula,
-                  pushToken: { not: null },
-                },
-                select: { pushToken: true },
-              });
-
-              if (usuario?.pushToken) {
-                tokens.push(usuario.pushToken);
-              }
-            } catch (error) {
-              console.error(
-                'Error buscando usuario para notificar entrenador:',
-                error,
-              );
+            // El usuario ya viene con el pushToken si fue incluido
+            if (usuario.pushToken) {
+              tokens.push(usuario.pushToken);
             }
           }
         }

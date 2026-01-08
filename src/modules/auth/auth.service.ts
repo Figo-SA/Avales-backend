@@ -50,11 +50,11 @@ export class AuthService extends BaseService<'usuario'> {
         cedula: true,
         categoriaId: true,
         disciplinaId: true,
+        genero: true,
         resetPasswordToken: true,
         resetPasswordExpires: true,
         pushToken: true,
         createdAt: true,
-
         updatedAt: true,
         deleted: true,
         usuariosRol: {
