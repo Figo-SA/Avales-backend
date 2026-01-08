@@ -1,4 +1,7 @@
+import { Genero } from '@prisma/client';
+
 export const usuariosSeed = [
+  // Usuarios administrativos
   {
     nombre: 'Super',
     apellido: 'Admin',
@@ -6,6 +9,7 @@ export const usuariosSeed = [
     cedula: '1234567890',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.MASCULINO,
     rolId: 1,
   },
   {
@@ -15,6 +19,7 @@ export const usuariosSeed = [
     cedula: '1234567891',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.MASCULINO,
     rolId: 2,
   },
   {
@@ -24,6 +29,7 @@ export const usuariosSeed = [
     cedula: '1234567892',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.FEMENINO,
     rolId: 3,
   },
   {
@@ -33,6 +39,7 @@ export const usuariosSeed = [
     cedula: '1234567893',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.MASCULINO,
     rolId: 5,
   },
   {
@@ -42,6 +49,7 @@ export const usuariosSeed = [
     cedula: '1234567894',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.FEMENINO,
     rolId: 6,
   },
   {
@@ -51,6 +59,7 @@ export const usuariosSeed = [
     cedula: '1234567895',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.MASCULINO,
     rolId: 7,
   },
   {
@@ -60,6 +69,7 @@ export const usuariosSeed = [
     cedula: '1234567896',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.MASCULINO,
     rolId: 8,
   },
   {
@@ -69,6 +79,7 @@ export const usuariosSeed = [
     cedula: '1234567897',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.FEMENINO,
     rolId: 8,
   },
   {
@@ -78,6 +89,7 @@ export const usuariosSeed = [
     cedula: '1234567898',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.MASCULINO,
     rolId: 6,
   },
   {
@@ -87,6 +99,131 @@ export const usuariosSeed = [
     cedula: '1234567899',
     categoriaId: 1,
     disciplinaId: 1,
+    genero: Genero.FEMENINO,
     rolId: 3,
+  },
+
+  // Más entrenadores con diferentes disciplinas
+  {
+    nombre: 'Roberto',
+    apellido: 'Silva',
+    email: 'roberto.silva@ejemplo.com',
+    cedula: '1234567800',
+    categoriaId: 2,
+    disciplinaId: 2, // Natación
+    genero: Genero.MASCULINO,
+    rolId: 8, // ENTRENADOR
+  },
+  {
+    nombre: 'Patricia',
+    apellido: 'Morales',
+    email: 'patricia.morales@ejemplo.com',
+    cedula: '1234567801',
+    categoriaId: 2,
+    disciplinaId: 3, // Atletismo
+    genero: Genero.FEMENINO,
+    rolId: 8,
+  },
+  {
+    nombre: 'Fernando',
+    apellido: 'Castro',
+    email: 'fernando.castro@ejemplo.com',
+    cedula: '1234567802',
+    categoriaId: 3,
+    disciplinaId: 4, // Ciclismo
+    genero: Genero.MASCULINO,
+    rolId: 8,
+  },
+  {
+    nombre: 'Gabriela',
+    apellido: 'Vega',
+    email: 'gabriela.vega@ejemplo.com',
+    cedula: '1234567803',
+    categoriaId: 3,
+    disciplinaId: 1, // Fútbol
+    genero: Genero.FEMENINO,
+    rolId: 8,
+  },
+  {
+    nombre: 'Andrés',
+    apellido: 'Torres',
+    email: 'andres.torres@ejemplo.com',
+    cedula: '1234567804',
+    categoriaId: 4,
+    disciplinaId: 2, // Natación
+    genero: Genero.MASCULINO,
+    rolId: 8,
+  },
+  {
+    nombre: 'Valentina',
+    apellido: 'Ruiz',
+    email: 'valentina.ruiz@ejemplo.com',
+    cedula: '1234567805',
+    categoriaId: 4,
+    disciplinaId: 3, // Atletismo
+    genero: Genero.FEMENINO,
+    rolId: 8,
+  },
+  {
+    nombre: 'Miguel',
+    apellido: 'Jiménez',
+    email: 'miguel.jimenez@ejemplo.com',
+    cedula: '1234567806',
+    categoriaId: 1,
+    disciplinaId: 4, // Ciclismo
+    genero: Genero.MASCULINO,
+    rolId: 8,
+  },
+  {
+    nombre: 'Carolina',
+    apellido: 'Mendoza',
+    email: 'carolina.mendoza@ejemplo.com',
+    cedula: '1234567807',
+    categoriaId: 2,
+    disciplinaId: 1, // Fútbol
+    genero: Genero.FEMENINO,
+    rolId: 8,
+  },
+
+  // Más usuarios administrativos
+  {
+    nombre: 'Alejandro',
+    apellido: 'Campos',
+    email: 'alejandro.campos@ejemplo.com',
+    cedula: '1234567808',
+    categoriaId: 1,
+    disciplinaId: 2,
+    genero: Genero.MASCULINO,
+    rolId: 5, // DTM
+  },
+  {
+    nombre: 'Daniela',
+    apellido: 'Ortega',
+    email: 'daniela.ortega@ejemplo.com',
+    cedula: '1234567809',
+    categoriaId: 1,
+    disciplinaId: 3,
+    genero: Genero.FEMENINO,
+    rolId: 3, // SECRETARIA
+  },
+  {
+    nombre: 'Ricardo',
+    apellido: 'Navarro',
+    email: 'ricardo.navarro@ejemplo.com',
+    cedula: '1234567810',
+    categoriaId: 1,
+    disciplinaId: 1,
+    genero: Genero.MASCULINO,
+    rolId: 6, // PDA
+  },
+  {
+    nombre: 'Isabella',
+    apellido: 'Flores',
+    email: 'isabella.flores@ejemplo.com',
+    cedula: '1234567811',
+    categoriaId: 1,
+    disciplinaId: 4,
+    genero: Genero.FEMENINO,
+    rolId: 7, // FINANCIERO
   },
 ];

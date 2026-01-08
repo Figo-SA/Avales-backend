@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, IsEnum } from 'class-validator';
+import { Genero } from '@prisma/client';
 
 /**
  * DTO para query params de paginación y filtros de usuarios
@@ -38,4 +39,13 @@ export class UserQueryDto {
   @IsString()
   @IsOptional()
   query?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar por género',
+    enum: Genero,
+    example: 'MASCULINO',
+  })
+  @IsEnum(Genero)
+  @IsOptional()
+  genero?: Genero;
 }

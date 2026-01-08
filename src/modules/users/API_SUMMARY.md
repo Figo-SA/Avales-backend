@@ -12,9 +12,14 @@ Response: UserResponse
 ```
 
 ### GET /
-Listar usuarios (paginado)
+Listar usuarios (paginado y filtrable)
 ```
-Query: { page?, limit? }
+Query: {
+  page?: number,       // default: 1
+  limit?: number,      // default: 10
+  query?: string,      // Buscar por nombre, apellido, email o cédula
+  genero?: Genero      // Filtrar por género: MASCULINO | FEMENINO | MASCULINO_FEMENINO
+}
 Response: { items: UserResponse[], pagination: { page, limit, total } }
 ```
 
@@ -77,6 +82,7 @@ Response: UserResponse
   password: string,        // min 6, max 32
   categoriaId?: number,
   disciplinaId?: number,
+  genero?: Genero,         // "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO"
   roles: TipoRol[]         // ["ADMIN", "SECRETARIA"]
 }
 ```
@@ -91,6 +97,7 @@ Response: UserResponse
   password?: string,
   categoriaId?: number,
   disciplinaId?: number,
+  genero?: Genero,         // "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO"
   roles?: TipoRol[]
 }
 ```
@@ -105,6 +112,7 @@ Response: UserResponse
   cedula: string,
   categoria: { id: number, nombre: string },
   disciplina: { id: number, nombre: string },
+  genero?: Genero,         // "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO"
   roles: TipoRol[],
   pushToken?: string,
   createdAt?: Date,
@@ -115,4 +123,9 @@ Response: UserResponse
 ### TipoRol (enum)
 ```
 SUPER_ADMIN | ADMIN | SECRETARIA | ENTRENADOR | DTM | DTM_EIDE
+```
+
+### Genero (enum)
+```
+MASCULINO | FEMENINO | MASCULINO_FEMENINO
 ```

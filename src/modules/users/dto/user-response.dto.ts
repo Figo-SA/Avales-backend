@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TipoRol } from '@prisma/client';
+import { TipoRol, Genero } from '@prisma/client';
 
 /**
  * DTO para categoría embebida en respuesta
@@ -69,6 +69,13 @@ export class UserResponseDto {
     type: DisciplinaDto,
   })
   disciplina: DisciplinaDto;
+
+  @ApiPropertyOptional({
+    description: 'Género del usuario',
+    enum: Genero,
+    example: 'MASCULINO',
+  })
+  genero?: Genero;
 
   @ApiProperty({
     description: 'Lista de roles asignados al usuario',
