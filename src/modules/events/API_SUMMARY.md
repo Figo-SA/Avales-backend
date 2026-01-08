@@ -21,7 +21,13 @@ Listar eventos (paginado y filtrable)
 - **Admins/SuperAdmins**: Ven todos los eventos sin restricción
 
 ```
-Query: { page?, limit?, estado?, search? }
+Query: {
+  page?: number,      // default: 1
+  limit?: number,     // default: 10
+  estado?: Estado,    // DISPONIBLE | BORRADOR | SOLICITADO | RECHAZADO | ACEPTADO
+  search?: string,    // Buscar por nombre, código, lugar, ciudad, provincia
+  sinAval?: boolean   // true = solo eventos SIN aval, false/undefined = todos
+}
 Response: { items: EventResponse[], pagination: { page, limit, total } }
 ```
 

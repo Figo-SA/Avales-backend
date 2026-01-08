@@ -21,6 +21,7 @@ import { ApiAuth } from 'src/common/decorators/api-auth.decorator';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 import { AvalesService } from './avales.service';
 import { CreateAvalDto } from './dto/create-aval.dto';
+import { UploadConvocatoriaDto } from './dto/upload-convocatoria.dto';
 import { AvalQueryDto } from './dto/aval-query.dto';
 import { ApproveRejectAvalDto } from './dto/approve-reject-aval.dto';
 import { SuccessMessage } from 'src/common/decorators/success-messages.decorator';
@@ -28,6 +29,7 @@ import {
   ApiGetAvales,
   ApiGetAval,
   ApiCreateAval,
+  ApiUploadConvocatoria,
   ApiUploadAvalArchivo,
   ApiDownloadDtmPdf,
   ApiDownloadPdaPdf,
@@ -98,26 +100,36 @@ export class AvalesController {
     return this.avalesService.findHistorial(id);
   }
 
-  @Post()
+  @Post('convocatoria')
   @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
-  @ApiCreateAval()
+  @ApiUploadConvocatoria()
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('solicitud'))
-  @SuccessMessage('Solicitud de aval creada exitosamente')
-  create(
-    @Body() createAvalDto: CreateAvalDto,
+  @UseInterceptors(FileInterceptor('convocatoria'))
+  @SuccessMessage('Convocatoria subida y colección de aval creada exitosamente')
+  uploadConvocatoria(
+    @Body() uploadConvocatoriaDto: UploadConvocatoriaDto,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png|pdf)$/ }),
         ],
-        fileIsRequired: false,
+        fileIsRequired: true,
       }),
     )
-    solicitud?: Express.Multer.File,
+    convocatoria: Express.Multer.File,
   ) {
-    return this.avalesService.create(createAvalDto, solicitud);
+    return this.avalesService.uploadConvocatoria(
+      uploadConvocatoriaDto.eventoId,
+      convocatoria,
+    );
+  }
+
+  @Post()
+  @ApiAuth(ValidRoles.entrenador, ValidRoles.admin, ValidRoles.superAdmin)
+  @ApiCreateAval()
+  @SuccessMessage('Solicitud de aval creada exitosamente')
+  create(@Body() createAvalDto: CreateAvalDto) {
+    return this.avalesService.create(createAvalDto);
   }
 
   @Patch(':id/archivo')

@@ -13,6 +13,7 @@ import {
   FileTypeValidator,
   Patch,
   Delete,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EventsService } from './events.service';

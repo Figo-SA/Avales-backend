@@ -18,11 +18,18 @@ Un **aval** es una `ColeccionAval` que incluye:
 ```typescript
 enum Estado {
   DISPONIBLE   // Evento disponible para crear solicitud
-  SOLICITADO   // Aval creado, pendiente de revisión
+  BORRADOR     // Convocatoria subida, esperando creación del AvalTecnico
+  SOLICITADO   // AvalTecnico creado, pendiente de revisión por DTM
   RECHAZADO    // Rechazado por DTM
   ACEPTADO     // Aprobado por DTM
 }
 ```
+
+**Ciclo de Vida del Estado**:
+1. **DISPONIBLE**: Evento existe, sin convocatoria
+2. **BORRADOR**: Convocatoria subida, ColeccionAval creada, esperando AvalTecnico
+3. **SOLICITADO**: AvalTecnico completado, esperando revisión
+4. **ACEPTADO** o **RECHAZADO**: Decisión de DTM
 
 ## Etapas del Flujo
 
@@ -50,7 +57,7 @@ Listar avales (paginado y filtrable)
 Query: {
   page?: number,        // default: 1
   limit?: number,       // default: 50
-  estado?: Estado,      // DISPONIBLE | SOLICITADO | RECHAZADO | ACEPTADO
+  estado?: Estado,      // DISPONIBLE | BORRADOR | SOLICITADO | RECHAZADO | ACEPTADO
   etapa?: EtapaFlujo,   // SOLICITUD | REVISION_DTM | PDA | CONTROL_PREVIO | SECRETARIA | FINANCIERO
   eventoId?: number,    // Filtrar por evento
   search?: string       // Buscar por nombre o código del evento
@@ -60,6 +67,11 @@ Response: {
   pagination: { page, limit, total }
 }
 ```
+
+**Uso del Filtro por Estado**:
+- `estado=BORRADOR`: Ver avales con convocatoria subida pero sin AvalTecnico (borradores incompletos)
+- `estado=SOLICITADO`: Ver avales completos pendientes de revisión
+- `estado=ACEPTADO` o `estado=RECHAZADO`: Ver avales procesados por DTM
 
 ### GET /:id
 Obtener aval por ID (con detalle completo)
@@ -88,27 +100,78 @@ Obtener historial completo del aval
 Response: HistorialResponse[]
 ```
 
-### POST /
-Crear solicitud de aval (multipart/form-data)
+### POST /convocatoria
+Subir convocatoria y crear colección de aval (Paso 1 - multipart/form-data)
 
 **Acceso**: Entrenador, Admin, SuperAdmin
 
 ```
-Body: CreateAval + solicitud? (jpg/png/pdf, max 5MB)
-Response: AvalResponse
+Body: {
+  eventoId: number,
+  convocatoria: File (requerido, cualquier formato, max 5MB)
+}
+Response: AvalResponse (ColeccionAval sin AvalTecnico)
 ```
+
+**Archivo de Convocatoria** (Campo: `convocatoria`):
+- Es el documento oficial de convocatoria del evento
+- Formatos aceptados: Cualquier formato de archivo
+- Tamaño máximo: 5MB
+- **REQUERIDO** en este endpoint
+- Se guarda en `ColeccionAval.convocatoriaUrl`
 
 **Validaciones**:
 - El evento debe existir y estar en estado DISPONIBLE
 - No debe existir un aval previo para el mismo evento
+
+**Proceso**:
+1. Valida que el evento exista y esté DISPONIBLE
+2. Sube el archivo de convocatoria
+3. Crea la `ColeccionAval` con:
+   - Archivo de convocatoria en `convocatoriaUrl`
+   - Estado: **BORRADOR** (convocatoria subida, esperando AvalTecnico)
+4. Retorna el `id` de la colección para usarlo en el paso 2
+
+**Estado Resultante**: `BORRADOR` - Permite al frontend identificar avales con convocatoria pero sin AvalTecnico
+
+**Flujo del Frontend**:
+1. Entrenador hace clic en "Crear Aval"
+2. Se abre un modal para subir la convocatoria
+3. Se llama a `POST /convocatoria` con el archivo
+4. Se muestra un loading mientras se crea la colección
+5. Una vez creada la colección, se habilita el formulario del aval técnico
+
+---
+
+### POST /
+Crear solicitud de aval técnico (Paso 2 - JSON)
+
+**Acceso**: Entrenador, Admin, SuperAdmin
+
+```
+Body: CreateAval (JSON con coleccionAvalId)
+Response: AvalResponse (ColeccionAval con AvalTecnico completo)
+```
+
+**Validaciones**:
+- La `ColeccionAval` debe existir (del paso 1)
+- La `ColeccionAval` NO debe tener ya un `AvalTecnico` **activo** (no eliminado lógicamente)
+  - ✅ Si existe un `AvalTecnico` pero está eliminado (`deleted: true`), se permite crear uno nuevo
+  - ❌ Si existe un `AvalTecnico` activo (`deleted: false`), se rechaza la creación
+- **El número de deportistas debe coincidir exactamente con el evento**:
+  - Total deportistas enviados = evento.numAtletasHombres + evento.numAtletasMujeres
+  - Error si no coincide con mensaje detallado
 - Todos los deportistas, entrenadores y rubros deben existir
 
 **Proceso**:
-1. Crea la `ColeccionAval` en estado SOLICITADO
-2. Crea el `AvalTecnico` con objetivos, criterios y requerimientos
-3. Asocia deportistas y entrenadores
-4. Actualiza el evento a estado SOLICITADO
-5. Registra en el historial
+1. Valida que la `ColeccionAval` existe y no tiene `AvalTecnico` activo
+2. Valida que el número de deportistas coincida con el evento
+3. Crea el `AvalTecnico` (solicitud) con:
+   - Objetivos, criterios y requerimientos presupuestarios
+   - Deportistas y entrenadores participantes
+4. Actualiza la `ColeccionAval` a estado SOLICITADO
+5. Actualiza el evento a estado SOLICITADO
+6. Registra en el historial
 
 ### PATCH /:id/archivo
 Subir archivo del aval (multipart/form-data)
@@ -191,13 +254,21 @@ Response: AvalResponse
 
 ## DTOs
 
-### CreateAval
+### UploadConvocatoriaDto (Paso 1)
 ```typescript
 {
-  eventoId: number,
-  fechaHoraSalida: string,      // ISO 8601: "2025-06-01T06:00:00Z"
-  fechaHoraRetorno: string,     // ISO 8601: "2025-06-05T20:00:00Z"
-  transporteSalida: string,     // "Bus interprovincial"
+  eventoId: number,               // ID del evento
+  convocatoria: File              // Archivo de convocatoria (requerido)
+}
+```
+
+### CreateAval (Paso 2)
+```typescript
+{
+  coleccionAvalId: number,        // ID de la ColeccionAval creada en el paso 1
+  fechaHoraSalida: string,        // ISO 8601: "2025-06-01T06:00:00Z"
+  fechaHoraRetorno: string,       // ISO 8601: "2025-06-05T20:00:00Z"
+  transporteSalida: string,       // "Bus interprovincial"
   transporteRetorno: string,
   objetivos: ObjetivoDto[],
   criterios: CriterioDto[],
@@ -257,6 +328,7 @@ Response: AvalResponse
   descripcion?: string,
   estado: Estado,
   comentario?: string,
+  convocatoriaUrl?: string,
   dtmUrl?: string,
   pdaUrl?: string,
   solicitudUrl?: string,
@@ -274,12 +346,34 @@ Response: AvalResponse
 ```typescript
 {
   id: number,
-  codigo: string,
-  nombre: string,
-  fechaInicio: string,
-  fechaFin: string,
-  ciudad: string,
-  pais: string
+  codigo: string,                    // "EVT-2025-001"
+  nombre: string,                    // "Campeonato Nacional de Atletismo 2025"
+  tipoParticipacion: string,         // "Nacional", "Internacional"
+  tipoEvento: string,                // "Campeonato", "Torneo", etc.
+  lugar: string,                     // "Estadio Olímpico Atahualpa"
+  genero: Genero,                    // "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO"
+  disciplina: {                      // Disciplina del evento
+    id: number,
+    nombre: string                   // "Atletismo"
+  },
+  categoria: {                       // Categoría del evento
+    id: number,
+    nombre: string                   // "Mayores"
+  },
+  provincia: string,                 // "Pichincha"
+  ciudad: string,                    // "Quito"
+  pais: string,                      // "Ecuador"
+  alcance: string,                   // "Local", "Regional", "Nacional", "Internacional"
+  fechaInicio: string,               // ISO 8601: "2025-12-01T08:00:00Z"
+  fechaFin: string,                  // ISO 8601: "2025-12-05T18:00:00Z"
+  numEntrenadoresHombres: number,    // 2
+  numEntrenadoresMujeres: number,    // 1
+  numAtletasHombres: number,         // 10
+  numAtletasMujeres: number,         // 8
+  estado: Estado,                    // "DISPONIBLE" | "BORRADOR" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO"
+  archivo?: string,                  // URL del archivo del evento (opcional)
+  createdAt: string,                 // ISO 8601: "2025-01-01T10:00:00Z"
+  updatedAt: string                  // ISO 8601: "2025-01-05T15:30:00Z"
 }
 ```
 
@@ -319,14 +413,33 @@ Response: AvalResponse
 
 ## Flujo de Trabajo
 
-### 1. Creación de Solicitud
-1. Entrenador crea una solicitud de aval (`POST /avales`)
-2. Sistema valida que el evento esté DISPONIBLE
-3. Se crea la ColeccionAval con AvalTecnico
-4. Estado cambia a SOLICITADO
-5. (Opcional) Se sube el archivo de solicitud
+### 1. Subir Convocatoria (Paso 1)
+1. Entrenador selecciona un evento DISPONIBLE
+2. Entrenador sube el archivo de convocatoria (`POST /avales/convocatoria`)
+3. Sistema valida que el evento esté DISPONIBLE
+4. Sistema crea la `ColeccionAval` con el archivo de convocatoria
+5. **Estado de la colección: BORRADOR** (convocatoria subida, sin AvalTecnico)
+6. Sistema retorna el `id` de la colección
 
-### 2. Revisión DTM
+**Importante**: En este punto, el aval está en estado `BORRADOR`. Si el entrenador no completa el paso 2, el aval quedará en este estado, permitiendo identificar convocatorias subidas pero incompletas.
+
+### 2. Crear Solicitud de Aval Técnico (Paso 2)
+1. Frontend habilita el formulario de solicitud
+2. Entrenador completa el formulario con:
+   - Fechas y transportes
+   - Objetivos y criterios
+   - Rubros presupuestarios
+   - Deportistas y entrenadores
+3. Entrenador envía la solicitud (`POST /avales`)
+4. Sistema valida:
+   - Que la ColeccionAval exista
+   - Que NO tenga ya un AvalTecnico
+   - Que el número de deportistas coincida con el evento
+5. Se crea el `AvalTecnico` con todos los datos
+6. Estado cambia a SOLICITADO (tanto la colección como el evento)
+7. Se registra en el historial
+
+### 3. Revisión DTM
 1. DTM descarga el PDF de solicitud (`GET /:id/dtm-pdf`)
 2. DTM revisa la solicitud
 3. DTM aprueba (`PATCH /:id/aprobar`) o rechaza (`PATCH /:id/rechazar`)
@@ -352,7 +465,8 @@ Response: AvalResponse
 
 - **Historial Completo**: Todos los cambios de estado se registran en `HistorialColeccion` con el usuario, fecha, etapa y comentarios.
 
-- **Archivos Generados**:
+- **Archivos en la ColeccionAval**:
+  - `convocatoriaUrl`: Archivo de convocatoria del evento (subido al crear el aval)
   - `solicitudUrl`: Archivo subido por el entrenador (opcional)
   - `dtmUrl`: PDF generado para DTM
   - `pdaUrl`: PDF de certificación PDA
@@ -360,7 +474,7 @@ Response: AvalResponse
 
 - **Validaciones de Estado**: Solo se puede aprobar o rechazar un aval en estado SOLICITADO.
 
-- **Multipart Form Data**: Los endpoints que suben archivos usan `multipart/form-data` con validaciones de tipo (jpg/jpeg/png/pdf) y tamaño máximo (5MB).
+- **Multipart Form Data**: Los endpoints que suben archivos usan `multipart/form-data`. La convocatoria acepta cualquier formato de archivo con tamaño máximo de 5MB. Otros archivos pueden tener restricciones de formato específicas.
 
 ---
 

@@ -45,6 +45,9 @@ export class SeedingService {
       // Crear eventos y asignarles items presupuestarios
       await this.createEventos();
       await this.createDeportistas();
+      // Crear avales de ejemplo
+      // TODO: Descomentar cuando se agreguen los métodos createAvales() y createAvalCompleto()
+      // await this.createAvales();
 
       this.logger.log('✅ Seeding completado exitosamente');
       return {

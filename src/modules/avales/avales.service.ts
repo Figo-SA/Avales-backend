@@ -33,6 +33,7 @@ export class AvalesService {
       },
     },
     avalTecnico: {
+      where: { deleted: false },
       include: {
         objetivos: { orderBy: { orden: 'asc' as const } },
         criterios: { orderBy: { orden: 'asc' as const } },
@@ -186,15 +187,12 @@ export class AvalesService {
   }
 
   /**
-   * Crear solicitud de aval
+   * PASO 1: Subir convocatoria y crear ColeccionAval
    */
-  async create(
-    createAvalDto: CreateAvalDto,
-    solicitudFile?: Express.Multer.File,
+  async uploadConvocatoria(
+    eventoId: number,
+    convocatoriaFile: Express.Multer.File,
   ): Promise<AvalResponseDto> {
-    const { eventoId, entrenadores, deportistas, rubros, ...solicitudData } =
-      createAvalDto;
-
     // Verificar que el evento existe y está disponible
     const evento = await this.prisma.evento.findFirst({
       where: { id: eventoId, deleted: false },
@@ -217,42 +215,86 @@ export class AvalesService {
       throw new AvalAlreadyExistsException();
     }
 
-    // Calcular totales
-    const totalEntrenadores = entrenadores.length;
-    const totalDeportistas = deportistas.length;
+    // Subir archivo de convocatoria
+    const convocatoriaUrl = await this.storageService.uploadFile(
+      convocatoriaFile,
+      'avales/convocatorias',
+    );
 
     // Crear descripción automática
     const descripcion = `Solicitud de aval para ${evento.nombre} - ${evento.lugar}, ${evento.ciudad}`;
 
-    // Subir archivo de solicitud si fue enviado
-    let solicitudUrl: string | undefined;
-    if (solicitudFile) {
-      try {
-        solicitudUrl = await this.storageService.uploadFile(
-          solicitudFile,
-          'avales',
-        );
-      } catch (err) {
-        console.error('Error subiendo archivo de solicitud:', err);
-      }
+    // Crear ColeccionAval con la convocatoria (sin AvalTecnico todavía)
+    const coleccion = await this.prisma.coleccionAval.create({
+      data: {
+        descripcion,
+        eventoId,
+        estado: Estado.BORRADOR, // Convocatoria subida, esperando AvalTecnico
+        convocatoriaUrl,
+      } as any,
+    });
+
+    // Retornar la colección creada
+    return this.findOne(coleccion.id);
+  }
+
+  /**
+   * PASO 2: Crear solicitud de aval técnico
+   */
+  async create(createAvalDto: CreateAvalDto): Promise<AvalResponseDto> {
+    const {
+      coleccionAvalId,
+      entrenadores,
+      deportistas,
+      rubros,
+      ...solicitudData
+    } = createAvalDto;
+
+    // Verificar que la ColeccionAval existe
+    const coleccion = await this.prisma.coleccionAval.findUnique({
+      where: { id: coleccionAvalId },
+      include: {
+        evento: true,
+        avalTecnico: true,
+      },
+    });
+
+    if (!coleccion) {
+      throw new AvalNotFoundException();
     }
+
+    // Verificar que no tenga ya un AvalTecnico activo (no eliminado)
+    if (coleccion.avalTecnico && !coleccion.avalTecnico.deleted) {
+      throw new BadRequestException(
+        'Esta colección de aval ya tiene un AvalTecnico activo',
+      );
+    }
+
+    const evento = coleccion.evento;
+
+    // Calcular totales
+    const totalEntrenadores = entrenadores.length;
+    const totalDeportistas = deportistas.length;
+
+    // Validar que el número de deportistas coincida con el evento
+    const totalDeportistasEvento =
+      evento.numAtletasHombres + evento.numAtletasMujeres;
+    if (totalDeportistas !== totalDeportistasEvento) {
+      throw new BadRequestException(
+        `El número de deportistas (${totalDeportistas}) no coincide con el evento (${totalDeportistasEvento}). ` +
+          `Evento requiere: ${evento.numAtletasHombres} hombres + ${evento.numAtletasMujeres} mujeres = ${totalDeportistasEvento} total.`,
+      );
+    }
+
+    // Crear descripción automática
+    const descripcion = `Solicitud de aval para ${evento.nombre} - ${evento.lugar}, ${evento.ciudad}`;
 
     // Crear todo en una transacción
     const resultado = await this.prisma.$transaction(async (tx) => {
-      // 1. Crear ColeccionAval
-      const coleccion = await tx.coleccionAval.create({
-        data: {
-          descripcion,
-          eventoId,
-          solicitudUrl,
-          estado: Estado.SOLICITADO,
-        } as any,
-      });
-
-      // 2. Crear AvalTecnico
+      // 1. Crear AvalTecnico (solicitud)
       const avalTecnico = await tx.avalTecnico.create({
         data: {
-          coleccionAvalId: coleccion.id,
+          coleccionAvalId,
           descripcion,
           fechaHoraSalida: new Date(solicitudData.fechaHoraSalida),
           fechaHoraRetorno: new Date(solicitudData.fechaHoraRetorno),
@@ -264,7 +306,7 @@ export class AvalesService {
         },
       });
 
-      // 3. Crear objetivos
+      // 2. Crear objetivos
       if (solicitudData.objetivos && solicitudData.objetivos.length > 0) {
         await tx.avalObjetivo.createMany({
           data: solicitudData.objetivos.map((obj) => ({
@@ -275,7 +317,7 @@ export class AvalesService {
         });
       }
 
-      // 4. Crear criterios
+      // 3. Crear criterios
       if (solicitudData.criterios && solicitudData.criterios.length > 0) {
         await tx.avalCriterio.createMany({
           data: solicitudData.criterios.map((crit) => ({
@@ -286,7 +328,7 @@ export class AvalesService {
         });
       }
 
-      // 5. Crear rubros presupuestarios
+      // 4. Crear rubros presupuestarios
       if (rubros && rubros.length > 0) {
         await tx.avalRequerimiento.createMany({
           data: rubros.map((rubro) => ({
@@ -298,7 +340,7 @@ export class AvalesService {
         });
       }
 
-      // 6. Crear deportistas del aval
+      // 5. Crear deportistas del aval
       if (deportistas && deportistas.length > 0) {
         await tx.deportistaAval.createMany({
           data: deportistas.map((dep) => ({
@@ -309,7 +351,7 @@ export class AvalesService {
         });
       }
 
-      // 7. Crear entrenadores de la colección
+      // 6. Crear entrenadores de la colección
       if (entrenadores && entrenadores.length > 0) {
         // Validar que los entrenadores existen (tabla Usuario)
         const usuarioIds = entrenadores.map((ent) => ent.entrenadorId);
@@ -337,13 +379,30 @@ export class AvalesService {
         });
       }
 
-      // 8. Actualizar estado del evento a SOLICITADO
-      await tx.evento.update({
-        where: { id: eventoId },
+      // 7. Actualizar la ColeccionAval a estado SOLICITADO
+      await tx.coleccionAval.update({
+        where: { id: coleccionAvalId },
         data: { estado: Estado.SOLICITADO },
       });
 
-      return coleccion.id;
+      // 8. Actualizar estado del evento a SOLICITADO
+      await tx.evento.update({
+        where: { id: evento.id },
+        data: { estado: Estado.SOLICITADO },
+      });
+
+      // 9. Crear registro en el historial
+      await tx.historialColeccion.create({
+        data: {
+          coleccionAvalId,
+          estado: Estado.SOLICITADO,
+          etapa: EtapaFlujo.SOLICITUD,
+          usuarioId: 1, // TODO: Obtener del usuario actual
+          comentario: 'Solicitud de aval creada',
+        },
+      });
+
+      return coleccionAvalId;
     });
 
     // TODO: Generar PDF DTM automáticamente y notificar usuarios
@@ -390,11 +449,9 @@ export class AvalesService {
     }
 
     if (aval.estado !== Estado.SOLICITADO) {
-      throw new AvalInvalidStateException(
-        'aprobar',
-        aval.estado,
-        [Estado.SOLICITADO],
-      );
+      throw new AvalInvalidStateException('aprobar', aval.estado, [
+        Estado.SOLICITADO,
+      ]);
     }
 
     await this.prisma.$transaction([
@@ -442,11 +499,9 @@ export class AvalesService {
     }
 
     if (aval.estado !== Estado.SOLICITADO) {
-      throw new AvalInvalidStateException(
-        'rechazar',
-        aval.estado,
-        [Estado.SOLICITADO],
-      );
+      throw new AvalInvalidStateException('rechazar', aval.estado, [
+        Estado.SOLICITADO,
+      ]);
     }
 
     await this.prisma.$transaction([
@@ -483,7 +538,9 @@ export class AvalesService {
   /**
    * Generar PDF DTM
    */
-  async generateDtmPdf(id: number): Promise<{ buffer: Buffer; archivoUrl?: string }> {
+  async generateDtmPdf(
+    id: number,
+  ): Promise<{ buffer: Buffer; archivoUrl?: string }> {
     const aval = await this.prisma.coleccionAval.findUnique({
       where: { id },
       include: {
@@ -530,16 +587,18 @@ export class AvalesService {
       transporteRetorno: aval.avalTecnico?.transporteRetorno,
       objetivos: aval.avalTecnico?.objetivos.map((o) => o.descripcion) ?? [],
       criterios: aval.avalTecnico?.criterios.map((c) => c.descripcion) ?? [],
-      requerimientos: aval.avalTecnico?.requerimientos.map((r) => ({
-        rubro: r.rubro.nombre,
-        cantidadDias: r.cantidadDias,
-        valorUnitario: r.valorUnitario?.toString(),
-      })) ?? [],
-      deportistas: aval.avalTecnico?.deportistasAval.map((d) => ({
-        nombres: d.deportista.nombres,
-        apellidos: d.deportista.apellidos,
-        cedula: d.deportista.cedula,
-      })) ?? [],
+      requerimientos:
+        aval.avalTecnico?.requerimientos.map((r) => ({
+          rubro: r.rubro.nombre,
+          cantidadDias: r.cantidadDias,
+          valorUnitario: r.valorUnitario?.toString(),
+        })) ?? [],
+      deportistas:
+        aval.avalTecnico?.deportistasAval.map((d) => ({
+          nombres: d.deportista.nombres,
+          apellidos: d.deportista.apellidos,
+          cedula: d.deportista.cedula,
+        })) ?? [],
       entrenadores: aval.entrenadores.map((e) => ({
         nombres: e.usuario.nombre,
         apellidos: e.usuario.apellido,
@@ -615,6 +674,7 @@ export class AvalesService {
       descripcion: aval.descripcion ?? undefined,
       estado: aval.estado,
       comentario: aval.comentario ?? undefined,
+      convocatoriaUrl: aval.convocatoriaUrl ?? undefined,
       dtmUrl: aval.dtmUrl ?? undefined,
       pdaUrl: aval.pdaUrl ?? undefined,
       solicitudUrl: aval.solicitudUrl ?? undefined,
@@ -623,73 +683,103 @@ export class AvalesService {
         id: aval.evento.id,
         codigo: aval.evento.codigo,
         nombre: aval.evento.nombre,
-        fechaInicio: aval.evento.fechaInicio.toISOString(),
-        fechaFin: aval.evento.fechaFin.toISOString(),
+        tipoParticipacion: aval.evento.tipoParticipacion,
+        tipoEvento: aval.evento.tipoEvento,
+        lugar: aval.evento.lugar,
+        genero: aval.evento.genero,
+        disciplina: {
+          id: aval.evento.disciplina.id,
+          nombre: aval.evento.disciplina.nombre,
+        },
+        categoria: {
+          id: aval.evento.categoria.id,
+          nombre: aval.evento.categoria.nombre,
+        },
+        provincia: aval.evento.provincia,
         ciudad: aval.evento.ciudad,
         pais: aval.evento.pais,
+        alcance: aval.evento.alcance,
+        fechaInicio: aval.evento.fechaInicio.toISOString(),
+        fechaFin: aval.evento.fechaFin.toISOString(),
+        numEntrenadoresHombres: aval.evento.numEntrenadoresHombres,
+        numEntrenadoresMujeres: aval.evento.numEntrenadoresMujeres,
+        numAtletasHombres: aval.evento.numAtletasHombres,
+        numAtletasMujeres: aval.evento.numAtletasMujeres,
+        estado: aval.evento.estado,
+        archivo: aval.evento.archivo ?? undefined,
+        createdAt: aval.evento.createdAt.toISOString(),
+        updatedAt: aval.evento.updatedAt.toISOString(),
       },
-      avalTecnico: aval.avalTecnico ? {
-        id: aval.avalTecnico.id,
-        descripcion: aval.avalTecnico.descripcion ?? undefined,
-        archivo: aval.avalTecnico.archivo ?? undefined,
-        fechaHoraSalida: aval.avalTecnico.fechaHoraSalida.toISOString(),
-        fechaHoraRetorno: aval.avalTecnico.fechaHoraRetorno.toISOString(),
-        transporteSalida: aval.avalTecnico.transporteSalida,
-        transporteRetorno: aval.avalTecnico.transporteRetorno,
-        entrenadores: aval.avalTecnico.entrenadores,
-        atletas: aval.avalTecnico.atletas,
-        observaciones: aval.avalTecnico.observaciones ?? undefined,
-        objetivos: aval.avalTecnico.objetivos?.map((o: any) => ({
-          id: o.id,
-          orden: o.orden,
-          descripcion: o.descripcion,
-        })) ?? [],
-        criterios: aval.avalTecnico.criterios?.map((c: any) => ({
-          id: c.id,
-          orden: c.orden,
-          descripcion: c.descripcion,
-        })) ?? [],
-        requerimientos: aval.avalTecnico.requerimientos?.map((r: any) => ({
-          id: r.id,
-          cantidadDias: r.cantidadDias,
-          valorUnitario: r.valorUnitario?.toString(),
-          rubro: {
-            id: r.rubro.id,
-            nombre: r.rubro.nombre,
+      avalTecnico: aval.avalTecnico
+        ? {
+            id: aval.avalTecnico.id,
+            descripcion: aval.avalTecnico.descripcion ?? undefined,
+            archivo: aval.avalTecnico.archivo ?? undefined,
+            fechaHoraSalida: aval.avalTecnico.fechaHoraSalida.toISOString(),
+            fechaHoraRetorno: aval.avalTecnico.fechaHoraRetorno.toISOString(),
+            transporteSalida: aval.avalTecnico.transporteSalida,
+            transporteRetorno: aval.avalTecnico.transporteRetorno,
+            entrenadores: aval.avalTecnico.entrenadores,
+            atletas: aval.avalTecnico.atletas,
+            observaciones: aval.avalTecnico.observaciones ?? undefined,
+            objetivos:
+              aval.avalTecnico.objetivos?.map((o: any) => ({
+                id: o.id,
+                orden: o.orden,
+                descripcion: o.descripcion,
+              })) ?? [],
+            criterios:
+              aval.avalTecnico.criterios?.map((c: any) => ({
+                id: c.id,
+                orden: c.orden,
+                descripcion: c.descripcion,
+              })) ?? [],
+            requerimientos:
+              aval.avalTecnico.requerimientos?.map((r: any) => ({
+                id: r.id,
+                cantidadDias: r.cantidadDias,
+                valorUnitario: r.valorUnitario?.toString(),
+                rubro: {
+                  id: r.rubro.id,
+                  nombre: r.rubro.nombre,
+                },
+              })) ?? [],
+            deportistasAval:
+              aval.avalTecnico.deportistasAval?.map((d: any) => ({
+                id: d.id,
+                rol: d.rol,
+                deportista: {
+                  id: d.deportista.id,
+                  nombre: `${d.deportista.nombres} ${d.deportista.apellidos}`,
+                  cedula: d.deportista.cedula,
+                },
+              })) ?? [],
+          }
+        : undefined,
+      entrenadores:
+        aval.entrenadores?.map((e: any) => ({
+          id: e.id,
+          rol: e.rol,
+          esPrincipal: e.esPrincipal,
+          entrenador: {
+            id: e.usuario.id,
+            nombre: `${e.usuario.nombre} ${e.usuario.apellido}`,
+            email: e.usuario.email,
           },
         })) ?? [],
-        deportistasAval: aval.avalTecnico.deportistasAval?.map((d: any) => ({
-          id: d.id,
-          rol: d.rol,
-          deportista: {
-            id: d.deportista.id,
-            nombre: `${d.deportista.nombres} ${d.deportista.apellidos}`,
-            cedula: d.deportista.cedula,
+      historial:
+        aval.historial?.map((h: any) => ({
+          id: h.id,
+          estado: h.estado,
+          etapa: h.etapa,
+          comentario: h.comentario ?? undefined,
+          usuario: {
+            id: h.usuario.id,
+            nombre: `${h.usuario.nombre} ${h.usuario.apellido}`,
+            email: h.usuario.email,
           },
+          createdAt: h.createdAt.toISOString(),
         })) ?? [],
-      } : undefined,
-      entrenadores: aval.entrenadores?.map((e: any) => ({
-        id: e.id,
-        rol: e.rol,
-        esPrincipal: e.esPrincipal,
-        entrenador: {
-          id: e.usuario.id,
-          nombre: `${e.usuario.nombre} ${e.usuario.apellido}`,
-          email: e.usuario.email,
-        },
-      })) ?? [],
-      historial: aval.historial?.map((h: any) => ({
-        id: h.id,
-        estado: h.estado,
-        etapa: h.etapa,
-        comentario: h.comentario ?? undefined,
-        usuario: {
-          id: h.usuario.id,
-          nombre: `${h.usuario.nombre} ${h.usuario.apellido}`,
-          email: h.usuario.email,
-        },
-        createdAt: h.createdAt.toISOString(),
-      })) ?? [],
       createdAt: aval.createdAt.toISOString(),
       updatedAt: aval.updatedAt.toISOString(),
     };

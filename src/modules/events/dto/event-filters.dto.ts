@@ -1,7 +1,7 @@
-import { IsOptional, IsEnum, IsString } from 'class-validator';
+import { IsOptional, IsEnum, IsString, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Estado } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class EventFiltersDto {
   @ApiPropertyOptional({
@@ -42,4 +42,18 @@ export class EventFiltersDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar solo eventos que NO tienen ningún aval asociado',
+    example: true,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  sinAval?: boolean;
 }
