@@ -31,17 +31,7 @@ Query: {
 Response: { items: EventResponse[], pagination: { page, limit, total } }
 ```
 
-**Filtros Disponibles**:
-- `page` y `limit`: Paginación
-- `estado`: Filtrar por estado del evento
-- `search`: Búsqueda de texto libre
-- `sinAval`: **NUEVO** - Filtrar solo eventos que NO tienen ningún aval (ColeccionAval) asociado
-  - `?sinAval=true` → Solo eventos sin aval (útil para crear nuevos avales)
-  - `?sinAval=false` o sin parámetro → Todos los eventos
-
-**Notas**:
-- El filtro por disciplina se aplica automáticamente desde el JWT del usuario
-- El filtro `sinAval=true` es útil para mostrar al entrenador solo eventos disponibles para crear aval
+**Nota**: El filtro por disciplina se aplica automáticamente desde el JWT del usuario. No es necesario enviarlo en el query.
 
 ### GET /:id
 Obtener evento por ID

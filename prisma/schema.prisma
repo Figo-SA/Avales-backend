@@ -79,6 +79,7 @@ model Usuario {
   cedula               String                 @unique
   categoriaId          Int
   disciplinaId         Int
+  genero               Genero?
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
   pushToken            String?                @db.VarChar(255)
@@ -89,10 +90,12 @@ model Usuario {
   disciplina           Disciplina             @relation(fields: [disciplinaId], references: [id])
   usuariosRol          UsuarioRol[]
   historialColeccion   HistorialColeccion[]
+  coleccionesEntrenador ColeccionEntrenador[] // Relación con avales donde actúa como entrenador
 
   @@index([nombre])
   @@index([deleted])
   @@index([resetPasswordToken])
+  @@index([genero])
 }
 
 model UsuarioRol {
@@ -117,7 +120,6 @@ model Disciplina {
   deleted      Boolean      @default(false)
   usuarios     Usuario[]
   deportistas  Deportista[]
-  entrenadores Entrenador[]
   colecciones  Evento[]
 
   @@index([deleted])
@@ -131,7 +133,6 @@ model Categoria {
   deleted      Boolean      @default(false)
   usuarios     Usuario[]
   deportistas  Deportista[]
-  entrenadores Entrenador[]
   colecciones  Evento[]
 
   @@index([deleted])
@@ -170,30 +171,31 @@ model Deportista {
 
 // ------------------
 // ENTRENADORES (tabla separada)
+// NOTA: Comentado temporalmente - Los entrenadores ahora son usuarios con rol ENTRENADOR
 // ------------------
-model Entrenador {
-  id              Int      @id @default(autoincrement())
-  nombres         String   @db.VarChar(150)
-  apellidos       String   @db.VarChar(150)
-  cedula          String   @unique @db.VarChar(50)
-  fechaNacimiento DateTime
-  categoriaId     Int
-  disciplinaId    Int
-  afiliacion      Boolean  @default(false)
-  genero          Genero
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  deleted         Boolean  @default(false)
-
-  categoria             Categoria             @relation(fields: [categoriaId], references: [id])
-  disciplina            Disciplina            @relation(fields: [disciplinaId], references: [id])
-  coleccionesEntrenador ColeccionEntrenador[]
-
-  @@index([nombres])
-  @@index([categoriaId])
-  @@index([deleted])
-  @@index([cedula])
-}
+// model Entrenador {
+//   id              Int      @id @default(autoincrement())
+//   nombres         String   @db.VarChar(150)
+//   apellidos       String   @db.VarChar(150)
+//   cedula          String   @unique @db.VarChar(50)
+//   fechaNacimiento DateTime
+//   categoriaId     Int
+//   disciplinaId    Int
+//   afiliacion      Boolean  @default(false)
+//   genero          Genero
+//   createdAt       DateTime @default(now())
+//   updatedAt       DateTime @updatedAt
+//   deleted         Boolean  @default(false)
+//
+//   categoria             Categoria             @relation(fields: [categoriaId], references: [id])
+//   disciplina            Disciplina            @relation(fields: [disciplinaId], references: [id])
+//   coleccionesEntrenador ColeccionEntrenador[]
+//
+//   @@index([nombres])
+//   @@index([categoriaId])
+//   @@index([deleted])
+//   @@index([cedula])
+// }
 
 model Evento {
   id                     Int      @id @default(autoincrement())
@@ -412,21 +414,22 @@ model DeportistaAval {
 }
 
 // ------------------
-// ENTRENADORES LIGADOS A UN AVAL 
+// ENTRENADORES LIGADOS A UN AVAL
+// NOTA: Ahora apunta a Usuario (usuarios con rol ENTRENADOR) en lugar de la tabla Entrenador
 // ------------------
 
 model ColeccionEntrenador {
   id              Int     @id @default(autoincrement())
   coleccionAvalId Int
-  entrenadorId    Int
+  usuarioId       Int     // Cambio de entrenadorId a usuarioId
   rol             String  @db.VarChar(100) // entrenador principal, asistente, etc.
   esPrincipal     Boolean
 
-  entrenador    Entrenador    @relation(fields: [entrenadorId], references: [id])
+  usuario       Usuario       @relation(fields: [usuarioId], references: [id])
   coleccionAval ColeccionAval @relation(fields: [coleccionAvalId], references: [id])
 
-  @@unique([coleccionAvalId, entrenadorId]) // no repetir entrenador en el mismo aval
-  @@index([entrenadorId])
+  @@unique([coleccionAvalId, usuarioId]) // no repetir entrenador en el mismo aval
+  @@index([usuarioId])
 }
 
 // =====================================================================

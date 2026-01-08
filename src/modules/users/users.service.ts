@@ -26,6 +26,7 @@ const userSelect = {
   cedula: true,
   categoriaId: true,
   disciplinaId: true,
+  genero: true,
   pushToken: true,
   createdAt: true,
   updatedAt: true,
@@ -77,6 +78,7 @@ export class UsersService {
       cedula: user.cedula,
       categoria: user.categoria,
       disciplina: user.disciplina,
+      genero: user.genero ?? undefined,
       roles: user.usuariosRol.map((ur) => ur.rol.nombre),
       pushToken: user.pushToken ?? undefined,
       createdAt: user.createdAt,
@@ -101,6 +103,7 @@ export class UsersService {
           cedula: dto.cedula,
           categoriaId: dto.categoriaId ?? 1,
           disciplinaId: dto.disciplinaId ?? 1,
+          genero: dto.genero,
         },
       });
 
@@ -129,15 +132,22 @@ export class UsersService {
     items: UserResponseDto[];
     pagination: { page: number; limit: number; total: number };
   }> {
-    const { page, limit } = query;
+    const { page, limit, genero } = query;
     const skip = (page - 1) * limit;
 
+    const where: any = { deleted: false };
+
+    // Filtrar por género si se proporciona
+    if (genero) {
+      where.genero = genero;
+    }
+
     const [total, users] = await this.prisma.$transaction([
-      this.prisma.usuario.count({ where: { deleted: false } }),
+      this.prisma.usuario.count({ where }),
       this.prisma.usuario.findMany({
         skip,
         take: limit,
-        where: { deleted: false },
+        where,
         select: userSelect,
         orderBy: { createdAt: 'desc' },
       }),

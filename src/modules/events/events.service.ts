@@ -70,7 +70,6 @@ export class EventsService {
     estado?: Estado,
     search?: string,
     disciplinaId?: number,
-    sinAval?: boolean,
   ): Promise<{
     items: EventResponseDto[];
     pagination: PaginationMetaDto;
@@ -86,13 +85,6 @@ export class EventsService {
     // Filtrar por disciplina si se proporciona (para entrenadores)
     if (disciplinaId) {
       where.disciplinaId = disciplinaId;
-    }
-
-    // Filtrar solo eventos SIN aval (ColeccionAval)
-    if (sinAval === true) {
-      where.coleccionesAval = {
-        none: {}, // No tiene ninguna ColeccionAval asociada
-      };
     }
 
     if (search) {

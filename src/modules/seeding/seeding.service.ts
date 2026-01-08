@@ -37,8 +37,8 @@ export class SeedingService {
       await this.createRubros();
       await this.createRoles();
       await this.createUsuarios();
-      // Crear entrenadores independientes (tabla separada)
-      await this.createEntrenadores();
+      // Crear entrenadores como usuarios con rol ENTRENADOR
+      await this.createEntrenadoresAsUsuarios();
       // Crear actividades e items presupuestarios
       await this.createActividades();
       await this.createItems();
@@ -84,8 +84,7 @@ export class SeedingService {
 
       // Colección and its relations
       this.prisma.coleccionEntrenador.deleteMany(),
-      // Entrenadores (delete colecciones first above)
-      this.prisma.entrenador.deleteMany(),
+      // Historial de colecciones
       this.prisma.historialColeccion.deleteMany(),
       this.prisma.coleccionAval.deleteMany(),
 
@@ -130,11 +129,8 @@ export class SeedingService {
     await this.prisma
       .$executeRaw`ALTER SEQUENCE "ColeccionAval_id_seq" RESTART WITH 1;`;
     await this.prisma
-      .$executeRaw`ALTER SEQUENCE "Entrenador_id_seq" RESTART WITH 1;`;
-    await this.prisma
       .$executeRaw`ALTER SEQUENCE "Actividad_id_seq" RESTART WITH 1;`;
-    await this.prisma
-      .$executeRaw`ALTER SEQUENCE "Item_id_seq" RESTART WITH 1;`;
+    await this.prisma.$executeRaw`ALTER SEQUENCE "Item_id_seq" RESTART WITH 1;`;
     await this.prisma
       .$executeRaw`ALTER SEQUENCE "EventoItem_id_seq" RESTART WITH 1;`;
     this.logger.log('🔄 Secuencias de autoincremento reseteadas');
@@ -175,7 +171,10 @@ export class SeedingService {
   private async createUsuarios() {
     const hashedPassword = await this.passwordService.hashPassword('123456');
 
-    const usuarios = usuariosSeed.map((user) => ({ ...user, password: hashedPassword }));
+    const usuarios = usuariosSeed.map((user) => ({
+      ...user,
+      password: hashedPassword,
+    }));
 
     const createdUsuarios = await this.prisma.$transaction(async (tx) => {
       const insertedUsuarios = await Promise.all(
@@ -189,6 +188,7 @@ export class SeedingService {
               cedula: user.cedula,
               categoriaId: user.categoriaId,
               disciplinaId: user.disciplinaId,
+              genero: user.genero,
             },
           });
           return { ...user, id: newUser.id };
@@ -208,17 +208,61 @@ export class SeedingService {
       return insertedUsuarios;
     });
 
-    this.logger.log(`?? ${createdUsuarios.length} usuarios creados con roles asignados`);
+    this.logger.log(
+      `?? ${createdUsuarios.length} usuarios creados con roles asignados`,
+    );
     return createdUsuarios;
   }
 
-  private async createEntrenadores() {
-    await this.prisma.entrenador.createMany({
-      data: entrenadoresSeed,
-      skipDuplicates: true,
+  private async createEntrenadoresAsUsuarios() {
+    // Obtener el rol ENTRENADOR
+    const rolEntrenador = await this.prisma.rol.findUnique({
+      where: { nombre: 'ENTRENADOR' },
     });
 
-    this.logger.log(`🏋️ ${entrenadoresSeed.length} entrenadores seed creados`);
+    if (!rolEntrenador) {
+      this.logger.error('❌ No se encontró el rol ENTRENADOR');
+      return;
+    }
+
+    const hashedPassword = await this.passwordService.hashPassword('123456');
+
+    const createdEntrenadores = await this.prisma.$transaction(async (tx) => {
+      const insertedEntrenadores = await Promise.all(
+        entrenadoresSeed.map(async (entrenador) => {
+          const newUser = await tx.usuario.create({
+            data: {
+              email: `${entrenador.cedula}@entrenador.com`, // Usar cédula como base del email
+              password: hashedPassword,
+              nombre: entrenador.nombres,
+              apellido: entrenador.apellidos,
+              cedula: entrenador.cedula,
+              categoriaId: entrenador.categoriaId,
+              disciplinaId: entrenador.disciplinaId,
+              genero: entrenador.genero,
+            },
+          });
+          return { ...entrenador, id: newUser.id };
+        }),
+      );
+
+      await tx.usuarioRol.createMany({
+        data: insertedEntrenadores.map((entrenador) => ({
+          usuarioId: entrenador.id,
+          rolId: rolEntrenador.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })),
+        skipDuplicates: true,
+      });
+
+      return insertedEntrenadores;
+    });
+
+    this.logger.log(
+      `🏋️ ${createdEntrenadores.length} entrenadores creados como usuarios con rol ENTRENADOR`,
+    );
+    return createdEntrenadores;
   }
 
   private async createActividades() {
@@ -226,7 +270,9 @@ export class SeedingService {
       data: actividadesSeed,
       skipDuplicates: true,
     });
-    this.logger.log(`📂 ${actividadesSeed.length} actividades presupuestarias creadas`);
+    this.logger.log(
+      `📂 ${actividadesSeed.length} actividades presupuestarias creadas`,
+    );
   }
 
   private async createItems() {
@@ -236,7 +282,9 @@ export class SeedingService {
       });
 
       if (!actividad) {
-        this.logger.warn(`⚠️ No se encontró actividad con número ${item.actividadNumero} para item: ${item.nombre}`);
+        this.logger.warn(
+          `⚠️ No se encontró actividad con número ${item.actividadNumero} para item: ${item.nombre}`,
+        );
         continue;
       }
 
@@ -267,7 +315,9 @@ export class SeedingService {
       });
 
       if (!disciplina || !categoria) {
-        this.logger.warn(`⚠️ No se encontró disciplina o categoría para evento: ${evento.nombre}`);
+        this.logger.warn(
+          `?? No se encontró disciplina o categoría para evento: ${evento.nombre}`,
+        );
         continue;
       }
 
@@ -299,7 +349,10 @@ export class SeedingService {
       // Seleccionamos entre 3 y 6 items aleatorios para cada evento
       const numItems = Math.floor(Math.random() * 4) + 3; // 3 a 6 items
       const shuffledItems = [...allItems].sort(() => Math.random() - 0.5);
-      const selectedItems = shuffledItems.slice(0, Math.min(numItems, allItems.length));
+      const selectedItems = shuffledItems.slice(
+        0,
+        Math.min(numItems, allItems.length),
+      );
 
       // Mes del evento basado en fechaInicio
       const eventoMonth = evento.fechaInicio.getMonth() + 1; // 1-12
@@ -320,8 +373,9 @@ export class SeedingService {
       }
     }
 
-    this.logger.log(`🎯 ${eventosSeed.length} eventos creados con estados variados`);
-    this.logger.log(`💰 ${eventoItemsCount} items presupuestarios asignados a eventos`);
+    this.logger.log(
+      `?? ${eventosSeed.length} eventos creados con estados variados`,
+    );
   }
 
   private async createDeportistas() {

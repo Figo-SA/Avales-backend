@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { trimAndLowercase, trimString } from 'src/common/herlpers/transformers';
-import { TipoRol } from '@prisma/client';
+import { TipoRol, Genero } from '@prisma/client';
 
 /**
  * DTO base con campos compartidos entre Create y Update
@@ -85,6 +85,15 @@ export class UserBaseDto {
   @IsInt()
   @Min(1)
   disciplinaId?: number;
+
+  @ApiPropertyOptional({
+    example: 'MASCULINO',
+    description: 'Género del usuario',
+    enum: Genero,
+  })
+  @IsOptional()
+  @IsEnum(Genero, { message: 'Género inválido' })
+  genero?: Genero;
 
   @ApiPropertyOptional({
     example: [TipoRol.ADMIN, TipoRol.SECRETARIA],

@@ -6,7 +6,9 @@
       "Bash(dir:*)",
       "Bash(npx prisma migrate:*)",
       "Bash(npm run build:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(findstr:*)",
+      "Bash(npx prisma generate:*)"
     ]
   }
 }
