@@ -162,6 +162,51 @@ export class UsersService {
   }
 
   /**
+   * Listar solo usuarios con rol ENTRENADOR (paginado)
+   */
+  async findEntrenadores(query: UserQueryDto): Promise<{
+    items: UserResponseDto[];
+    pagination: { page: number; limit: number; total: number };
+  }> {
+    const { page, limit, genero } = query;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      deleted: false,
+      usuariosRol: {
+        some: {
+          rol: {
+            nombre: 'ENTRENADOR',
+          },
+        },
+      },
+    };
+
+    // Filtrar por género si se proporciona
+    if (genero) {
+      where.genero = genero;
+    }
+
+    const [total, users] = await this.prisma.$transaction([
+      this.prisma.usuario.count({ where }),
+      this.prisma.usuario.findMany({
+        skip,
+        take: limit,
+        where,
+        select: userSelect,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const items = users.map((user) => this.mapToResponse(user));
+
+    return {
+      items,
+      pagination: { page, limit, total },
+    };
+  }
+
+  /**
    * Obtener un usuario por ID
    */
   async findOne(id: number): Promise<UserResponseDto> {

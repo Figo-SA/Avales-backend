@@ -23,6 +23,17 @@ Query: {
 Response: { items: UserResponse[], pagination: { page, limit, total } }
 ```
 
+### GET /entrenadores
+Listar solo usuarios con rol ENTRENADOR (accesible desde cualquier rol autenticado)
+```
+Query: {
+  page?: number,       // default: 1
+  limit?: number,      // default: 10
+  genero?: Genero      // Filtrar por género: MASCULINO | FEMENINO
+}
+Response: { items: UserResponse[], pagination: { page, limit, total } }
+```
+
 ### GET /deleted
 Listar usuarios eliminados
 ```

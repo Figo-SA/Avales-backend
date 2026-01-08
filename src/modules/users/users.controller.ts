@@ -30,6 +30,7 @@ import {
   ApiGetUsers,
   ApiGetUsersDeleted,
   ApiUpdatePushToken,
+  ApiGetEntrenadores,
 } from './decorators/api-user-responses.decorator';
 import { GetUser } from '../auth/decorators';
 import { Usuario } from '@prisma/client';
@@ -51,6 +52,13 @@ export class UsersController {
   @ApiGetUsers()
   findAll(@Query() query: UserQueryDto) {
     return this.usersService.findAll(query);
+  }
+
+  @Get('entrenadores')
+  @ApiAuth()
+  @ApiGetEntrenadores()
+  findEntrenadores(@Query() query: UserQueryDto) {
+    return this.usersService.findEntrenadores(query);
   }
 
   @Get('deleted')

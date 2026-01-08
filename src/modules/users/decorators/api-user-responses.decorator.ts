@@ -103,6 +103,51 @@ Parámetros de paginación:
 }
 
 /**
+ * Decorador para el endpoint de listado de entrenadores (paginado)
+ */
+export function ApiGetEntrenadores() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Listar entrenadores (paginado)',
+      description: `
+Retorna una lista paginada de usuarios con rol ENTRENADOR.
+
+Parámetros de paginación:
+- page: Número de página (default: 1)
+- limit: Cantidad de registros por página (default: 10)
+- genero: Filtro opcional por género (MASCULINO, FEMENINO)
+      `.trim(),
+    }),
+    SuccessMessage('Entrenadores obtenidos correctamente'),
+    ApiQuery({
+      name: 'page',
+      required: false,
+      type: Number,
+      description: 'Página (default: 1)',
+    }),
+    ApiQuery({
+      name: 'limit',
+      required: false,
+      type: Number,
+      description: 'Resultados por página (default: 10)',
+    }),
+    ApiQuery({
+      name: 'genero',
+      required: false,
+      enum: ['MASCULINO', 'FEMENINO'],
+      description: 'Filtro por género (opcional)',
+    }),
+    ApiOkResponsePaginated(
+      UserResponseDto,
+      undefined,
+      'Entrenadores obtenidos correctamente',
+      true,
+    ),
+    ApiErrorResponsesConfig([401, 500]),
+  );
+}
+
+/**
  * Decorador para el endpoint de usuarios eliminados
  */
 export function ApiGetUsersDeleted() {
